@@ -36,6 +36,7 @@ export default function RegistroPage() {
     businessName: "",
     email: "",
     phone: "",
+    password: "",
     wantsDomain: false,
     customDomain: "",
   });
@@ -88,7 +89,7 @@ export default function RegistroPage() {
       const res = await fetch('/api/registro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, code: verifyCode }),
+        body: JSON.stringify({ email: formData.email, code: verifyCode, password: formData.password }),
       });
 
       const data = await res.json();
@@ -404,6 +405,23 @@ export default function RegistroPage() {
                   />
                   <p className="text-xs text-gray-500">
                     Incluye el código de país. Ej: +51 para Perú
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="regPassword" className="text-white">Contraseña *</Label>
+                  <Input
+                    id="regPassword"
+                    type="password"
+                    placeholder="Mínimo 6 caracteres"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Usarás esta contraseña para ingresar a tu panel
                   </p>
                 </div>
 

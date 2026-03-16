@@ -27,10 +27,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'JSON inválido' }, { status: 400 });
   }
 
-  const { businessName, email, phone } = body;
+  const { businessName, email, phone, password } = body;
 
-  if (!businessName || !email || !phone) {
+  if (!businessName || !email || !phone || !password) {
     return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
+  }
+
+  if (String(password).length < 6) {
+    return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres' }, { status: 400 });
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) {

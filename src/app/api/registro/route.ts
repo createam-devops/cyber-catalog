@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
-import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { getCentralAdminDb, getCentralAdminAuth } from '@/lib/server/central-admin';
 import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { getTrialEndDate } from '@/lib/plans';
@@ -19,10 +19,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, code } = body;
+    const { email, code, password } = body;
 
-    if (!email || !code) {
+    if (!email || !code || !password) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
+    }
+
+    if (String(password).length < 6) {
+      return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres' }, { status: 400 });
     }
 
     const db = getCentralAdminDb();
@@ -87,6 +91,23 @@ export async function POST(request: NextRequest) {
     };
 
     const docRef = await db.collection('tenants').add(tenantData);
+
+    // Crear usuario en Firebase Auth
+    const authUser = await getCentralAdminAuth().createUser({
+      email: String(email),
+      password: String(password),
+      displayName: String(businessName),
+    });
+
+    // Crear documento en users (vincula auth UID con tenant)
+    await db.collection('users').doc(authUser.uid).set({
+      uid: authUser.uid,
+      email: String(email),
+      tenantId: docRef.id,
+      role: 'owner',
+      displayName: String(businessName),
+      createdAt: FieldValue.serverTimestamp(),
+    });
 
     // Eliminar registro pendiente
     await db.collection('pendingRegistrations').doc(String(email)).delete();
