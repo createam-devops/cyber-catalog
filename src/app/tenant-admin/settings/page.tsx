@@ -63,6 +63,8 @@ function SettingsContent() {
   const [instagram, setInstagram] = useState('');
   const [facebook, setFacebook] = useState('');
   const [tiktok, setTiktok] = useState('');
+  const [seoTitle, setSeoTitle] = useState('');
+  const [seoDescription, setSeoDescription] = useState('');
   const [heroSlides, setHeroSlides] = useState<Array<{
     id: string;
     image: string;
@@ -129,6 +131,8 @@ function SettingsContent() {
         setInstagram(tenantData.socialMedia?.instagram || '');
         setFacebook(tenantData.socialMedia?.facebook || '');
         setTiktok(tenantData.socialMedia?.tiktok || '');
+        setSeoTitle(tenantData.seoTitle || '');
+        setSeoDescription(tenantData.seoDescription || '');
         setHeroSlides(tenantData.heroSlides || []);
         setError(null);
       } catch (err: any) {
@@ -172,6 +176,8 @@ function SettingsContent() {
           ...slide,
           order: index,
         })),
+        seoTitle,
+        seoDescription,
         updatedAt: new Date().toISOString(),
       };
       
@@ -795,6 +801,47 @@ function SettingsContent() {
             )}
           </div>
         </div>
+
+        {/* SEO - Solo plan Pro */}
+        {tenant && (tenant as TenantConfig & { plan?: string }).plan === 'pro' && (
+          <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 space-y-6">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                <Hash size={20} className="text-purple-600" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">SEO <span className="ml-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full align-middle">Pro</span></h2>
+                <p className="text-sm text-gray-500">Optimiza cómo aparece tu tienda en Google</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest ml-1">Título SEO</label>
+                <input
+                  type="text"
+                  value={seoTitle}
+                  onChange={(e) => setSeoTitle(e.target.value)}
+                  maxLength={60}
+                  className="w-full bg-gray-50 rounded-2xl px-5 py-3.5 font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 transition-all"
+                  placeholder="Mi Tienda | Los mejores productos"
+                />
+                <p className="text-xs text-gray-400 ml-1">{seoTitle.length}/60 caracteres</p>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest ml-1">Descripción SEO</label>
+                <textarea
+                  value={seoDescription}
+                  onChange={(e) => setSeoDescription(e.target.value)}
+                  maxLength={160}
+                  rows={3}
+                  className="w-full bg-gray-50 rounded-2xl px-5 py-3.5 font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-purple-500/20 transition-all resize-none"
+                  placeholder="Descripción breve de tu tienda para aparecer en resultados de búsqueda..."
+                />
+                <p className="text-xs text-gray-400 ml-1">{seoDescription.length}/160 caracteres</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Botón Guardar */}
         <div className="sticky bottom-6 z-20">

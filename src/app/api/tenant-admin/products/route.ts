@@ -7,6 +7,7 @@ import { getTenantDbFromConfig } from '@/lib/server/tenant-firestore';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantProductPayloadSchema } from '@/lib/server/tenant-product-validation';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
+import { checkProductLimit } from '@/lib/server/tenant-plan';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,6 +92,16 @@ export async function POST(request: NextRequest) {
     const payload = tenantProductPayloadSchema.parse(rawPayload);
     const db = await getTenantDb(authResult.context.tenantId);
     const { tenantId, uid, email, role } = authResult.context;
+
+    // Verificar límite de plan
+    const currentSnapshot = await getDocs(query(collection(db, 'products'), limit(301)));
+    const limitCheck = await checkProductLimit(tenantId, currentSnapshot.size);
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: `Límite de productos alcanzado (${limitCheck.limit}). Actualiza tu plan para agregar más.`, limitReached: true },
+        { status: 403 }
+      );
+    }
 
     const now = new Date();
     const productRef = await addDoc(collection(db, 'products'), {

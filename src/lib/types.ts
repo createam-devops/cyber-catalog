@@ -1,6 +1,7 @@
 // Tipos para el sistema multi-tenant
+import type { PlanId, BillingCycle } from './plans';
 
-export type TenantStatus = 'pending' | 'active' | 'suspended' | 'rejected';
+export type TenantStatus = 'pending' | 'active' | 'trial' | 'suspended' | 'rejected';
 
 export interface TenantConfig {
   id: string;
@@ -49,6 +50,22 @@ export interface TenantConfig {
     tiktok?: string;
   };
   
+  // SEO
+  seoTitle?: string;
+  seoDescription?: string;
+
+  // Plan y suscripción
+  plan?: PlanId;
+  billingCycle?: BillingCycle;
+  trialEndsAt?: Date | string;
+  subscriptionId?: string;  // ID de suscripción en MercadoPago
+  subscriptionStatus?: 'authorized' | 'paused' | 'cancelled' | null;
+
+  // Analytics (solo plan Pro)
+  analyticsViews?: number;
+  analyticsWhatsapp?: number;
+  analyticsUpdatedAt?: Date | string;
+
   // Metadata
   createdAt: Date;
   updatedAt: Date;
@@ -64,6 +81,7 @@ export interface Product {
   category: string;
   imageUrls?: string[];
   featured?: boolean;
+  stock?: number | null;  // null = sin control de stock
   createdAt: Date;
   updatedAt: Date;
 }

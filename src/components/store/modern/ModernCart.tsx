@@ -33,6 +33,15 @@ export default function ModernCart({
     const message = `¡Hola! Quiero hacer un pedido:\n\n${cart.map(item => 
       `• ${item.name} x${item.quantity} - S/${(item.price * item.quantity).toFixed(2)}`
     ).join('\n')}\n\nTotal: S/${total.toFixed(2)}`;
+
+    // Trackear clic en WhatsApp (fire-and-forget)
+    if (tenant.id) {
+      fetch('/api/analytics/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId: tenant.id, event: 'whatsapp_click' }),
+      }).catch(() => {});
+    }
     
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };

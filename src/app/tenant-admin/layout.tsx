@@ -4,17 +4,21 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutGrid, Package, Layers, Settings as SettingsIcon, LogOut, User, ChevronDown } from 'lucide-react';
+import { LayoutGrid, Package, Layers, Settings as SettingsIcon, LogOut, User, ChevronDown, Zap, Clock, CreditCard } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
+import { doc, getDoc } from 'firebase/firestore';
+import { centralDb } from '@/lib/firebase';
+import { isTrialExpired } from '@/lib/plans';
 
 const MENU = [
   { id: 'home', icon: LayoutGrid, label: 'Inicio', path: '/tenant-admin' },
   { id: 'products', icon: Package, label: 'Productos', path: '/tenant-admin/products' },
   { id: 'categories', icon: Layers, label: 'Categorías', path: '/tenant-admin/categories' },
   { id: 'settings', icon: SettingsIcon, label: 'Ajustes', path: '/tenant-admin/settings' },
+  { id: 'billing', icon: CreditCard, label: 'Planes', path: '/tenant-admin/billing' },
 ];
 
 function TenantAdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,6 +27,22 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [tenantPlan, setTenantPlan] = useState<{ plan?: string; status?: string; trialEndsAt?: string | null } | null>(null);
+
+  // Cargar info de plan del tenant
+  useEffect(() => {
+    if (!user?.tenantId) return;
+    getDoc(doc(centralDb, 'tenants', user.tenantId)).then(snap => {
+      if (snap.exists()) {
+        const d = snap.data();
+        setTenantPlan({
+          plan: d.plan,
+          status: d.status,
+          trialEndsAt: d.trialEndsAt?.toDate?.()?.toISOString() ?? d.trialEndsAt ?? null,
+        });
+      }
+    }).catch(() => {});
+  }, [user?.tenantId]);
 
   const handleLogout = async () => {
     try {
@@ -56,6 +76,7 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
     if (pathname?.startsWith('/tenant-admin/products')) return 'products';
     if (pathname?.startsWith('/tenant-admin/categories')) return 'categories';
     if (pathname?.startsWith('/tenant-admin/settings')) return 'settings';
+    if (pathname?.startsWith('/tenant-admin/billing')) return 'billing';
     return 'home';
   };
 
@@ -84,6 +105,42 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
             </button>
           ))}
         </nav>
+
+        {/* Plan badge en sidebar */}
+        {tenantPlan && (
+          <div className="px-2 mb-3">
+            {tenantPlan.plan === 'pro' ? (
+              <div className="flex items-center justify-center gap-1 bg-purple-50 text-purple-700 text-[9px] font-extrabold uppercase tracking-widest px-2 py-1.5 rounded-xl">
+                <Zap size={10} strokeWidth={3} />
+                Pro
+              </div>
+            ) : tenantPlan.status === 'trial' ? (() => {
+              const trialEnd = tenantPlan.trialEndsAt ? new Date(tenantPlan.trialEndsAt) : null;
+              const expired = isTrialExpired(trialEnd);
+              const daysLeft = trialEnd ? Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000)) : null;
+              return (
+                <button
+                  onClick={() => router.push('/tenant-admin/billing')}
+                  className={`w-full flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[9px] font-extrabold uppercase tracking-widest transition-all hover:opacity-80 ${
+                    expired ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'
+                  }`}
+                >
+                  <Clock size={10} strokeWidth={3} />
+                  {expired ? 'Expirado' : `${daysLeft}d`}
+                </button>
+              );
+            })() : (
+              <button
+                onClick={() => router.push('/tenant-admin/billing')}
+                className="w-full flex items-center justify-center gap-1 bg-gray-50 text-gray-400 text-[9px] font-extrabold uppercase tracking-widest px-2 py-1.5 rounded-xl hover:bg-purple-50 hover:text-purple-600 transition-all"
+              >
+                <Zap size={10} strokeWidth={3} />
+                Upgrade
+              </button>
+            )}
+          </div>
+        )}
+
         <button 
           onClick={handleLogout}
           className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all mb-4"

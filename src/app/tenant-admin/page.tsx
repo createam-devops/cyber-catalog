@@ -3,23 +3,26 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Eye, MousePointerClick, Package, Plus, ChevronDown, LogOut } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
-import { centralDb } from '@/lib/firebase';
+import { Eye, MousePointerClick, Package, Plus, ChevronDown, LogOut, Lock, Zap, Clock } from 'lucide-react';
+import { doc, getDoc, collection, getCountFromServer } from 'firebase/firestore';
+import { centralDb, initTenantFirebase } from '@/lib/firebase';
 import { TenantConfig } from '@/lib/types';
 import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
+import { isTrialExpired } from '@/lib/plans';
 
-const MOCK_METRICS = [
-  { label: "Vistas Totales", value: "3.2k", trend: "+12%", icon: Eye, color: "bg-blue-50 text-blue-600" },
-  { label: "Intención de Compra", value: "145", sub: "Clics WhatsApp", trend: "+8%", icon: MousePointerClick, color: "bg-green-50 text-green-600" },
-  { label: "Prod. Activos", value: "24", trend: "", icon: Package, color: "bg-purple-50 text-purple-600" },
-];
+function getTrialDaysLeft(trialEndsAt?: Date | string | null): number | null {
+  if (!trialEndsAt) return null;
+  const end = trialEndsAt instanceof Date ? trialEndsAt : new Date(trialEndsAt as string);
+  const diff = end.getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
 
 export default function TenantAdminDashboard() {
   const router = useRouter();
   const { user } = useAuth();
   const [tenant, setTenant] = useState<TenantConfig | null>(null);
+  const [productCount, setProductCount] = useState<number | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +60,17 @@ export default function TenantAdminDashboard() {
       try {
         const tenantDoc = await getDoc(doc(centralDb, 'tenants', user.tenantId));
         if (tenantDoc.exists()) {
-          setTenant({ id: tenantDoc.id, ...tenantDoc.data() } as TenantConfig);
+          const tenantData = { id: tenantDoc.id, ...tenantDoc.data() } as TenantConfig;
+          setTenant(tenantData);
+
+          // Cargar conteo de productos desde Firebase del tenant
+          try {
+            const { db } = initTenantFirebase(tenantData.id, tenantData.firebaseConfig);
+            const snap = await getCountFromServer(collection(db, 'products'));
+            setProductCount(snap.data().count);
+          } catch {
+            // Si falla, dejamos null (no crítico)
+          }
         }
       } catch (error) {
         console.error('Error loading tenant:', error);
@@ -125,29 +138,128 @@ export default function TenantAdminDashboard() {
           </div>
         </div>
 
+        {/* Plan badge */}
+        {tenant && (
+          <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-sm flex flex-wrap items-center gap-4 justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-widest ${
+                tenant.plan === 'pro'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-gray-100 text-gray-600'
+              }`}>
+                {tenant.plan === 'pro' ? '⚡ Pro' : 'Starter'}
+              </div>
+              {tenant.status === 'trial' && (() => {
+                const daysLeft = getTrialDaysLeft(tenant.trialEndsAt);
+                const expired = isTrialExpired(tenant.trialEndsAt ? (tenant.trialEndsAt instanceof Date ? tenant.trialEndsAt : new Date(tenant.trialEndsAt as string)) : null);
+                return (
+                  <div className={`flex items-center gap-1.5 text-xs font-bold ${
+                    expired ? 'text-red-500' : daysLeft !== null && daysLeft <= 7 ? 'text-amber-500' : 'text-gray-500'
+                  }`}>
+                    <Clock size={13} />
+                    {expired
+                      ? 'Prueba expirada'
+                      : `${daysLeft} día${daysLeft === 1 ? '' : 's'} de prueba restantes`}
+                  </div>
+                );
+              })()}
+            </div>
+            {tenant.plan !== 'pro' && (
+              <button
+                onClick={() => router.push('/tenant-admin/billing')}
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
+              >
+                <Zap size={13} />
+                Mejorar a Pro
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_METRICS.map((metric, i) => (
-            <div key={i} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-40">
+          {/* Vistas */}
+          {tenant?.plan === 'pro' ? (
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-40">
               <div className="flex justify-between items-start">
-                <div className={`p-3 rounded-2xl ${metric.color} bg-opacity-10`}>
-                  <metric.icon size={20} strokeWidth={2.5} />
+                <div className="p-3 rounded-2xl bg-blue-50 text-blue-600">
+                  <Eye size={20} strokeWidth={2.5} />
                 </div>
-                {metric.trend && (
-                  <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
-                    {metric.trend}
-                  </span>
-                )}
               </div>
               <div>
-                <p className="text-3xl font-black text-gray-900 tracking-tight">{metric.value}</p>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">{metric.label}</p>
-                {metric.sub && (
-                  <p className="text-[10px] text-gray-400 mt-0.5">{metric.sub}</p>
-                )}
+                <p className="text-3xl font-black text-gray-900 tracking-tight">
+                  {tenant.analyticsViews?.toLocaleString() ?? '0'}
+                </p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Vistas Totales</p>
               </div>
             </div>
-          ))}
+          ) : (
+            <div className="bg-gray-50 p-6 rounded-[2rem] border border-dashed border-gray-200 flex flex-col justify-between h-40 relative overflow-hidden">
+              <div className="flex justify-between items-start">
+                <div className="p-3 rounded-2xl bg-gray-100 text-gray-300">
+                  <Eye size={20} strokeWidth={2.5} />
+                </div>
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg flex items-center gap-1">
+                  <Lock size={9} /> Pro
+                </span>
+              </div>
+              <div>
+                <p className="text-3xl font-black text-gray-300 tracking-tight">—</p>
+                <p className="text-xs font-bold text-gray-300 uppercase tracking-wider mt-1">Vistas Totales</p>
+              </div>
+            </div>
+          )}
+
+          {/* WhatsApp clicks */}
+          {tenant?.plan === 'pro' ? (
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-40">
+              <div className="flex justify-between items-start">
+                <div className="p-3 rounded-2xl bg-green-50 text-green-600">
+                  <MousePointerClick size={20} strokeWidth={2.5} />
+                </div>
+              </div>
+              <div>
+                <p className="text-3xl font-black text-gray-900 tracking-tight">
+                  {tenant.analyticsWhatsapp?.toLocaleString() ?? '0'}
+                </p>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Intención de Compra</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">Clics WhatsApp</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 p-6 rounded-[2rem] border border-dashed border-gray-200 flex flex-col justify-between h-40 relative overflow-hidden">
+              <div className="flex justify-between items-start">
+                <div className="p-3 rounded-2xl bg-gray-100 text-gray-300">
+                  <MousePointerClick size={20} strokeWidth={2.5} />
+                </div>
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-lg flex items-center gap-1">
+                  <Lock size={9} /> Pro
+                </span>
+              </div>
+              <div>
+                <p className="text-3xl font-black text-gray-300 tracking-tight">—</p>
+                <p className="text-xs font-bold text-gray-300 uppercase tracking-wider mt-1">Intención de Compra</p>
+              </div>
+            </div>
+          )}
+
+          {/* Productos activos */}
+          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between h-40">
+            <div className="flex justify-between items-start">
+              <div className="p-3 rounded-2xl bg-purple-50 text-purple-600">
+                <Package size={20} strokeWidth={2.5} />
+              </div>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-gray-900 tracking-tight">
+                {productCount ?? '...'}
+              </p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Prod. Activos</p>
+              {tenant?.plan === 'starter' && productCount !== null && (
+                <p className="text-[10px] text-gray-400 mt-0.5">{productCount}/30 del límite</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Quick Actions */}

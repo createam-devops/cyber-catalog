@@ -7,7 +7,7 @@ import { sendTenantApprovedEmail, sendTenantRejectedEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
-const ALLOWED_STATUSES = new Set(['pending', 'active', 'suspended', 'rejected']);
+const ALLOWED_STATUSES = new Set(['pending', 'active', 'trial', 'suspended', 'rejected']);
 
 export async function PATCH(
   request: NextRequest,

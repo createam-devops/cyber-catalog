@@ -19,6 +19,10 @@ import { uploadProductImage } from "@/lib/products";
 import { Category, TenantConfig } from "@/lib/types";
 import { toast } from "sonner";
 
+interface ApiError extends Error {
+  limitReached?: boolean;
+}
+
 async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = await auth.currentUser?.getIdToken(true);
 
@@ -41,7 +45,9 @@ async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promis
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload?.error || 'Error en API tenant-admin');
+    const err: ApiError = new Error(payload?.error || 'Error en API tenant-admin');
+    err.limitReached = payload?.limitReached ?? false;
+    throw err;
   }
 
   return payload as T;
@@ -62,6 +68,7 @@ function NewProductContent() {
     price: "",
     category: "",
     featured: false,
+    stock: "",
   });
 
   useEffect(() => {
@@ -133,14 +140,23 @@ function NewProductContent() {
         category: formData.category,
         imageUrls,
         featured: formData.featured,
+        stock: formData.stock !== '' ? parseInt(formData.stock) : null,
         }),
       });
       
       toast.success("Producto creado exitosamente");
       router.push('/tenant-admin/products');
     } catch (error) {
-      console.error("Error creating product:", error);
-      toast.error("Error al crear producto");
+      const err = error as ApiError;
+      if (err.limitReached) {
+        toast.error(err.message, {
+          description: 'Actualiza tu plan para crear productos ilimitados.',
+          action: { label: 'Ver planes', onClick: () => router.push('/tenant-admin/billing') },
+        });
+      } else {
+        console.error("Error creating product:", error);
+        toast.error("Error al crear producto");
+      }
     } finally {
       setLoading(false);
     }
@@ -222,6 +238,22 @@ function NewProductContent() {
                 </select>
               </div>
             </div>
+
+            {tenant && (tenant as TenantConfig & { plan?: string }).plan === 'pro' && (
+              <div className="space-y-2">
+                <Label htmlFor="stock" className="text-sm font-bold text-gray-700">Stock disponible <span className="ml-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Pro</span></Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                  placeholder="Dejar vacío = sin límite de stock"
+                  className="bg-white border-gray-200 rounded-xl focus:border-rose-300 focus:ring-2 focus:ring-rose-50"
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label className="text-sm font-bold text-gray-700">Imágenes</Label>

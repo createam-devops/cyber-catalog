@@ -7,6 +7,7 @@ import { getTenantDbFromConfig } from '@/lib/server/tenant-firestore';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantCategoryPayloadSchema } from '@/lib/server/tenant-category-validation';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
+import { checkCategoryLimit } from '@/lib/server/tenant-plan';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -77,6 +78,16 @@ export async function POST(request: NextRequest) {
     const rawPayload = (await request.json()) as unknown;
     const payload = tenantCategoryPayloadSchema.parse(rawPayload);
     const db = await getTenantDb(authResult.context.tenantId);
+
+    // Verificar límite de plan
+    const currentSnapshot = await getDocs(query(collection(db, 'categories'), orderBy('order', 'asc')));
+    const limitCheck = await checkCategoryLimit(authResult.context.tenantId, currentSnapshot.size);
+    if (!limitCheck.allowed) {
+      return NextResponse.json(
+        { error: `Límite de categorías alcanzado (${limitCheck.limit}). Actualiza tu plan para agregar más.`, limitReached: true },
+        { status: 403 }
+      );
+    }
 
     const categoryRef = await addDoc(collection(db, 'categories'), {
       label: payload.label,

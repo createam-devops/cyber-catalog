@@ -36,6 +36,12 @@ export const tenantProductPayloadSchema = z.object({
     .optional()
     .transform((urls) => Array.from(new Set(urls || []))),
   featured: z.boolean().optional().default(false),
+  stock: z.coerce
+    .number({ invalid_type_error: 'Stock must be a number' })
+    .int('Stock must be an integer')
+    .nonnegative('Stock cannot be negative')
+    .nullable()
+    .optional(),
 });
 
 export type TenantProductPayload = z.infer<typeof tenantProductPayloadSchema>;

@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Edit3, Coffee, Flower, Gift, Heart, Sparkles, Package, ShoppingBag, Star, Cake, Wine, Palette, Home, Shirt, Watch, Footprints, Baby, Music, Book, Camera, Gamepad2, Dumbbell, Pizza, IceCream } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/auth";
@@ -45,6 +46,10 @@ const renderIcon = (iconName?: string, size = 24) => {
   return IconComponent ? <IconComponent size={size} /> : <Sparkles size={size} />;
 };
 
+interface ApiError extends Error {
+  limitReached?: boolean;
+}
+
 async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = await auth.currentUser?.getIdToken(true);
 
@@ -67,13 +72,16 @@ async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promis
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload?.error || 'Error en API tenant-admin');
+    const err: ApiError = new Error(payload?.error || 'Error en API tenant-admin');
+    err.limitReached = payload?.limitReached ?? false;
+    throw err;
   }
 
   return payload as T;
 }
 
 function CategoriesContent() {
+  const router = useRouter();
   const { user } = useAuth();
   
   const [categories, setCategories] = useState<Category[]>([]);
@@ -125,8 +133,16 @@ function CategoriesContent() {
       setShowModal(false);
       loadCategories();
     } catch (error) {
-      console.error("Error creating category:", error);
-      toast.error("Error al crear categoría");
+      const err = error as ApiError;
+      if (err.limitReached) {
+        toast.error(err.message, {
+          description: 'Actualiza tu plan para crear categorías ilimitadas.',
+          action: { label: 'Ver planes', onClick: () => router.push('/tenant-admin/billing') },
+        });
+      } else {
+        console.error("Error creating category:", error);
+        toast.error("Error al crear categoría");
+      }
     }
   }
 

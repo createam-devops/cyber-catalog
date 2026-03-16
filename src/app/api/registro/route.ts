@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
+import { getTrialEndDate } from '@/lib/plans';
 
 export const runtime = 'nodejs';
 
@@ -51,7 +52,10 @@ export async function POST(request: NextRequest) {
       phone,
       subdomain,
       domain: wantsDomain && customDomain ? customDomain : null,
-      status: 'pending',
+      status: 'trial',
+      plan: 'starter',
+      billingCycle: 'monthly',
+      trialEndsAt: getTrialEndDate(),
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     };

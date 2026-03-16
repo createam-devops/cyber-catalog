@@ -18,6 +18,8 @@ services:
       - FIREBASE_ADMIN_PRIVATE_KEY=${FIREBASE_ADMIN_PRIVATE_KEY}
       - PLATFORM_ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS}
       - RESEND_API_KEY=${RESEND_API_KEY}
+      - MP_ACCESS_TOKEN=${MP_ACCESS_TOKEN}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://createam.cloud}
       - NODE_ENV=production
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]

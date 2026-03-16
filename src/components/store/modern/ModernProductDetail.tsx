@@ -47,6 +47,15 @@ export default function ModernProductDetail({
     }
   }, [productId, tenant.id, initialProduct]);
 
+  // Trackear vista de producto (fire-and-forget)
+  useEffect(() => {
+    fetch('/api/analytics/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenantId: tenant.id, event: 'view' }),
+    }).catch(() => {}); // ignorar errores de tracking
+  }, [productId, tenant.id]);
+
   async function loadProduct() {
     try {
       setLoading(true);
