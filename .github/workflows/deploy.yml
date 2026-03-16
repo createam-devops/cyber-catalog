@@ -53,7 +53,7 @@ jobs:
           ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null || { echo "ERROR: clave SSH no válida"; exit 1; }
           ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Copiar archivos de configuración al VPS
+      - name: Copiar docker-compose.yml al VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
@@ -63,21 +63,6 @@ jobs:
           scp -i ~/.ssh/deploy_key -P "$VPS_PORT" \
             docker-compose.yml \
             "$VPS_USER@$VPS_HOST:$PROJECT_DIR/docker-compose.yml"
-
-          # Instalar nginx config si no existe aún
-          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o StrictHostKeyChecking=no \
-            "$VPS_USER@$VPS_HOST" \
-            "[ -f /etc/nginx/sites-available/createam.cloud ] && echo 'nginx config ya existe' || (
-              mkdir -p /var/www/certbot
-              echo 'instalando nginx config...'
-            )"
-          scp -i ~/.ssh/deploy_key -P "$VPS_PORT" \
-            createam.cloud.conf \
-            "$VPS_USER@$VPS_HOST:/etc/nginx/sites-available/createam.cloud"
-          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o StrictHostKeyChecking=no \
-            "$VPS_USER@$VPS_HOST" \
-            "ln -sf /etc/nginx/sites-available/createam.cloud /etc/nginx/sites-enabled/createam.cloud
-             nginx -t && systemctl reload nginx"
 
       - name: Actualizar contenedor en VPS
         env:
