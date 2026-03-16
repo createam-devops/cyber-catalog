@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
@@ -8,37 +9,62 @@ import { getTrialEndDate } from '@/lib/plans';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const rateLimit = checkRateLimit(request, 'registro', 5, 60 * 60 * 1000); // 5 por hora por IP
+  const rateLimit = checkRateLimit(request, 'registro-verify', 10, 60 * 60 * 1000);
   if (rateLimit.limited) {
     return NextResponse.json(
-      { error: 'Demasiadas solicitudes. Intenta más tarde.' },
+      { error: 'Demasiados intentos. Intenta más tarde.' },
       { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } }
     );
   }
 
   try {
     const body = await request.json();
-    const { businessName, email, phone, wantsDomain, customDomain } = body;
+    const { email, code } = body;
 
-    if (!businessName || !email || !phone) {
+    if (!email || !code) {
       return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
-    }
-
-    // Validación básica de email
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
     }
 
     const db = getCentralAdminDb();
 
-    // Verificar si ya existe un tenant con ese email
-    const existing = await db.collection('tenants').where('email', '==', email).limit(1).get();
-    if (!existing.empty) {
-      return NextResponse.json({ error: 'Ya existe una solicitud con este email' }, { status: 409 });
+    // Leer registro pendiente
+    const pendingDoc = await db.collection('pendingRegistrations').doc(String(email)).get();
+    if (!pendingDoc.exists) {
+      return NextResponse.json({ error: 'Código no encontrado o expirado. Solicita uno nuevo.' }, { status: 400 });
     }
 
-    // Generar subdomain base desde el nombre del negocio
-    const subdomain = businessName
+    const pending = pendingDoc.data()!;
+
+    // Verificar expiración
+    if (pending.expiresAt.toDate() < new Date()) {
+      await db.collection('pendingRegistrations').doc(String(email)).delete();
+      return NextResponse.json({ error: 'El código expiró. Solicita uno nuevo.' }, { status: 400 });
+    }
+
+    // Verificar intentos (max 5)
+    if ((pending.attempts ?? 0) >= 5) {
+      return NextResponse.json({ error: 'Demasiados intentos fallidos. Solicita un nuevo código.' }, { status: 400 });
+    }
+
+    // Verificar código
+    if (pending.code !== String(code).trim()) {
+      await db.collection('pendingRegistrations').doc(String(email)).update({
+        attempts: admin.firestore.FieldValue.increment(1),
+      });
+      const remaining = 5 - ((pending.attempts ?? 0) + 1);
+      return NextResponse.json({ error: `Código incorrecto. ${remaining} intentos restantes.` }, { status: 400 });
+    }
+
+    // Código correcto — verificar duplicado (race condition)
+    const existing = await db.collection('tenants').where('email', '==', email).limit(1).get();
+    if (!existing.empty) {
+      await db.collection('pendingRegistrations').doc(String(email)).delete();
+      return NextResponse.json({ error: 'Ya existe una cuenta con este email' }, { status: 409 });
+    }
+
+    const { businessName, phone, wantsDomain, customDomain } = pending;
+
+    const subdomain = String(businessName)
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '-')
       .replace(/-+/g, '-')
@@ -62,10 +88,13 @@ export async function POST(request: NextRequest) {
 
     const docRef = await db.collection('tenants').add(tenantData);
 
-    // Enviar emails en paralelo (sin bloquear la respuesta si fallan)
+    // Eliminar registro pendiente
+    await db.collection('pendingRegistrations').doc(String(email)).delete();
+
+    // Enviar emails en paralelo (no bloquean la respuesta)
     Promise.all([
-      sendNewTenantNotification({ businessName, email, phone, domain: tenantData.domain || undefined, subdomain }),
-      sendRegistrationConfirmation({ businessName, email }),
+      sendNewTenantNotification({ businessName: String(businessName), email: String(email), phone: String(phone), domain: tenantData.domain || undefined, subdomain }),
+      sendRegistrationConfirmation({ businessName: String(businessName), email: String(email) }),
     ]).catch((err) => console.error('[registro] Error enviando emails:', err));
 
     return NextResponse.json({ ok: true, tenantId: docRef.id });
@@ -74,3 +103,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Error al procesar solicitud' }, { status: 500 });
   }
 }
+

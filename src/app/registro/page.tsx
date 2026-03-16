@@ -16,10 +16,12 @@ import {
   X, 
   ExternalLink,
   Cpu,
-  MessageCircle,
   Send,
   Lightbulb,
-  Cloud
+  Cloud,
+  Mail,
+  ArrowLeft,
+  CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +30,8 @@ export default function RegistroPage() {
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [step, setStep] = useState<'form' | 'verify'>('form');
+  const [verifyCode, setVerifyCode] = useState('');
   const [formData, setFormData] = useState({
     businessName: "",
     email: "",
@@ -40,12 +44,13 @@ export default function RegistroPage() {
     password: "",
   });
 
+  // Paso 1: enviar código al email
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const res = await fetch('/api/registro', {
+      const res = await fetch('/api/registro/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -54,35 +59,52 @@ export default function RegistroPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error("Error al procesar solicitud", {
-          description: data.error || "Por favor intenta nuevamente.",
-        });
+        toast.error(data.error || "Error al procesar solicitud");
         return;
       }
 
-      toast.success("¡Solicitud enviada!", {
-        description: "Revisa tu correo, te confirmamos que recibimos tu solicitud.",
+      toast.success("Código enviado", {
+        description: `Revisá tu correo: ${formData.email}`,
       });
-
-      // También abrimos WhatsApp como canal adicional
-      const domainInfo = formData.wantsDomain 
-        ? `🌐 Dominio: Personalizado (${formData.customDomain || 'Por definir'})` 
-        : `🌐 Dominio: Subdominio gratuito (.createam.cloud)`;
-      const message = [
-        `🚀 *NUEVA SOLICITUD - CATÁLOGO DIGITAL*`,
-        `• Nombre: ${formData.businessName}`,
-        `• Email: ${formData.email}`,
-        `• WhatsApp: ${formData.phone}`,
-        `${domainInfo}`,
-      ].join('\n');
-      setTimeout(() => {
-        window.open(`https://wa.me/51945111310?text=${encodeURIComponent(message)}`, '_blank');
-      }, 1000);
+      setStep('verify');
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Error al procesar solicitud", {
-        description: "Por favor intenta nuevamente.",
+      toast.error("Error al enviar el código. Intenta nuevamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Paso 2: verificar código y crear cuenta
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyCode.length !== 6) {
+      toast.error("El código debe tener 6 dígitos");
+      return;
+    }
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/registro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, code: verifyCode }),
       });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error || "Código incorrecto");
+        return;
+      }
+
+      toast.success("¡Cuenta activada!", {
+        description: "Tu período de prueba gratuito ha comenzado.",
+      });
+      setTimeout(() => router.push('/login'), 1500);
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error al verificar. Intenta nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -182,7 +204,9 @@ export default function RegistroPage() {
               <p className="text-gray-400 text-sm">
                 {isLogin 
                   ? "Ingresa con tus credenciales para gestionar tu catálogo" 
-                  : "Completa el formulario y te contactaremos por WhatsApp para activar tu catálogo"
+                  : step === 'form'
+                    ? "Completa el formulario y activa tu catálogo digital al instante"
+                    : "Ingresa el código que enviamos a tu correo"
                 }
               </p>
             </div>
@@ -272,6 +296,75 @@ export default function RegistroPage() {
                 </form>
               ) : (
                 /* Formulario de Registro */
+                step === 'verify' ? (
+                  /* Paso 2: Verificar código */
+                  <form onSubmit={handleVerify} className="space-y-6">
+                    <button
+                      type="button"
+                      onClick={() => { setStep('form'); setVerifyCode(''); }}
+                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                      <ArrowLeft size={16} />
+                      Volver
+                    </button>
+
+                    <div className="text-center py-2">
+                      <div className="w-14 h-14 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <Mail className="h-7 w-7 text-cyan-400" />
+                      </div>
+                      <p className="text-white font-bold">Revisa tu correo</p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        Enviamos un código de 6 dígitos a<br />
+                        <span className="text-cyan-400 font-semibold">{formData.email}</span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="code" className="text-white">Código de verificación</Label>
+                      <Input
+                        id="code"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="\d{6}"
+                        maxLength={6}
+                        placeholder="123456"
+                        value={verifyCode}
+                        onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        required
+                        autoFocus
+                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-bold"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading || verifyCode.length !== 6}
+                      className="w-full px-8 py-3 bg-cyan-500 text-black rounded-xl font-black hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        "Verificando..."
+                      ) : (
+                        <>
+                          <CheckCircle className="h-5 w-5" />
+                          Verificar y Activar Catálogo
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-center text-sm text-gray-500">
+                      ¿No llegó el correo?{" "}
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => { setStep('form'); setVerifyCode(''); }}
+                        className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors disabled:opacity-50"
+                      >
+                        Reenviar código
+                      </button>
+                    </p>
+                  </form>
+                ) : (
+                  /* Paso 1: Formulario */
                   <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="businessName" className="text-white">Nombre del Negocio *</Label>
@@ -372,10 +465,10 @@ export default function RegistroPage() {
                   <button 
                     type="submit" 
                     disabled={loading}
-                    className="w-full px-8 py-3 bg-green-500 text-white rounded-xl font-black hover:bg-green-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base"
+                    className="w-full px-8 py-3 bg-cyan-500 text-black rounded-xl font-black hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base"
                   >
-                    <MessageCircle className="h-5 w-5" />
-                    {loading ? "Procesando..." : "Enviar Solicitud por WhatsApp"}
+                    <Send className="h-5 w-5" />
+                    {loading ? "Enviando código..." : "Continuar →"}
                   </button>
                 </div>
 
@@ -391,9 +484,10 @@ export default function RegistroPage() {
                 </p>
 
                 <p className="text-center text-xs text-gray-500">
-                  Te contactaremos por WhatsApp para activar tu catálogo digital
+                  Verificaremos tu email para activar tu catálogo gratis por 30 días
                 </p>
               </form>
+                )
               )}
             </div>
           </div>
