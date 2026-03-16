@@ -1,10 +1,6 @@
-version: '3.8'
-
 services:
   createam-platform:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${DOCKER_IMAGE}
     container_name: createam-platform
     restart: unless-stopped
     ports:

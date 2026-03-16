@@ -5,29 +5,46 @@ on:
     workflows: [CI]
     types: [completed]
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Branch, tag, or commit to deploy
-        required: false
-        default: main
 
 concurrency:
   group: deploy-vps-production
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'workflow_run' &&
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.head_branch == 'main')
-    env:
-      TARGET_REF: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ref || 'main' }}
-      VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
+    outputs:
+      image: ${{ steps.image.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build y push imagen
+        id: image
+        run: |
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/cyber-catalog"
+          docker build -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" .
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+          echo "name=$IMAGE:latest" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Preparar clave SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -35,49 +52,53 @@ jobs:
           VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
         run: |
           mkdir -p ~/.ssh
-          # Escribir clave via env var (único método que preserva saltos de línea en GitHub Actions)
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Verificar que la clave es válida antes de continuar
-          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null || { echo "ERROR: La clave SSH no es válida"; exit 1; }
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null || { echo "ERROR: clave SSH no válida"; exit 1; }
           ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Deploy en VPS
+      - name: Copiar docker-compose.yml al VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
           PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR || '/var/www/createam-platform' }}
-          TARGET_REF: ${{ env.TARGET_REF }}
+        run: |
+          scp -i ~/.ssh/deploy_key -P "$VPS_PORT" \
+            docker-compose.yml \
+            "$VPS_USER@$VPS_HOST:$PROJECT_DIR/docker-compose.yml"
+
+      - name: Actualizar contenedor en VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
+          PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR || '/var/www/createam-platform' }}
+          DOCKER_IMAGE: ${{ needs.build-and-push.outputs.image }}
         run: |
           ssh -i ~/.ssh/deploy_key \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
-            "$VPS_USER@$VPS_HOST" \
-            "set -e
-            cd '${PROJECT_DIR}'
+            "$VPS_USER@$VPS_HOST" << EOF
+          set -e
+          cd "$PROJECT_DIR"
 
-            if command -v docker-compose >/dev/null 2>&1; then
-              DC='docker-compose'
-            else
-              DC='docker compose'
-            fi
+          if command -v docker-compose >/dev/null 2>&1; then
+            DC="docker-compose"
+          else
+            DC="docker compose"
+          fi
 
-            git fetch --all
-            git checkout '${TARGET_REF:-main}'
-            git pull origin '${TARGET_REF:-main}'
+          export DOCKER_IMAGE="$DOCKER_IMAGE"
+          \$DC down
+          docker pull "$DOCKER_IMAGE"
+          \$DC up -d --remove-orphans
 
-            \$DC down
-            \$DC build --no-cache
-            \$DC up -d
+          sleep 10
 
-            sleep 10
+          HEALTH=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)
+          echo "Health check: \$HEALTH"
+          [ "\$HEALTH" = "200" ] || { echo "Health check falló"; exit 1; }
 
-            HEALTH_CODE=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true)
-            echo \"Health check: \$HEALTH_CODE\"
-            if [ \"\$HEALTH_CODE\" != '200' ]; then
-              echo 'Health check failed'
-              exit 1
-            fi
-
-            \$DC ps"
+          \$DC ps
+          EOF
