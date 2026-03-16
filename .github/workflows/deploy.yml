@@ -76,29 +76,22 @@ jobs:
           PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR || '/var/www/createam-platform' }}
           DOCKER_IMAGE: ${{ needs.build-and-push.outputs.image }}
         run: |
+          # Pasar variables como prefijo del comando SSH (no heredoc) para evitar
+          # problemas de expansión de variables en el runner vs el VPS
           ssh -i ~/.ssh/deploy_key \
             -p "$VPS_PORT" \
             -o StrictHostKeyChecking=no \
-            "$VPS_USER@$VPS_HOST" << EOF
-          set -e
-          cd "$PROJECT_DIR"
-
-          if command -v docker-compose >/dev/null 2>&1; then
-            DC="docker-compose"
-          else
-            DC="docker compose"
-          fi
-
-          export DOCKER_IMAGE="$DOCKER_IMAGE"
-          \$DC down
-          docker pull "$DOCKER_IMAGE"
-          \$DC up -d --remove-orphans
-
-          sleep 10
-
-          HEALTH=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)
-          echo "Health check: \$HEALTH"
-          [ "\$HEALTH" = "200" ] || { echo "Health check falló"; exit 1; }
-
-          \$DC ps
-          EOF
+            "$VPS_USER@$VPS_HOST" \
+            "set -e
+             export PROJECT_DIR='$PROJECT_DIR'
+             export DOCKER_IMAGE='$DOCKER_IMAGE'
+             cd \"\$PROJECT_DIR\"
+             if command -v docker-compose >/dev/null 2>&1; then DC='docker-compose'; else DC='docker compose'; fi
+             \$DC down || true
+             docker pull \"\$DOCKER_IMAGE\"
+             \$DC up -d --remove-orphans
+             sleep 10
+             HEALTH=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true)
+             echo \"Health check: \$HEALTH\"
+             [ \"\$HEALTH\" = '200' ] || { echo 'Health check falló'; exit 1; }
+             \$DC ps"
