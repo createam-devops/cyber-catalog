@@ -4,6 +4,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
+  eslint: {
+    // El lint se ejecuta en el CI de GitHub Actions, no durante el build de Docker
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
