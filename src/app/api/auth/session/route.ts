@@ -4,6 +4,7 @@ import {
   getSessionCookieName,
   verifyPlatformAdminIdToken,
 } from '@/lib/server/admin-auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,16 @@ function getSessionCookieMaxAgeSeconds() {
 }
 
 export async function POST(request: NextRequest) {
+  // 10 intentos por IP cada 15 minutos
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? request.headers.get('x-real-ip') ?? 'unknown';
+  const rl = rateLimit(ip, 10, 15 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status: 429,
+      headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+    });
+  }
+
   try {
     const body = (await request.json()) as { idToken?: string };
     const idToken = body?.idToken?.trim();
