@@ -515,6 +515,7 @@ function TenantCard({
     active: "bg-green-100 text-green-800",
     suspended: "bg-red-100 text-red-800",
     rejected: "bg-gray-100 text-gray-800",
+    trial: "bg-purple-100 text-purple-800",
   };
 
   const domain = tenant.domain || `${tenant.subdomain}.createam.cloud`;
