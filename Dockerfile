@@ -22,7 +22,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN mkdir -p public
 
 # Build de Next.js
-RUN npm run build
+RUN npm run build:ci
 
 # Imagen de producción
 FROM base AS runner
