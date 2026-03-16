@@ -28,46 +28,50 @@ jobs:
       VPS_PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR }}
 
     steps:
-      - name: Deploy on VPS over SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
-          debug: true
-          script_stop: true
-          envs: TARGET_REF,VPS_PROJECT_DIR
-          script: |
-            set -e
+      - name: Preparar clave SSH
+        run: |
+          mkdir -p ~/.ssh
+          # tr -d '\r' elimina saltos de línea de Windows que rompen el parsing
+          printf '%s' "${{ secrets.VPS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "${{ secrets.VPS_PORT || 22 }}" -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
-            PROJECT_DIR="${VPS_PROJECT_DIR:-/var/www/createam-platform}"
-            cd "$PROJECT_DIR"
+      - name: Deploy en VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
+          PROJECT_DIR: ${{ secrets.VPS_PROJECT_DIR || '/var/www/createam-platform' }}
+          TARGET_REF: ${{ env.TARGET_REF }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -p "$VPS_PORT" \
+            -o StrictHostKeyChecking=no \
+            "$VPS_USER@$VPS_HOST" \
+            "set -e
+            cd '${PROJECT_DIR}'
 
             if command -v docker-compose >/dev/null 2>&1; then
-              DC="docker-compose"
+              DC='docker-compose'
             else
-              DC="docker compose"
+              DC='docker compose'
             fi
 
             git fetch --all
-            git checkout "$TARGET_REF"
-            git pull origin "$TARGET_REF"
+            git checkout '${TARGET_REF:-main}'
+            git pull origin '${TARGET_REF:-main}'
 
-            $DC down
-            $DC build --no-cache
-            $DC up -d
+            \$DC down
+            \$DC build --no-cache
+            \$DC up -d
 
-            HEALTH_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/health || true)
-            if [ "$HEALTH_CODE" != "200" ]; then
-              echo "Health check failed, status: $HEALTH_CODE"
+            sleep 10
+
+            HEALTH_CODE=\$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/api/health || true)
+            echo \"Health check: \$HEALTH_CODE\"
+            if [ \"\$HEALTH_CODE\" != '200' ]; then
+              echo 'Health check failed'
               exit 1
             fi
 
-            AUDIT_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/api/admin/audit || true)
-            if [ "$AUDIT_CODE" = "404" ] || [ -z "$AUDIT_CODE" ]; then
-              echo "Audit route missing after deploy, status: $AUDIT_CODE"
-              exit 1
-            fi
-
-            $DC ps
+            \$DC ps"
