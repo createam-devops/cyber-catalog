@@ -71,6 +71,7 @@
 - [x] Saneamiento de claves hardcodeadas en scripts y documentacion versionada.
 - [x] Configuracion ESLint no interactiva para ejecucion en CI.
 - [x] Pipeline CI inicial con gates `lint:critical`, `build:ci` y `test --if-present`.
+- [x] Despliegue continuo configurado en GitHub Actions hacia VPS con Docker Compose.
 - [x] Script de readiness pre-release automatizado (`npm run ready:prod`).
 - [x] Script de smoke test post-deploy automatizado (`npm run smoke:prod`).
 
