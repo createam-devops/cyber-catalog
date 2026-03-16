@@ -29,12 +29,18 @@ jobs:
 
     steps:
       - name: Preparar clave SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || 22 }}
         run: |
           mkdir -p ~/.ssh
-          # tr -d '\r' elimina saltos de línea de Windows que rompen el parsing
-          printf '%s' "${{ secrets.VPS_SSH_KEY }}" | tr -d '\r' > ~/.ssh/deploy_key
+          # Escribir clave via env var (único método que preserva saltos de línea en GitHub Actions)
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "${{ secrets.VPS_PORT || 22 }}" -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          # Verificar que la clave es válida antes de continuar
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null || { echo "ERROR: La clave SSH no es válida"; exit 1; }
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy en VPS
         env:
