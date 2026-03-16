@@ -61,7 +61,7 @@ export async function getTenantByDomain(domain: string): Promise<TenantConfig | 
         
         // Si el nombre normalizado contiene el subdominio o viceversa
         if (normalizedName.includes(normalizedSubdomain) || normalizedSubdomain.includes(normalizedName)) {
-          snapshot = { docs: [doc], empty: false } as any;
+          snapshot = { docs: [doc], empty: false } as typeof snapshot;
           break;
         }
       }
@@ -189,7 +189,7 @@ export async function updateTenantStatus(
 ): Promise<void> {
   try {
     const docRef = doc(centralDb, 'tenants', tenantId);
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status,
       updatedAt: Timestamp.now(),
     };
