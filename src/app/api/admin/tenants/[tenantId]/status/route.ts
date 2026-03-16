@@ -3,6 +3,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { verifyPlatformAdminRequest } from '@/lib/server/admin-auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
+import { sendTenantApprovedEmail, sendTenantRejectedEmail } from '@/lib/email';
 
 export const runtime = 'nodejs';
 
@@ -51,6 +52,10 @@ export async function PATCH(
     const db = getCentralAdminDb();
     const tenantRef = db.collection('tenants').doc(tenantId);
 
+    // Obtener datos del tenant para el email
+    const tenantSnap = await tenantRef.get();
+    const tenantData = tenantSnap.data();
+
     const updateData: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
       status,
       updatedAt: FieldValue.serverTimestamp(),
@@ -62,6 +67,23 @@ export async function PATCH(
     }
 
     await tenantRef.update(updateData);
+
+    // Enviar email de notificación al tenant (sin bloquear la respuesta)
+    if (tenantData?.email) {
+      if (status === 'active') {
+        sendTenantApprovedEmail({
+          businessName: tenantData.businessName || tenantData.name || '',
+          email: tenantData.email,
+          subdomain: tenantData.subdomain,
+          domain: tenantData.domain,
+        }).catch((err) => console.error('[status] Error enviando email aprobación:', err));
+      } else if (status === 'rejected') {
+        sendTenantRejectedEmail({
+          businessName: tenantData.businessName || tenantData.name || '',
+          email: tenantData.email,
+        }).catch((err) => console.error('[status] Error enviando email rechazo:', err));
+      }
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -45,36 +45,39 @@ export default function RegistroPage() {
     setLoading(true);
 
     try {
+      const res = await fetch('/api/registro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error("Error al procesar solicitud", {
+          description: data.error || "Por favor intenta nuevamente.",
+        });
+        return;
+      }
+
+      toast.success("¡Solicitud enviada!", {
+        description: "Revisa tu correo, te confirmamos que recibimos tu solicitud.",
+      });
+
+      // También abrimos WhatsApp como canal adicional
       const domainInfo = formData.wantsDomain 
         ? `🌐 Dominio: Personalizado (${formData.customDomain || 'Por definir'})` 
         : `🌐 Dominio: Subdominio gratuito (.createam.cloud)`;
-
       const message = [
         `🚀 *NUEVA SOLICITUD - CATÁLOGO DIGITAL*`,
-        `━━━━━━━━━━━━━━━━━━━━━`,
-        ``,
-        `📋 *Datos del Negocio:*`,
         `• Nombre: ${formData.businessName}`,
         `• Email: ${formData.email}`,
         `• WhatsApp: ${formData.phone}`,
-        ``,
-        `🔧 *Configuración:*`,
         `${domainInfo}`,
-        ``,
-        `━━━━━━━━━━━━━━━━━━━━━`,
-        `📅 Fecha: ${new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`,
-        `🌐 Origen: createam.cloud/registro`,
       ].join('\n');
-
-      const whatsappUrl = `https://wa.me/51945111310?text=${encodeURIComponent(message)}`;
-      
-      toast.success("¡Redirigiendo a WhatsApp!", {
-        description: "Envía el mensaje para completar tu solicitud.",
-      });
-
       setTimeout(() => {
-        window.open(whatsappUrl, '_blank');
-      }, 500);
+        window.open(`https://wa.me/51945111310?text=${encodeURIComponent(message)}`, '_blank');
+      }, 1000);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al procesar solicitud", {
