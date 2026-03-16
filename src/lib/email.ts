@@ -1,9 +1,14 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const FROM_EMAIL = 'Createam <noreply@createam.cloud>';
-const ADMIN_EMAIL = process.env.PLATFORM_ADMIN_EMAILS?.split(',')[0]?.trim() || 'timori.dev.ia@gmail.com';
+
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
+
+function getAdminEmail() {
+  return process.env.PLATFORM_ADMIN_EMAILS?.split(',')[0]?.trim() || 'timori.dev.ia@gmail.com';
+}
 
 // --- Email al admin cuando hay nuevo registro ---
 export async function sendNewTenantNotification(tenant: {
@@ -17,9 +22,9 @@ export async function sendNewTenantNotification(tenant: {
     ? `Dominio personalizado: ${tenant.domain}`
     : `Subdominio: ${tenant.subdomain || 'pendiente'}.createam.cloud`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
-    to: ADMIN_EMAIL,
+    to: getAdminEmail(),
     subject: `🚀 Nueva solicitud: ${tenant.businessName}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #f9fafb; border-radius: 8px;">
@@ -44,7 +49,7 @@ export async function sendRegistrationConfirmation(tenant: {
   businessName: string;
   email: string;
 }) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to: tenant.email,
     subject: `¡Recibimos tu solicitud, ${tenant.businessName}!`,
@@ -75,7 +80,7 @@ export async function sendTenantApprovedEmail(tenant: {
     ? `https://${tenant.domain}`
     : `https://${tenant.subdomain}.createam.cloud`;
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to: tenant.email,
     subject: `¡Tu catálogo está activo! 🚀`,
@@ -101,7 +106,7 @@ export async function sendTenantRejectedEmail(tenant: {
   businessName: string;
   email: string;
 }) {
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM_EMAIL,
     to: tenant.email,
     subject: `Actualización sobre tu solicitud en Createam`,
