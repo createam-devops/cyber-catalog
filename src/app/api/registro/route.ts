@@ -84,14 +84,15 @@ export async function POST(request: NextRequest) {
         displayName: String(businessName),
       });
     } catch (authError: any) {
-      console.error('[registro] Firebase Auth error:', authError?.code, authError?.message);
+      console.error('[registro] Firebase Auth error full:', JSON.stringify(authError?.errorInfo || authError, null, 2));
+      console.error('[registro] code:', authError?.code, 'message:', authError?.message);
       if (authError.code === 'auth/email-already-exists') {
         return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
       }
       if (authError.code === 'auth/invalid-password') {
         return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
       }
-      return NextResponse.json({ error: `Error al crear cuenta: ${authError?.code || authError?.message || 'desconocido'}` }, { status: 500 });
+      return NextResponse.json({ error: `Error al crear cuenta: ${authError?.code || authError?.message || 'desconocido'}`, detail: authError?.errorInfo?.message }, { status: 500 });
     }
 
     const tenantData = {
