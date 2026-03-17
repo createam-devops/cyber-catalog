@@ -51,9 +51,10 @@ export async function POST(request: NextRequest) {
 
   const code = generateCode();
 
-  // Guardar registro pendiente (upsert por email)
+  // Guardar registro pendiente — NO guardar password en Firestore
+  const { password: _omit, ...safeBody } = body as Record<string, unknown>;
   await db.collection('pendingRegistrations').doc(String(email)).set({
-    ...body,
+    ...safeBody,
     code,
     attempts: 0,
     expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 15 * 60 * 1000)),

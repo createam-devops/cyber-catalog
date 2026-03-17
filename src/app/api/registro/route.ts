@@ -75,6 +75,25 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '')
       .slice(0, 30);
 
+    // 1. Crear usuario en Firebase Auth PRIMERO (si falla, no creamos tenant)
+    let authUser: admin.auth.UserRecord;
+    try {
+      authUser = await getCentralAdminAuth().createUser({
+        email: String(email),
+        password: String(password),
+        displayName: String(businessName),
+      });
+    } catch (authError: any) {
+      console.error('[registro] Firebase Auth error:', authError);
+      if (authError.code === 'auth/email-already-exists') {
+        return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
+      }
+      if (authError.code === 'auth/invalid-password') {
+        return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'Error al crear cuenta. Intenta nuevamente.' }, { status: 500 });
+    }
+
     const tenantData = {
       businessName,
       name: businessName,
@@ -90,16 +109,10 @@ export async function POST(request: NextRequest) {
       updatedAt: FieldValue.serverTimestamp(),
     };
 
+    // 2. Crear tenant en Firestore
     const docRef = await db.collection('tenants').add(tenantData);
 
-    // Crear usuario en Firebase Auth
-    const authUser = await getCentralAdminAuth().createUser({
-      email: String(email),
-      password: String(password),
-      displayName: String(businessName),
-    });
-
-    // Crear documento en users (vincula auth UID con tenant)
+    // 3. Crear documento en users (vincula auth UID con tenant)
     await db.collection('users').doc(authUser.uid).set({
       uid: authUser.uid,
       email: String(email),
