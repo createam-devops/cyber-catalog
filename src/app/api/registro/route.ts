@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
-import { getCentralAdminDb, getCentralAdminAuth } from '@/lib/server/central-admin';
+import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { getTrialEndDate } from '@/lib/plans';
@@ -75,25 +75,36 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '')
       .slice(0, 30);
 
-    // 1. Crear usuario en Firebase Auth PRIMERO (si falla, no creamos tenant)
-    let authUser: admin.auth.UserRecord;
-    try {
-      authUser = await getCentralAdminAuth().createUser({
-        email: String(email),
-        password: String(password),
-        displayName: String(businessName),
-      });
-    } catch (authError: any) {
-      console.error('[registro] Firebase Auth error full:', JSON.stringify(authError?.errorInfo || authError, null, 2));
-      console.error('[registro] code:', authError?.code, 'message:', authError?.message);
-      if (authError.code === 'auth/email-already-exists') {
+    // 1. Crear usuario en Firebase Auth via REST API (evita problemas de permisos IAM del Admin SDK)
+    const firebaseApiKey = process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY;
+    if (!firebaseApiKey) {
+      console.error('[registro] Missing NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY');
+      return NextResponse.json({ error: 'Configuración del servidor incompleta' }, { status: 500 });
+    }
+
+    const signUpRes = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: String(email), password: String(password), returnSecureToken: false }),
+      }
+    );
+    const signUpData = await signUpRes.json();
+
+    if (!signUpRes.ok) {
+      const errMsg = signUpData?.error?.message || '';
+      console.error('[registro] Firebase Auth REST error:', errMsg);
+      if (errMsg === 'EMAIL_EXISTS') {
         return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
       }
-      if (authError.code === 'auth/invalid-password') {
+      if (errMsg.includes('WEAK_PASSWORD')) {
         return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
       }
-      return NextResponse.json({ error: `Error al crear cuenta: ${authError?.code || authError?.message || 'desconocido'}`, detail: authError?.errorInfo?.message }, { status: 500 });
+      return NextResponse.json({ error: 'Error al crear cuenta. Intenta nuevamente.' }, { status: 500 });
     }
+
+    const uid: string = signUpData.localId;
 
     const tenantData = {
       businessName,
@@ -114,8 +125,8 @@ export async function POST(request: NextRequest) {
     const docRef = await db.collection('tenants').add(tenantData);
 
     // 3. Crear documento en users (vincula auth UID con tenant)
-    await db.collection('users').doc(authUser.uid).set({
-      uid: authUser.uid,
+    await db.collection('users').doc(uid).set({
+      uid,
       email: String(email),
       tenantId: docRef.id,
       role: 'owner',
