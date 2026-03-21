@@ -26,7 +26,7 @@ export default function AdminOnlyRoute({ children }: { children: React.ReactNode
     }
 
     if (!user) {
-      router.replace('/login');
+      router.replace('/registro');
       return;
     }
 

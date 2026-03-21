@@ -30,7 +30,7 @@ export default function TenantAdminDashboard() {
     try {
       await logout();
       toast.success('Sesión cerrada');
-      router.push('/login');
+      router.push('/registro');
     } catch (error) {
       toast.error('Error al cerrar sesión');
     }
