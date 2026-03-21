@@ -30,7 +30,16 @@ jobs:
       - name: Build y push imagen
         run: |
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/cyber-catalog"
-          docker build -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" .
+          docker build \
+            --build-arg NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY="${{ secrets.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY }}" \
+            --build-arg NEXT_PUBLIC_CENTRAL_FIREBASE_AUTH_DOMAIN="${{ secrets.NEXT_PUBLIC_CENTRAL_FIREBASE_AUTH_DOMAIN }}" \
+            --build-arg NEXT_PUBLIC_CENTRAL_FIREBASE_PROJECT_ID="${{ secrets.NEXT_PUBLIC_CENTRAL_FIREBASE_PROJECT_ID }}" \
+            --build-arg NEXT_PUBLIC_CENTRAL_FIREBASE_STORAGE_BUCKET="${{ secrets.NEXT_PUBLIC_CENTRAL_FIREBASE_STORAGE_BUCKET }}" \
+            --build-arg NEXT_PUBLIC_CENTRAL_FIREBASE_MESSAGING_SENDER_ID="${{ secrets.NEXT_PUBLIC_CENTRAL_FIREBASE_MESSAGING_SENDER_ID }}" \
+            --build-arg NEXT_PUBLIC_CENTRAL_FIREBASE_APP_ID="${{ secrets.NEXT_PUBLIC_CENTRAL_FIREBASE_APP_ID }}" \
+            --build-arg NEXT_PUBLIC_PLATFORM_DOMAIN="${{ secrets.NEXT_PUBLIC_PLATFORM_DOMAIN }}" \
+            --build-arg NEXT_PUBLIC_APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}" \
+            -t "$IMAGE:latest" -t "$IMAGE:${{ github.sha }}" .
           docker push "$IMAGE:latest"
           docker push "$IMAGE:${{ github.sha }}"
 

@@ -3,13 +3,14 @@ import { getFirestore, Firestore } from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Firebase Central (para gestión de tenants)
+// || undefined: evita que Firebase lance auth/invalid-api-key con string vacío durante prerendering
 const centralFirebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY || undefined,
+  authDomain: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_AUTH_DOMAIN || undefined,
+  projectId: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_PROJECT_ID || undefined,
+  storageBucket: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_STORAGE_BUCKET || undefined,
+  messagingSenderId: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_MESSAGING_SENDER_ID || undefined,
+  appId: process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_APP_ID || undefined,
 };
 
 // Inicializar Firebase Central (funciona en servidor y cliente)
