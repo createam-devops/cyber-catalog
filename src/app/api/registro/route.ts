@@ -94,14 +94,14 @@ export async function POST(request: NextRequest) {
 
     if (!signUpRes.ok) {
       const errMsg = signUpData?.error?.message || '';
-      console.error('[registro] Firebase Auth REST error:', errMsg);
+      console.error('[registro] Firebase Auth REST error:', JSON.stringify(signUpData));
       if (errMsg === 'EMAIL_EXISTS') {
         return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
       }
       if (errMsg.includes('WEAK_PASSWORD')) {
         return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
       }
-      return NextResponse.json({ error: 'Error al crear cuenta. Intenta nuevamente.' }, { status: 500 });
+      return NextResponse.json({ error: `Error Firebase: ${errMsg || JSON.stringify(signUpData)}` }, { status: 500 });
     }
 
     const uid: string = signUpData.localId;
