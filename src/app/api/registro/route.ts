@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
-import { getCentralAdminDb, getCentralAdminAuth } from '@/lib/server/central-admin';
+import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { AuthService, AuthServiceException } from '@/lib/server/auth-service';
 import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { getTrialEndDate } from '@/lib/plans';
@@ -75,24 +76,22 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '')
       .slice(0, 30);
 
-    // 1. Crear usuario en Firebase Auth via Admin SDK
+    // 1. Crear usuario en el proveedor de autenticación
     let uid: string;
     try {
-      const authUser = await getCentralAdminAuth().createUser({
-        email: String(email),
-        password: String(password),
-        displayName: String(businessName),
-      });
+      const authUser = await AuthService.createUser(String(email), String(password));
       uid = authUser.uid;
-    } catch (authError: any) {
-      console.error('[registro] Firebase Auth error:', authError?.code, authError?.message, authError?.errorInfo);
-      if (authError.code === 'auth/email-already-exists') {
-        return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
+    } catch (e) {
+      if (e instanceof AuthServiceException) {
+        if (e.code === 'EMAIL_EXISTS') {
+          return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
+        }
+        if (e.code === 'WEAK_PASSWORD') {
+          return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
+        }
       }
-      if (authError.code === 'auth/invalid-password') {
-        return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
-      }
-      return NextResponse.json({ error: `Error al crear cuenta: ${authError?.code}`, detail: authError?.errorInfo?.message || authError?.message }, { status: 500 });
+      console.error('[registro] AuthService.createUser error:', e);
+      return NextResponse.json({ error: 'Error al crear cuenta.' }, { status: 500 });
     }
 
     const tenantData = {
