@@ -101,11 +101,22 @@ export default function RegistroPage() {
       }
 
       // Login automático después de registrar
-      await loginWithEmail(String(formData.email), String(formData.password));
       toast.success("¡Cuenta activada!", {
         description: "Tu período de prueba gratuito ha comenzado.",
       });
-      setTimeout(() => router.push('/tenant-admin'), 1500);
+
+      try {
+        await loginWithEmail(String(formData.email), String(formData.password));
+        setTimeout(() => router.push('/tenant-admin'), 1500);
+      } catch (loginErr) {
+        console.error("Auto-login fallido, redirigiendo a login:", loginErr);
+        // Si el auto-login falla, ir al tab de login con email pre-llenado
+        setLoginData({ email: formData.email, password: '' });
+        setTimeout(() => {
+          setIsLogin(true);
+          setStep('form');
+        }, 1500);
+      }
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al verificar. Intenta nuevamente.");
