@@ -76,9 +76,10 @@ export async function POST(request: NextRequest) {
       .slice(0, 30);
 
     // 1. Crear usuario en Firebase Auth via REST API (evita problemas de permisos IAM del Admin SDK)
-    const firebaseApiKey = process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY;
+    // CENTRAL_FIREBASE_API_KEY es la var server-only (runtime), fallback a NEXT_PUBLIC_ por compatibilidad
+    const firebaseApiKey = process.env.CENTRAL_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY;
     if (!firebaseApiKey) {
-      console.error('[registro] Missing NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY');
+      console.error('[registro] Missing CENTRAL_FIREBASE_API_KEY');
       return NextResponse.json({ error: 'Configuración del servidor incompleta' }, { status: 500 });
     }
 
