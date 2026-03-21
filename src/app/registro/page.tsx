@@ -24,6 +24,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { loginWithEmail, auth } from "@/lib/auth";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -99,10 +100,12 @@ export default function RegistroPage() {
         return;
       }
 
+      // Login automático después de registrar
+      await loginWithEmail(String(formData.email), String(formData.password));
       toast.success("¡Cuenta activada!", {
         description: "Tu período de prueba gratuito ha comenzado.",
       });
-      setTimeout(() => router.push('/login'), 1500);
+      setTimeout(() => router.push('/tenant-admin'), 1500);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error al verificar. Intenta nuevamente.");
@@ -116,20 +119,14 @@ export default function RegistroPage() {
     setLoading(true);
 
     try {
-      // Aquí iría la lógica de autenticación
-      // Por ahora simulamos un login exitoso
+      await loginWithEmail(loginData.email, loginData.password);
       toast.success("¡Bienvenido de vuelta!", {
         description: "Redirigiendo a tu panel...",
       });
-
-      setTimeout(() => {
-        router.push("/tenant-admin");
-      }, 1500);
-    } catch (error) {
+      setTimeout(() => router.push("/tenant-admin"), 1500);
+    } catch (error: any) {
       console.error("Error logging in:", error);
-      toast.error("Error al iniciar sesión", {
-        description: "Verifica tus credenciales.",
-      });
+      toast.error("Email o contraseña incorrectos");
     } finally {
       setLoading(false);
     }
