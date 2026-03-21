@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
-import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { getCentralAdminDb, getCentralAdminAuth } from '@/lib/server/central-admin';
 import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { getTrialEndDate } from '@/lib/plans';
@@ -75,37 +75,25 @@ export async function POST(request: NextRequest) {
       .replace(/^-|-$/g, '')
       .slice(0, 30);
 
-    // 1. Crear usuario en Firebase Auth via REST API (evita problemas de permisos IAM del Admin SDK)
-    // CENTRAL_FIREBASE_API_KEY es la var server-only (runtime), fallback a NEXT_PUBLIC_ por compatibilidad
-    const firebaseApiKey = process.env.CENTRAL_FIREBASE_API_KEY || process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_API_KEY;
-    if (!firebaseApiKey) {
-      console.error('[registro] Missing CENTRAL_FIREBASE_API_KEY');
-      return NextResponse.json({ error: 'Configuración del servidor incompleta' }, { status: 500 });
-    }
-
-    const signUpRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: String(email), password: String(password), returnSecureToken: false }),
-      }
-    );
-    const signUpData = await signUpRes.json();
-
-    if (!signUpRes.ok) {
-      const errMsg = signUpData?.error?.message || '';
-      console.error('[registro] Firebase Auth REST error:', JSON.stringify(signUpData));
-      if (errMsg === 'EMAIL_EXISTS') {
+    // 1. Crear usuario en Firebase Auth via Admin SDK
+    let uid: string;
+    try {
+      const authUser = await getCentralAdminAuth().createUser({
+        email: String(email),
+        password: String(password),
+        displayName: String(businessName),
+      });
+      uid = authUser.uid;
+    } catch (authError: any) {
+      console.error('[registro] Firebase Auth error:', authError?.code, authError?.message);
+      if (authError.code === 'auth/email-already-exists') {
         return NextResponse.json({ error: 'Ya existe una cuenta con este email. Intenta iniciar sesión.' }, { status: 409 });
       }
-      if (errMsg.includes('WEAK_PASSWORD')) {
+      if (authError.code === 'auth/invalid-password') {
         return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres.' }, { status: 400 });
       }
-      return NextResponse.json({ error: `Error Firebase: ${errMsg || JSON.stringify(signUpData)}` }, { status: 500 });
+      return NextResponse.json({ error: `Error al crear cuenta: ${authError?.code || authError?.message}` }, { status: 500 });
     }
-
-    const uid: string = signUpData.localId;
 
     const tenantData = {
       businessName,
