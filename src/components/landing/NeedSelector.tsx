@@ -90,14 +90,22 @@ export default function NeedSelector() {
 
   return (
     <div>
-      <div role="group" aria-label="Tipo de negocio" className="mt-7 flex flex-wrap gap-2.5">
+      {/* En celular los botones van en una sola fila que se desliza de lado */}
+      <div
+        role="group"
+        aria-label="Tipo de negocio"
+        className="-mx-5 mt-7 flex snap-x scroll-px-5 gap-2.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-8 sm:scroll-px-8 sm:px-8 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden"
+      >
         {NEEDS.map((n) => (
           <button
             key={n.id}
             type="button"
             aria-pressed={n.id === selected}
-            onClick={() => setSelected(n.id)}
-            className={`min-h-[48px] rounded-full border-[1.5px] px-5 text-base font-bold transition-colors ${
+            onClick={(event) => {
+              setSelected(n.id);
+              event.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+            }}
+            className={`min-h-[48px] shrink-0 snap-start whitespace-nowrap rounded-full border-[1.5px] px-5 text-base font-bold transition-colors ${
               n.id === selected
                 ? "border-[#0B1B3A] bg-[#0B1B3A] text-white"
                 : "border-[#C5D0E3] bg-white text-[#0B1B3A] hover:border-[#0B1B3A]"
