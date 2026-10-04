@@ -5,7 +5,7 @@ export interface Plan {
   id: PlanId;
   name: string;
   monthlyPrice: number; // en soles
-  yearlyPrice: number;  // en soles (con 5% descuento)
+  yearlyPrice: number;  // en soles (pago anual con descuento fuerte para incentivarlo)
   currency: 'PEN';
   limits: {
     products: number | null;    // null = ilimitado
@@ -27,7 +27,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: 'starter',
     name: 'Starter',
     monthlyPrice: 9.90,
-    yearlyPrice: +(9.90 * 12 * 0.95).toFixed(2), // 112.86
+    yearlyPrice: 70.80, // equivale a S/ 5.90 al mes
     currency: 'PEN',
     limits: {
       products: 30,
@@ -47,7 +47,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: 'pro',
     name: 'Pro',
     monthlyPrice: 19.90,
-    yearlyPrice: +(19.90 * 12 * 0.95).toFixed(2), // 226.86
+    yearlyPrice: 156.00, // equivale a S/ 13.00 al mes
     currency: 'PEN',
     limits: {
       products: null,
@@ -87,6 +87,8 @@ export function getPlanPrice(planId: PlanId, cycle: BillingCycle): number {
   return cycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
 }
 
-export function getYearlyDiscount(): number {
-  return 5; // 5%
+// Porcentaje que se ahorra pagando el año frente a 12 meses sueltos
+export function getYearlyDiscount(planId: PlanId): number {
+  const plan = getPlan(planId);
+  return Math.round((1 - plan.yearlyPrice / (plan.monthlyPrice * 12)) * 100);
 }

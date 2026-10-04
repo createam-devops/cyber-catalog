@@ -19,6 +19,8 @@ const config: Config = {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
         heading: ['Days One', 'sans-serif'],
+        'landing-display': ['var(--font-landing-display)', 'sans-serif'],
+        'landing-body': ['var(--font-landing-body)', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
