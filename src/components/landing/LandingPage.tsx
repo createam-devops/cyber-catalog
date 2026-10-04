@@ -43,10 +43,32 @@ function Bullets({ items, dotClass }: { items: string[]; dotClass: string }) {
   );
 }
 
-function PlanCard({ plan, accentBorder, basis }: { plan: LandingPlan; accentBorder: string; basis: string }) {
+// En celular es una fila que se desliza de lado, dejando asomar la tarjeta
+// siguiente; desde `md` se comporta como la grilla o fila que indique className.
+function SwipeRow({ label, className, children }: { label: string; className: string; children: React.ReactNode }) {
   return (
     <div
-      className={`flex flex-col gap-3 rounded-[18px] bg-white p-6 ${basis} ${
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+      className={`-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-8 sm:scroll-px-8 sm:px-8 md:mx-0 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Tamaño de cada tarjeta dentro de un SwipeRow en celular
+const swipeItem = "shrink-0 basis-[80%] snap-start";
+
+function SwipeHint() {
+  return <p className="text-sm text-[#5A6885] md:hidden">Desliza para ver más</p>;
+}
+
+function PlanCard({ plan, accentBorder, className }: { plan: LandingPlan; accentBorder: string; className: string }) {
+  return (
+    <div
+      className={`flex flex-col gap-3 rounded-[18px] bg-white p-6 ${className} ${
         plan.highlighted ? `border-2 ${accentBorder}` : "border border-[#DDE4F0]"
       }`}
     >
@@ -264,20 +286,23 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="mt-11 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {CYBERPOS_MODULES.map((module) => (
-                <div key={module.title} className="rounded-2xl border border-[#DDE4F0] bg-white p-5">
-                  <h3 className="mb-1.5 font-landing-body text-lg font-bold">{module.title}</h3>
-                  <p className="text-[15px] text-[#3D4B66]">{module.text}</p>
+            <div className="mt-11 flex flex-col gap-2.5">
+              <SwipeHint />
+              <SwipeRow label="Módulos de CyberPOS" className="md:grid md:grid-cols-2 md:gap-4 lg:grid-cols-3">
+                {CYBERPOS_MODULES.map((module) => (
+                  <div key={module.title} className={`${swipeItem} rounded-2xl border border-[#DDE4F0] bg-white p-5`}>
+                    <h3 className="mb-1.5 font-landing-body text-lg font-bold">{module.title}</h3>
+                    <p className="text-[15px] text-[#3D4B66]">{module.text}</p>
+                  </div>
+                ))}
+                <div className={`${swipeItem} rounded-2xl border border-[#A8DCC6] bg-[#DDF3EA] p-5`}>
+                  <h3 className="mb-1.5 font-landing-body text-lg font-bold text-[#065F46]">Inteligencia artificial</h3>
+                  <p className="text-[15px] text-[#1F4D3D]">
+                    Integración opcional: propone cortes que desperdician menos material, toma medidas desde fotos y planos
+                    y prepara reportes para decidir.
+                  </p>
                 </div>
-              ))}
-              <div className="rounded-2xl border border-[#A8DCC6] bg-[#DDF3EA] p-5">
-                <h3 className="mb-1.5 font-landing-body text-lg font-bold text-[#065F46]">Inteligencia artificial</h3>
-                <p className="text-[15px] text-[#1F4D3D]">
-                  Integración opcional: propone cortes que desperdician menos material, toma medidas desde fotos y planos y
-                  prepara reportes para decidir.
-                </p>
-              </div>
+              </SwipeRow>
             </div>
 
             <div className="mt-7 flex flex-col gap-[22px] rounded-[22px] bg-[#0B3B2E] p-6 text-white sm:p-9">
@@ -384,8 +409,8 @@ export default function LandingPage() {
                 {TRIAL_DAYS} días gratis · Ahorra hasta {maxYearlyDiscount}% pagando el año
               </span>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className={`${card} flex flex-col gap-3`}>
+            <SwipeRow label="Planes de Catálogo Digital" className="md:grid md:grid-cols-2 md:gap-4">
+              <div className={`${card} ${swipeItem} flex flex-col gap-3`}>
                 <h4 className="text-lg font-bold">{starter.name}</h4>
                 <div>
                   <p className={priceBig}>
@@ -405,7 +430,7 @@ export default function LandingPage() {
                   <li>Pedidos por WhatsApp</li>
                 </ul>
               </div>
-              <div className="flex flex-col gap-3 rounded-[18px] border-2 border-[#A21CAF] bg-white p-6">
+              <div className={`${swipeItem} flex flex-col gap-3 rounded-[18px] border-2 border-[#A21CAF] bg-white p-6`}>
                 <h4 className="text-lg font-bold">{pro.name}</h4>
                 <div>
                   <p className={priceBig}>
@@ -424,7 +449,7 @@ export default function LandingPage() {
                   <li>Hasta {pro.limits.heroSlides} banners de portada</li>
                 </ul>
               </div>
-            </div>
+            </SwipeRow>
           </div>
 
           <div className="flex flex-col gap-3.5">
@@ -432,11 +457,12 @@ export default function LandingPage() {
               <h3 className="font-landing-display text-2xl font-bold">CyberPOS</h3>
               <span className="text-[15px] text-[#3D4B66]">Plan gratis hasta por 1 año · Sin tarjeta y sin permanencia</span>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <SwipeHint />
+            <SwipeRow label="Planes de CyberPOS" className="md:flex-wrap md:gap-4">
               {CYBERPOS_PLANS.map((plan) => (
-                <PlanCard key={plan.name} plan={plan} accentBorder="border-[#047857]" basis="flex-[1_1_230px]" />
+                <PlanCard key={plan.name} plan={plan} accentBorder="border-[#047857]" className={`${swipeItem} md:flex-[1_1_230px]`} />
               ))}
-            </div>
+            </SwipeRow>
             <div className="flex flex-wrap items-center gap-x-8 gap-y-3.5 rounded-[18px] border border-[#A8DCC6] bg-[#DDF3EA] px-6 py-[22px]">
               <div className="min-w-0 flex-[1_1_420px]">
                 <h4 className="text-lg font-bold text-[#065F46]">Plan a tu medida</h4>
@@ -455,11 +481,11 @@ export default function LandingPage() {
                 Pide una demostración
               </a>
             </div>
-            <div className="flex flex-wrap gap-4">
+            <SwipeRow label="Planes de CyberPOS para restaurantes" className="md:flex-wrap md:gap-4">
               {RESTAURANT_PLANS.map((plan) => (
-                <PlanCard key={plan.name} plan={plan} accentBorder="border-[#047857]" basis="flex-[1_1_300px]" />
+                <PlanCard key={plan.name} plan={plan} accentBorder="border-[#047857]" className={`${swipeItem} md:flex-[1_1_300px]`} />
               ))}
-            </div>
+            </SwipeRow>
           </div>
 
           <div className="flex flex-col gap-3.5">
@@ -483,37 +509,39 @@ export default function LandingPage() {
                 reales con negocios peruanos.
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
               {[
                 { value: "2017", label: "Año en que empezamos" },
                 { value: "150+", label: "Proyectos entregados" },
                 { value: "3", label: "Plataformas propias en la nube" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-[18px] border border-[#DDE4F0] p-6">
-                  <p className="font-landing-display text-[44px] font-extrabold leading-none text-[#1357AD]">{stat.value}</p>
-                  <p className="mt-2 text-[15px] text-[#3D4B66]">{stat.label}</p>
+                <div key={stat.label} className="rounded-[18px] border border-[#DDE4F0] p-3.5 sm:p-6">
+                  <p className="font-landing-display text-[28px] font-extrabold leading-none text-[#1357AD] sm:text-[44px]">
+                    {stat.value}
+                  </p>
+                  <p className="mt-2 text-[13px] leading-snug text-[#3D4B66] sm:text-[15px]">{stat.label}</p>
                 </div>
               ))}
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="flex flex-col gap-2 rounded-[18px] bg-[#F6F8FC] p-6">
+            <SwipeRow label="Negocios que usan las plataformas" className="md:grid md:grid-cols-3 md:gap-4">
+              <div className={`${swipeItem} flex flex-col gap-2 rounded-[18px] bg-[#F6F8FC] p-6`}>
                 <span className="self-start rounded-full bg-[#F7E3F9] px-2.5 py-1 text-xs font-bold text-[#7A1485]">Catálogo Digital</span>
                 <h3 className="font-landing-body text-[19px] font-bold">Tienda de regalos personalizados</h3>
                 <p className="text-[15px] text-[#3D4B66]">
                   Vende por redes sociales con envíos a todo el Perú y recibe por WhatsApp los pedidos de su catálogo.
                 </p>
               </div>
-              <div className="flex flex-col gap-2 rounded-[18px] bg-[#F6F8FC] p-6">
+              <div className={`${swipeItem} flex flex-col gap-2 rounded-[18px] bg-[#F6F8FC] p-6`}>
                 <span className="self-start rounded-full bg-[#DDF3EA] px-2.5 py-1 text-xs font-bold text-[#065F46]">CyberPOS</span>
                 <h3 className="font-landing-body text-[19px] font-bold">Vidriería y venta de accesorios</h3>
                 <p className="text-[15px] text-[#3D4B66]">Gestiona su operación diaria con CyberPOS.</p>
               </div>
-              <div className="flex flex-col gap-2 rounded-[18px] bg-[#F6F8FC] p-6">
+              <div className={`${swipeItem} flex flex-col gap-2 rounded-[18px] bg-[#F6F8FC] p-6`}>
                 <span className="self-start rounded-full bg-[#D9F0ED] px-2.5 py-1 text-xs font-bold text-[#00574F]">OnTurn</span>
                 <h3 className="font-landing-body text-[19px] font-bold">Barberías, spas y consultorios</h3>
                 <p className="text-[15px] text-[#3D4B66]">OnTurn está en beta con sus primeros locales.</p>
               </div>
-            </div>
+            </SwipeRow>
           </div>
         </section>
 
