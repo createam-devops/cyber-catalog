@@ -36,9 +36,12 @@ export async function middleware(request: NextRequest) {
   // Si es el dominio principal de la plataforma
   if (domain === platformDomain || domain === `www.${platformDomain}`) {
     // Permitir acceso a rutas de plataforma: /, /store (para testing)
+    // y los archivos que leen los buscadores
     if (
       url.pathname === '/' ||
-      url.pathname.startsWith('/store')
+      url.pathname.startsWith('/store') ||
+      url.pathname === '/robots.txt' ||
+      url.pathname === '/sitemap.xml'
     ) {
       return NextResponse.next();
     }
@@ -117,6 +120,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
   ],
 };

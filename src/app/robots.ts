@@ -4,7 +4,7 @@ export default function robots() {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin/', '/api/'],
+        disallow: ['/admin/', '/tenant-admin/', '/api/', '/login', '/store'],
       },
     ],
     sitemap: 'https://createam.cloud/sitemap.xml',

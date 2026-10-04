@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { doc, getDoc } from 'firebase/firestore';
 import { centralDb } from '@/lib/firebase';
 import { TenantConfig } from '@/lib/types';
-import { PLANS, isTrialExpired } from '@/lib/plans';
+import { PLANS, getYearlyDiscount, isTrialExpired } from '@/lib/plans';
 import { Check, Zap, ArrowLeft, Loader2, Lock, Star } from 'lucide-react';
 import Link from 'next/link';
 
@@ -173,7 +173,7 @@ function BillingContent() {
               <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded-full ${
                 cycle === 'yearly' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
               }`}>
-                -5%
+                hasta -{Math.max(getYearlyDiscount('starter'), getYearlyDiscount('pro'))}%
               </span>
             </button>
           </div>
