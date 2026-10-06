@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTenantByDomain } from "@/lib/tenants";
+import { getTenantByDomain } from "@/lib/server/tenants";
 import { getTenantProductById, getRelatedProducts } from "@/lib/products-server";
 import ModernProductDetail from "@/components/store/modern/ModernProductDetail";
 import CartProviderWrapper from "@/components/store/CartProviderWrapper";

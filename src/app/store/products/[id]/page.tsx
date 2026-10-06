@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getTenantByDomain } from '@/lib/tenants';
+import { getTenantByDomain } from '@/lib/server/tenants';
 import ModernProductDetail from '@/components/store/modern/ModernProductDetail';
 
 export const dynamic = 'force-dynamic';

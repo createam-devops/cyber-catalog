@@ -1,0 +1,57 @@
+rules_version = '2';
+
+// Reglas del proyecto CENTRAL de Firebase (cyber-catalog): tiendas, usuarios y
+// registros. Los productos de cada tienda viven en el Firebase de esa tienda,
+// con sus propias reglas.
+//
+// Este archivo es la fuente de verdad. Se publica con
+// `node scripts/publicar-reglas.js` (ver scripts/REGLAS_FIRESTORE.md); un cambio
+// hecho a mano en la consola de Firebase se pierde en la siguiente publicación.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ¿Quien tiene la sesión administra esta tienda? Lo dice SU documento de
+    // `users`, que solo escribe el servidor.
+    function ownsTenant(tenantId) {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tenantId == tenantId;
+    }
+
+    // Usuarios: solo puede leer su propio documento
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Tiendas
+    //  - La ficha de una tienda ACTIVA es pública: es lo que su vitrina enseña
+    //    (nombre, marca, redes, configuración pública de Firebase). Una consulta
+    //    tiene que filtrar por status == 'active' o se rechaza entera.
+    //  - Quien administra una tienda lee la suya en cualquier estado: su panel
+    //    (/tenant-admin) la necesita también en prueba o pendiente.
+    //  - Nadie escribe desde el navegador. Altas, aprobaciones y cambios pasan
+    //    por las rutas del servidor (Admin SDK, que no pasa por estas reglas).
+    //    Antes bastaba tener sesión para modificar CUALQUIER tienda.
+    match /tenants/{tenantId} {
+      allow get: if resource.data.status == 'active' || ownsTenant(tenantId);
+      allow list: if resource.data.status == 'active';
+      allow write: if false;
+    }
+
+    // Productos y categorías del tenant: acceso público de lectura
+    match /tenants/{tenantId}/products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /tenants/{tenantId}/categories/{categoryId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Registros pendientes: solo escritura desde servidor (Admin SDK bypasea reglas)
+    match /pendingRegistrations/{email} {
+      allow read, write: if false;
+    }
+  }
+}
