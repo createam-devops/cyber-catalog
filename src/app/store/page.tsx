@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTenantByDomain } from "@/lib/tenants";
+import { getTenantByDomain } from "@/lib/server/tenants";
 import { extractDomain } from "@/lib/utils";
 import { getTenantProducts } from "@/lib/products-server";
 import ModernStoreHome from "@/components/store/modern/ModernStoreHome";
