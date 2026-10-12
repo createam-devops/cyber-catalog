@@ -1,13 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import { PLANS, TRIAL_DAYS, getYearlyDiscount } from "@/lib/plans";
 import { CONTACT, CYBERPOS_PLANS, FAQS, LINKS, RESTAURANT_PLANS, type LandingPlan } from "./content";
+import { bodyFont, displayFont } from "./fonts";
 import NeedSelector from "./NeedSelector";
 import OrderDemo from "./OrderDemo";
-
-const displayFont = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-landing-display", display: "swap" });
-const bodyFont = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-landing-body", display: "swap" });
 
 const container = "mx-auto w-full max-w-[1180px] px-5 sm:px-8 lg:px-10";
 const sectionY = "py-14 sm:py-20 lg:py-24";
@@ -247,7 +244,7 @@ export default function LandingPage() {
                   ]}
                 />
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-[22px] gap-y-3.5">
-                  <Link href={LINKS.catalogRegister} className={`${btn} bg-[#A21CAF]`}>
+                  <Link href={LINKS.catalogRegister} data-track="catalogo_registro" className={`${btn} bg-[#A21CAF]`}>
                     Crear mi tienda gratis
                   </Link>
                   <span className="font-bold">Desde S/ {perMonth(starter.yearlyPrice)} al mes pagando el año</span>
@@ -268,7 +265,7 @@ export default function LandingPage() {
                   carpinterías de melamina.
                 </p>
                 <div className="flex flex-wrap items-center gap-x-[22px] gap-y-3.5">
-                  <a href={LINKS.cyberposRegister} className={`${btn} bg-[#047857]`}>
+                  <a href={LINKS.cyberposRegister} data-track="cyberpos_registro" className={`${btn} bg-[#047857]`}>
                     Crear cuenta gratis
                   </a>
                   <span className="font-bold">Sin tarjeta y sin permanencia</span>
@@ -315,6 +312,7 @@ export default function LandingPage() {
                 </div>
                 <a
                   href={LINKS.whatsapp}
+                  data-track="whatsapp_restaurante"
                   className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-white px-[22px] font-bold text-[#0B3B2E] transition-opacity hover:opacity-90"
                 >
                   Pedir una demostración
@@ -372,7 +370,7 @@ export default function LandingPage() {
                     ]}
                   />
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-[22px] gap-y-3.5">
-                    <a href={LINKS.onturnRegister} className={`${btn} bg-[#007A70]`}>
+                    <a href={LINKS.onturnRegister} data-track="onturn_registro" className={`${btn} bg-[#007A70]`}>
                       Registrar mi negocio
                     </a>
                     <span className="font-bold">Gratis hasta por 1 año</span>
@@ -471,13 +469,13 @@ export default function LandingPage() {
                   solo con los módulos que usa tu negocio.
                 </p>
               </div>
-              <a href={LINKS.whatsapp} className={`${btn} min-h-[48px] bg-[#047857]`}>
+              <a href={LINKS.whatsapp} data-track="whatsapp_plan_a_medida" className={`${btn} min-h-[48px] bg-[#047857]`}>
                 Armar mi plan
               </a>
             </div>
             <div className="mt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
               <h4 className="text-lg font-bold">Para restaurantes</h4>
-              <a href={LINKS.whatsapp} className="text-[15px] font-bold text-[#1357AD] underline hover:text-[#0F3281]">
+              <a href={LINKS.whatsapp} data-track="whatsapp_restaurante" className="text-[15px] font-bold text-[#1357AD] underline hover:text-[#0F3281]">
                 Pide una demostración
               </a>
             </div>
@@ -571,12 +569,14 @@ export default function LandingPage() {
             <div className="flex flex-wrap gap-3">
               <a
                 href={LINKS.whatsapp}
+                data-track="whatsapp_contacto"
                 className="inline-flex min-h-[52px] items-center justify-center rounded-[14px] bg-white px-[26px] font-bold text-[#0B1B3A] transition-opacity hover:opacity-90"
               >
                 WhatsApp {CONTACT.phone}
               </a>
               <a
                 href={LINKS.email}
+                data-track="correo_contacto"
                 className="inline-flex min-h-[52px] items-center justify-center rounded-[14px] border-[1.5px] border-[#5F78A8] px-[26px] font-bold text-white hover:border-white"
               >
                 {CONTACT.email}
@@ -599,9 +599,17 @@ export default function LandingPage() {
 
           <div className="flex flex-wrap items-center justify-between gap-x-7 gap-y-2.5 border-t border-[#2A3D66] pt-6 text-sm text-[#C9D6EE]">
             <span>© {new Date().getFullYear()} Createam · Lima, Perú</span>
-            <a href={LINKS.custom} className="flex min-h-[44px] items-center underline hover:text-white">
-              Desarrollo a medida
-            </a>
+            <div className="flex flex-wrap gap-x-6">
+              <Link href="/terminos" className="flex min-h-[44px] items-center underline hover:text-white">
+                Términos
+              </Link>
+              <Link href="/privacidad" className="flex min-h-[44px] items-center underline hover:text-white">
+                Privacidad
+              </Link>
+              <a href={LINKS.custom} className="flex min-h-[44px] items-center underline hover:text-white">
+                Desarrollo a medida
+              </a>
+            </div>
           </div>
         </div>
       </footer>

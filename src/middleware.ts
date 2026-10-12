@@ -27,6 +27,8 @@ export async function middleware(request: NextRequest) {
     url.pathname.startsWith('/admin') ||
     url.pathname.startsWith('/login') ||
     url.pathname.startsWith('/registro') ||
+    url.pathname === '/terminos' ||
+    url.pathname === '/privacidad' ||
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api')
   ) {

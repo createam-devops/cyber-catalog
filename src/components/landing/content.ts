@@ -11,13 +11,13 @@ export const LINKS = {
   onturnRegister: 'https://beta.onturn.app/registrar-negocio',
   onturnLogin: 'https://beta.onturn.app/panel',
   whatsapp: 'https://wa.me/51945111310',
-  email: 'mailto:hello@createam.io',
+  email: 'mailto:hola@createam.io',
   custom: 'https://createam.io',
 };
 
 export const CONTACT = {
   phone: '+51 945 111 310',
-  email: 'hello@createam.io',
+  email: 'hola@createam.io',
 };
 
 export interface LandingPlan {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Analytics from "@/components/Analytics";
 import LandingPage from "@/components/landing/LandingPage";
 import { CONTACT, FAQS, LINKS } from "@/components/landing/content";
 
@@ -75,6 +76,7 @@ export default function HomePage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <Analytics />
       <LandingPage />
     </>
   );

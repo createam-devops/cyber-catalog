@@ -128,11 +128,11 @@ export default function NeedSelector() {
             <p className="text-[15px] text-[#3D4B66]">{need.priceNote}</p>
           </div>
           {need.cta.href.startsWith("/") ? (
-            <Link href={need.cta.href} className={ctaClass}>
+            <Link href={need.cta.href} data-track={`selector_${need.id}`} className={ctaClass}>
               {need.cta.label}
             </Link>
           ) : (
-            <a href={need.cta.href} className={ctaClass}>
+            <a href={need.cta.href} data-track={`selector_${need.id}`} className={ctaClass}>
               {need.cta.label}
             </a>
           )}
