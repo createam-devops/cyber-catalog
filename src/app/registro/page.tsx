@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { loginWithEmail, auth } from "@/lib/auth";
+import { trackEvent } from "@/lib/analytics";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -99,6 +100,8 @@ export default function RegistroPage() {
         toast.error(data.error || "Código incorrecto");
         return;
       }
+
+      trackEvent("sign_up", { method: "email" });
 
       // Login automático después de registrar
       toast.success("¡Cuenta activada!", {
@@ -512,6 +515,18 @@ export default function RegistroPage() {
                 <p className="text-center text-xs text-gray-500">
                   Verificaremos tu email para activar tu catálogo gratis por 30 días
                 </p>
+
+                <p className="text-center text-xs text-gray-500">
+                  Al crear tu cuenta aceptas los{" "}
+                  <Link href="/terminos" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">
+                    Términos
+                  </Link>{" "}
+                  y la{" "}
+                  <Link href="/privacidad" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">
+                    Política de privacidad
+                  </Link>
+                  .
+                </p>
               </form>
                 )
               )}
@@ -528,10 +543,10 @@ export default function RegistroPage() {
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               Sistemas Operativos en la Nube
             </div>
-            <div>© 2024 CREATEAM.CLOUD // Ecosistema SaaS Modular</div>
+            <div>© {new Date().getFullYear()} CREATEAM.CLOUD // Ecosistema SaaS Modular</div>
             <div className="flex gap-8">
-              <a href="#" className="hover:text-white transition-colors">Términos</a>
-              <a href="#" className="hover:text-white transition-colors">Privacidad</a>
+              <Link href="/terminos" className="hover:text-white transition-colors">Términos</Link>
+              <Link href="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
             </div>
           </div>
         </div>

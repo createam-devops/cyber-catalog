@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Analytics from "@/components/Analytics";
 import { TRIAL_DAYS } from "@/lib/plans";
 
 export const metadata: Metadata = {
@@ -8,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function RegistroLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <Analytics />
+      {children}
+    </>
+  );
 }
