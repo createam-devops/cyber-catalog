@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Days_One, Outfit } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/contexts/AuthContext";
 
 const outfit = Outfit({ 
   subsets: ["latin"],
   variable: "--font-body",
+});
+
+// Fuente de títulos servida desde el propio sitio: evita la petición a Google Fonts que bloqueaba el renderizado
+const daysOne = Days_One({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-days-one",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -34,20 +41,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" className={daysOne.variable}>
       <head>
         <link rel="icon" href="/images/favicon/favicon.ico" sizes="any" />
         <link rel="icon" href="/images/favicon/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
         <link rel="manifest" href="/images/favicon/site.webmanifest" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Days+One&display=swap" rel="stylesheet" />
       </head>
       <body className={`${outfit.variable} font-body`}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        {children}
         <Toaster />
       </body>
     </html>

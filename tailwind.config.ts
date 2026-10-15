@@ -18,7 +18,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
-        heading: ['Days One', 'sans-serif'],
+        heading: ['var(--font-days-one)', 'Days One', 'sans-serif'],
         'landing-display': ['var(--font-landing-display)', 'sans-serif'],
         'landing-body': ['var(--font-landing-body)', 'sans-serif'],
       },

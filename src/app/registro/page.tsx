@@ -170,13 +170,13 @@ export default function RegistroPage() {
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-3xl font-black tracking-tight leading-none" style={{ fontFamily: '"Days One", sans-serif' }}>
+              <span className="text-3xl font-black tracking-tight leading-none" style={{ fontFamily: 'var(--font-days-one), "Days One", sans-serif' }}>
                 Createam
               </span>
             </div>
           </Link>
 
-          <div className="hidden lg:flex items-center space-x-10 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: '"Days One", sans-serif' }}>
+          <div className="hidden lg:flex items-center space-x-10 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: 'var(--font-days-one), "Days One", sans-serif' }}>
             <a href="/#on-turn" className="hover:text-cyan-400 transition-colors">Gestión de Turnos</a>
             <a href="/#catalogo" className="hover:text-cyan-400 transition-colors">Catálogo Digital</a>
             <a href="/#erp" className="hover:text-cyan-400 transition-colors">POS Integral</a>
@@ -190,7 +190,7 @@ export default function RegistroPage() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#020408] flex flex-col items-center justify-center space-y-8 animate-fade-in lg:hidden" style={{ fontFamily: '"Days One", sans-serif' }}>
+        <div className="fixed inset-0 z-[60] bg-[#020408] flex flex-col items-center justify-center space-y-8 animate-fade-in lg:hidden" style={{ fontFamily: 'var(--font-days-one), "Days One", sans-serif' }}>
           <button onClick={() => setIsMenuOpen(false)} className="absolute top-8 right-8 text-white">
             <X size={32} />
           </button>
