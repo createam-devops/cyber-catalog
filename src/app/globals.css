@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --font-heading: 'Days One', sans-serif;
+  --font-heading: var(--font-days-one), 'Days One', sans-serif;
   --font-body: 'Outfit', sans-serif;
   
   --background: 0 0% 100%;

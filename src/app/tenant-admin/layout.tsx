@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { LayoutGrid, Package, Layers, Settings as SettingsIcon, LogOut, User, ChevronDown, Zap, Clock, CreditCard } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -214,8 +214,10 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <ProtectedRoute>
-      <TenantAdminLayout>{children}</TenantAdminLayout>
-    </ProtectedRoute>
+    <AuthProvider>
+      <ProtectedRoute>
+        <TenantAdminLayout>{children}</TenantAdminLayout>
+      </ProtectedRoute>
+    </AuthProvider>
   );
 }

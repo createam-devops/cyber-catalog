@@ -35,21 +35,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // Si es el dominio principal de la plataforma
+  // En el dominio principal de la plataforma las rutas pasan tal cual y las que
+  // no existen responden 404. Antes redirigían a la portada, así que buscadores y
+  // agentes de IA recibían la portada al pedir /llms.txt o /.well-known/...
   if (domain === platformDomain || domain === `www.${platformDomain}`) {
-    // Permitir acceso a rutas de plataforma: /, /store (para testing)
-    // y los archivos que leen los buscadores
-    if (
-      url.pathname === '/' ||
-      url.pathname.startsWith('/store') ||
-      url.pathname === '/robots.txt' ||
-      url.pathname === '/sitemap.xml'
-    ) {
-      return NextResponse.next();
-    }
-    
-    // Redirigir otras rutas a home
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.next();
   }
   
   // ============================================================
