@@ -9,6 +9,10 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    // Las fotos de producto no cambian: cada archivo subido tiene su propio
+    // nombre y token. Sin esto Next guardaba la versión optimizada solo 60 s y
+    // el servidor volvía a bajar y reducir originales de varios MB sin parar.
+    minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
       {
         protocol: 'https',
