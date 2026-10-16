@@ -61,6 +61,11 @@
   h1, h2, h3, .brand-font {
     font-family: var(--font-heading);
   }
+  /* Vitrina: los títulos siguen el estilo de la tienda (mayúsculas o no). */
+  .sf-root h1, .sf-root h2, .sf-heading {
+    text-transform: var(--sf-heading-transform);
+    letter-spacing: var(--sf-heading-tracking);
+  }
 }
 
 @layer utilities {

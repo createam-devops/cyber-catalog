@@ -7,6 +7,7 @@ import { getTenantDbFromConfig } from '@/lib/server/tenant-firestore';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantProductPayloadSchema } from '@/lib/server/tenant-product-validation';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
+import { invalidateStoreCatalog } from '@/lib/server/storefront-data';
 import { checkProductLimit } from '@/lib/server/tenant-plan';
 
 export const runtime = 'nodejs';
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
+    invalidateStoreCatalog(tenantId);
     await logTenantAdminEvent({
       tenantId,
       action: 'product.created',

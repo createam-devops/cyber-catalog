@@ -7,6 +7,7 @@ import { getTenantDbFromConfig } from '@/lib/server/tenant-firestore';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantCategoryPayloadSchema } from '@/lib/server/tenant-category-validation';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
+import { invalidateStoreCatalog } from '@/lib/server/storefront-data';
 
 export const runtime = 'nodejs';
 
@@ -74,6 +75,7 @@ export async function PATCH(
       updatedAt: new Date(),
     });
 
+    invalidateStoreCatalog(authResult.context.tenantId);
     await logTenantAdminEvent({
       tenantId: authResult.context.tenantId,
       action: 'category.updated',
@@ -137,6 +139,7 @@ export async function DELETE(
 
     await deleteDoc(categoryRef);
 
+    invalidateStoreCatalog(authResult.context.tenantId);
     await logTenantAdminEvent({
       tenantId: authResult.context.tenantId,
       action: 'category.deleted',

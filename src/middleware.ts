@@ -29,6 +29,7 @@ export async function middleware(request: NextRequest) {
     url.pathname.startsWith('/registro') ||
     url.pathname === '/terminos' ||
     url.pathname === '/privacidad' ||
+    url.pathname === '/vista-previa' ||
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api')
   ) {
@@ -112,6 +113,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest)$).*)',
   ],
 };

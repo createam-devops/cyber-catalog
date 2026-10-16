@@ -1,356 +1,195 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { 
-  ShoppingBag, 
-  Search, 
-  Instagram,
-  Facebook,
-  MessageCircle,
-  MoreVertical
-} from 'lucide-react';
-import { TenantConfig } from '@/lib/types';
-import { getPrimaryColor } from '@/lib/tenant-colors';
+import { useEffect, useState, type CSSProperties } from 'react';
+import { useRouter } from 'next/navigation';
+import { ShoppingBag, Search, Instagram, Facebook, MessageCircle, MoreVertical } from 'lucide-react';
+import { useStorefront } from '../StorefrontRoot';
+import { socialUrl } from '@/lib/storefront/public-store';
+import type { HeroTone } from './ModernHero';
 
 const TikTokIcon = ({ size = 20, className = "" }: { size?: number; className?: string }) => (
-  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" className={className} height={size} width={size} xmlns="http://www.w3.org/2000/svg">
+  <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 448 512" className={className} height={size} width={size} xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"></path>
   </svg>
 );
 
 interface ModernNavbarProps {
-  tenant: TenantConfig;
   cartCount: number;
   onOpenCart: () => void;
   isScrolled: boolean;
   onGoHome?: () => void;
-  isProductPage?: boolean;
+  /**
+   * Sobre qué está la barra cuando la página no se ha desplazado: una foto,
+   * el color de la marca o nada (barra sólida desde el inicio).
+   */
+  heroTone?: HeroTone;
   searchQuery?: string;
+  /** Búsqueda en vivo. Sin ella, Enter lleva a la portada con la búsqueda. */
   onSearchChange?: (query: string) => void;
 }
 
-export default function ModernNavbar({ 
-  tenant, 
-  cartCount, 
-  onOpenCart, 
-  isScrolled, 
+function isHttpUrl(value?: string): boolean {
+  if (!value?.trim()) return false;
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export default function ModernNavbar({
+  cartCount,
+  onOpenCart,
+  isScrolled,
   onGoHome,
-  isProductPage = false,
+  heroTone = 'none',
   searchQuery = '',
-  onSearchChange
+  onSearchChange,
 }: ModernNavbarProps) {
-  // Función para validar si hay un logo válido
-  const hasValidLogo = (logoUrl?: string) => {
-    if (!logoUrl) return false;
-    const trimmedLogo = logoUrl.trim();
-    if (!trimmedLogo) return false;
-    // Validar que sea una URL válida
-    try {
-      const url = new URL(trimmedLogo);
-      return url.protocol === 'http:' || url.protocol === 'https:';
-    } catch {
-      return false;
-    }
-  };
-
+  const router = useRouter();
+  const { store, theme, preview } = useStorefront();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-  // Inicializar logoError basado en si hay logo válido
-  const [logoError, setLogoError] = useState(!hasValidLogo(tenant.logo));
-  const [logoLoaded, setLogoLoaded] = useState(false);
+  const [query, setQuery] = useState(searchQuery);
+  const [logoError, setLogoError] = useState(false);
 
-  const validLogo = hasValidLogo(tenant.logo);
+  useEffect(() => setQuery(searchQuery), [searchQuery]);
+  useEffect(() => setLogoError(false), [store.logo]);
 
-  // Sincronizar con el prop searchQuery cuando cambia externamente
-  useEffect(() => {
-    setLocalSearchQuery(searchQuery);
-  }, [searchQuery]);
+  const solid = isScrolled || heroTone === 'none';
+  // Color del texto de la barra según lo que tiene detrás.
+  const navStyle = {
+    '--sf-nav-fg': solid ? 'var(--sf-text)' : heroTone === 'brand' ? 'var(--sf-on-primary)' : '#ffffff',
+  } as CSSProperties;
 
-  // Reset logo error y loaded cuando cambia el tenant o el logo
-  useEffect(() => {
-    const isValid = hasValidLogo(tenant.logo);
-    if (!isValid) {
-      // Si no hay logo válido, marcar error inmediatamente y no intentar cargar
-      setLogoError(true);
-      setLogoLoaded(false);
-    } else {
-      // Si hay logo válido, resetear estados para intentar cargar
-      setLogoError(false);
-      setLogoLoaded(false);
-    }
-  }, [tenant.logo]);
+  const socials = [
+    { key: 'tiktok', label: 'TikTok', href: socialUrl('tiktok', store.socialMedia?.tiktok), icon: <TikTokIcon size={22} /> },
+    { key: 'instagram', label: 'Instagram', href: socialUrl('instagram', store.socialMedia?.instagram), icon: <Instagram size={22} strokeWidth={2.25} /> },
+    { key: 'facebook', label: 'Facebook', href: socialUrl('facebook', store.socialMedia?.facebook), icon: <Facebook size={22} strokeWidth={2.25} /> },
+    { key: 'whatsapp', label: 'WhatsApp', href: store.whatsapp ? `https://wa.me/${store.whatsapp}` : null, icon: <MessageCircle size={22} strokeWidth={2.25} /> },
+  ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setLocalSearchQuery(value);
-    // Llamar inmediatamente para búsqueda en tiempo real
-    onSearchChange?.(value);
-  };
+  const showLogo = isHttpUrl(store.logo) && !logoError;
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && localSearchQuery.trim()) {
-      onSearchChange?.(localSearchQuery.trim());
+  const submitSearch = () => {
+    const value = query.trim();
+    if (onSearchChange) {
+      onSearchChange(value);
+    } else if (value && !preview) {
+      router.push(`/?q=${encodeURIComponent(value)}`);
     }
   };
-  
+
   return (
-    <nav className={`fixed top-0 md:top-4 left-0 right-0 z-50 transition-all duration-300 px-0 md:px-4 flex justify-center`}>
-      <div className={`
-        flex items-center justify-between px-4 py-2 md:px-6 md:py-3 md:rounded-full transition-all duration-300 w-full
-        ${(isScrolled || isProductPage)
-          ? 'bg-white/70 backdrop-blur-md shadow-lg border-b md:border border-white/20 max-w-5xl' 
-          : 'bg-transparent border-transparent max-w-7xl'
-        }
-      `}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 shrink-0 mr-2 md:mr-6">
-          <a 
-            href="#" 
-            onClick={(e) => { e.preventDefault(); onGoHome?.(); }} 
-            className="flex items-center"
-          >
-            {/* Mostrar imagen solo si hay logo válido y no ha fallado */}
-            {validLogo && !logoError ? (
-              <img 
-                src={tenant.logo!.trim()} 
-                alt={tenant.name}
-                className="h-8 md:h-10 w-auto object-contain mr-2"
-                onError={() => {
-                  // Si la imagen falla al cargar, marcar error y ocultar
-                  setLogoError(true);
-                }}
-                onLoad={() => {
-                  // Si la imagen carga correctamente, marcar como cargada
-                  setLogoLoaded(true);
-                  setLogoError(false);
-                }}
-              />
-            ) : null}
-            {/* Siempre mostrar el texto del nombre - solo una versión según el tamaño de pantalla */}
-            {/* Versión móvil - solo primera letra con color, resto normal */}
-            <span className={`md:hidden text-lg tracking-tight brand-font transition-colors ${(isScrolled || isProductPage) ? 'text-gray-900' : 'text-white'}`}>
-              <span style={{ color: getPrimaryColor(tenant) }}>
-                {tenant.name.charAt(0)}
-              </span>
-              <span>
-                {tenant.name.substring(1)}
-              </span>
-            </span>
-            {/* Versión desktop - primera palabra normal, resto con color */}
-            <span className={`hidden md:inline text-2xl tracking-tight brand-font transition-colors ${(isScrolled || isProductPage) ? 'text-gray-900' : 'text-white'}`}>
-              <span>
-                {tenant.name.split(' ')[0]}
-              </span>
-              <span style={{ color: getPrimaryColor(tenant) }}>
-                {' ' + tenant.name.split(' ').slice(1).join(' ')}
-              </span>
-            </span>
-          </a>
-        </div>
+    <nav className="fixed top-0 md:top-4 left-0 right-0 z-50 px-0 md:px-4 flex justify-center" style={navStyle}>
+      <div
+        className={`flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 px-4 py-2 md:px-6 md:py-3 md:rounded-full transition-all duration-300 w-full text-[color:var(--sf-nav-fg)] ${
+          solid
+            ? 'bg-sf-bg/80 backdrop-blur-md shadow-lg border-b md:border border-sf-border max-w-5xl'
+            : 'bg-transparent border-transparent max-w-7xl'
+        }`}
+      >
+        {/* Marca */}
+        <a
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            onGoHome?.();
+          }}
+          className="flex items-center gap-2 flex-1 md:flex-none mr-2 md:mr-6 min-w-0"
+        >
+          {showLogo && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={store.logo!.trim()} alt={store.name} className="h-8 md:h-10 w-auto max-w-[140px] object-contain" onError={() => setLogoError(true)} />
+          )}
+          <span className={`brand-font text-lg md:text-2xl tracking-tight truncate ${showLogo ? 'hidden md:inline' : ''}`}>
+            {store.name}
+          </span>
+        </a>
 
-        {/* Buscador */}
-        <div className="flex-1 max-w-2xl relative group mx-2">
-          <div 
-            className={`
-              flex items-center w-full rounded-full transition-all duration-300 overflow-hidden
-              ${(isScrolled || isProductPage) 
-                ? 'bg-white/50 focus-within:bg-white/80 focus-within:ring-2' 
-                : 'bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30'
-              }
-            `}
-            style={(isScrolled || isProductPage) ? { 
-              '--tw-ring-color': getPrimaryColor(tenant) + '33' 
-            } as React.CSSProperties : {}}
+        {/* Buscador: en celular va en su propia fila, a todo el ancho */}
+        <form
+          role="search"
+          className="order-last basis-full md:order-none md:basis-auto md:flex-1 max-w-2xl md:mx-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitSearch();
+          }}
+        >
+          <label
+            className={`flex items-center w-full rounded-full transition-all duration-300 overflow-hidden ${
+              solid ? 'bg-sf-surface focus-within:ring-2 focus-within:ring-sf-primary/30' : 'bg-white/20 backdrop-blur-md border border-white/30'
+            }`}
           >
-            <div className={`pl-3 md:pl-4 ${(isScrolled || isProductPage) ? 'text-gray-600' : 'text-white'}`}>
-              <Search size={18} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="¿Qué buscas hoy?" 
-              value={localSearchQuery}
-              onChange={handleSearchChange}
-              onKeyDown={handleSearchKeyDown}
-              className={`w-full py-2.5 px-3 bg-transparent border-none outline-none text-sm md:text-base font-medium transition-colors
-                ${(isScrolled || isProductPage) ? 'text-gray-900 placeholder-gray-600' : 'text-white placeholder-white/80'}
-              `}
+            <span className="pl-3 md:pl-4 opacity-80">
+              <Search size={18} aria-hidden="true" />
+            </span>
+            <span className="sr-only">Buscar productos</span>
+            <input
+              type="search"
+              placeholder={theme.content.searchPlaceholder}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                onSearchChange?.(e.target.value);
+              }}
+              className="w-full py-2.5 px-3 bg-transparent border-none outline-none text-sm md:text-base font-medium text-[color:var(--sf-nav-fg)] placeholder:text-[color:var(--sf-nav-fg)] placeholder:opacity-70"
             />
-          </div>
-        </div>
+          </label>
+        </form>
 
-        {/* Actions */}
+        {/* Acciones */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0 ml-1">
-          <div className={`hidden lg:flex items-center gap-5 border-r pr-5 mr-2 transition-colors ${(isScrolled || isProductPage) ? 'border-gray-300' : 'border-white/40'}`}>
-            {tenant.socialMedia?.tiktok && (
-              <a 
-                href={tenant.socialMedia.tiktok} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="transition-all duration-200 hover:scale-110"
-              >
-                <div
-                  className="transition-colors"
-                  style={{
-                    color: (isScrolled || isProductPage) ? '#374151' : 'white',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = getPrimaryColor(tenant);
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = (isScrolled || isProductPage) ? '#374151' : 'white';
-                  }}
-                >
-                  <TikTokIcon size={26} />
-                </div>
-              </a>
-            )}
-            {tenant.socialMedia?.instagram && (
-              <a 
-                href={tenant.socialMedia.instagram} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="transition-all duration-200 hover:scale-110"
-              >
-                <div
-                  className="transition-colors"
-                  style={{
-                    color: (isScrolled || isProductPage) ? '#374151' : 'white',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = getPrimaryColor(tenant);
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = (isScrolled || isProductPage) ? '#374151' : 'white';
-                  }}
-                >
-                  <Instagram size={26} strokeWidth={2.5} />
-                </div>
-              </a>
-            )}
-            {tenant.socialMedia?.facebook && (
-              <a 
-                href={tenant.socialMedia.facebook} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="transition-all duration-200 hover:scale-110"
-              >
-                <div
-                  className="transition-colors"
-                  style={{
-                    color: (isScrolled || isProductPage) ? '#374151' : 'white',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = getPrimaryColor(tenant);
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = (isScrolled || isProductPage) ? '#374151' : 'white';
-                  }}
-                >
-                  <Facebook size={26} strokeWidth={2.5} />
-                </div>
-              </a>
-            )}
-            {tenant.whatsapp && (
-              <a 
-                href={`https://wa.me/${tenant.whatsapp}`} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="transition-all duration-200 hover:scale-110"
-              >
-                <div
-                  className="transition-colors"
-                  style={{
-                    color: (isScrolled || isProductPage) ? '#374151' : 'white',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = getPrimaryColor(tenant);
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = (isScrolled || isProductPage) ? '#374151' : 'white';
-                  }}
-                >
-                  <MessageCircle size={26} strokeWidth={2.5} />
-                </div>
-              </a>
-            )}
-          </div>
+          {socials.length > 0 && (
+            <div className={`hidden lg:flex items-center gap-4 border-r pr-4 mr-1 ${solid ? 'border-sf-border' : 'border-white/40'}`}>
+              {socials.map((s) => (
+                <a key={s.key} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} className="transition-all duration-200 hover:scale-110 hover:text-sf-primary">
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          )}
 
-          <div className="lg:hidden relative">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className={`p-2 rounded-full ${(isScrolled || isProductPage) ? 'text-gray-700' : 'text-white'}`}>
-              <MoreVertical size={20} />
-            </button>
-            
-            {/* Dropdown Menu for Mobile */}
-            {isMenuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
-                <div className="absolute right-0 top-12 bg-white/70 backdrop-blur-md rounded-2xl shadow-xl border border-white/20 py-3 px-4 min-w-[200px] z-50">
-                  <div className="flex flex-col gap-3">
-                    {tenant.socialMedia?.tiktok && (
-                      <a 
-                        href={tenant.socialMedia.tiktok} 
-                        target="_blank" 
+          {socials.length > 0 && (
+            <div className="lg:hidden relative">
+              <button type="button" aria-label="Redes sociales" onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 rounded-full">
+                <MoreVertical size={20} />
+              </button>
+              {isMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+                  <div className="absolute right-0 top-12 bg-sf-bg/95 backdrop-blur-md rounded-2xl shadow-xl border border-sf-border py-3 px-3 min-w-[200px] z-50 text-sf-text">
+                    {socials.map((s) => (
+                      <a
+                        key={s.key}
+                        href={s.href}
+                        target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sf-surface transition-colors"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        <TikTokIcon size={22} className="text-gray-700" />
-                        <span className="text-sm font-medium text-gray-700">TikTok</span>
+                        {s.icon}
+                        <span className="text-sm font-medium">{s.label}</span>
                       </a>
-                    )}
-                    {tenant.socialMedia?.instagram && (
-                      <a 
-                        href={tenant.socialMedia.instagram} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Instagram size={22} strokeWidth={2.5} className="text-gray-700" />
-                        <span className="text-sm font-medium text-gray-700">Instagram</span>
-                      </a>
-                    )}
-                    {tenant.socialMedia?.facebook && (
-                      <a 
-                        href={tenant.socialMedia.facebook} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Facebook size={22} strokeWidth={2.5} className="text-gray-700" />
-                        <span className="text-sm font-medium text-gray-700">Facebook</span>
-                      </a>
-                    )}
-                    {tenant.whatsapp && (
-                      <a 
-                        href={`https://wa.me/${tenant.whatsapp}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <MessageCircle size={22} strokeWidth={2.5} className="text-gray-700" />
-                        <span className="text-sm font-medium text-gray-700">WhatsApp</span>
-                      </a>
-                    )}
+                    ))}
                   </div>
-                </div>
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </div>
+          )}
 
-          <button 
-            onClick={onOpenCart} 
-            className="relative p-2.5 rounded-full text-white shadow-md hover:opacity-90 active:scale-95 transition-all"
-            style={{ backgroundColor: getPrimaryColor(tenant) }}
+          <button
+            type="button"
+            onClick={onOpenCart}
+            aria-label={`${theme.content.cartTitle} (${cartCount})`}
+            className={`relative p-2.5 rounded-full shadow-md hover:opacity-90 active:scale-95 transition-all ${
+              // Sobre una portada del color de la marca el botón se invierte para no perderse.
+              !solid && heroTone === 'brand' ? 'bg-sf-on-primary text-sf-primary' : 'bg-sf-primary text-sf-on-primary'
+            }`}
           >
             <ShoppingBag size={20} />
             {cartCount > 0 && (
-              <span 
-                className="absolute -top-1 -right-1 h-5 w-5 bg-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm border border-gray-100"
-                style={{ color: getPrimaryColor(tenant) }}
-              >
+              <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 bg-sf-bg text-sf-text text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm border border-sf-border">
                 {cartCount}
               </span>
             )}

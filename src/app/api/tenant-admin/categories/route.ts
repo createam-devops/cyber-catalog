@@ -7,6 +7,7 @@ import { getTenantDbFromConfig } from '@/lib/server/tenant-firestore';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantCategoryPayloadSchema } from '@/lib/server/tenant-category-validation';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
+import { invalidateStoreCatalog } from '@/lib/server/storefront-data';
 import { checkCategoryLimit } from '@/lib/server/tenant-plan';
 
 export const runtime = 'nodejs';
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date(),
     });
 
+    invalidateStoreCatalog(authResult.context.tenantId);
     await logTenantAdminEvent({
       tenantId: authResult.context.tenantId,
       action: 'category.created',

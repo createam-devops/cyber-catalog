@@ -1,77 +1,72 @@
 "use client";
 
-import { Settings, Zap, Instagram, Facebook } from 'lucide-react';
+import { Settings, Instagram, Facebook, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
-import { TenantConfig } from '@/lib/types';
-import { getPrimaryColor } from '@/lib/tenant-colors';
+import { useStorefront } from '../StorefrontRoot';
+import { socialUrl } from '@/lib/storefront/public-store';
+import type { FooterStyle } from '@/lib/storefront/presets';
 
 const TikTokIcon = ({ size = 20 }: { size?: number }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 448 512" fill="currentColor">
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 448 512" fill="currentColor" aria-hidden="true">
     <path d="M448,209.91a210.06,210.06,0,0,1-122.77-39.25V349.38A162.55,162.55,0,1,1,185,188.31V278.2a74.62,74.62,0,1,0,52.23,71.18V0l88,0a121.18,121.18,0,0,0,1.86,22.17h0A122.18,122.18,0,0,0,381,102.39a121.43,121.43,0,0,0,67,20.14Z"/>
   </svg>
 );
 
-interface ModernFooterProps {
-  tenant: TenantConfig;
-}
+const SHELL: Record<FooterStyle, { root: string; soft: string; chip: string }> = {
+  dark: { root: 'bg-gray-900 text-white', soft: 'text-white/60', chip: 'bg-white/10 hover:bg-white/20' },
+  light: { root: 'bg-sf-surface text-sf-text border-t border-sf-border', soft: 'text-sf-muted', chip: 'bg-sf-bg hover:bg-sf-border' },
+  brand: { root: 'bg-sf-primary text-sf-on-primary', soft: 'opacity-75', chip: 'bg-black/10 hover:bg-black/20' },
+};
 
-export default function ModernFooter({ tenant }: ModernFooterProps) {
+export default function ModernFooter() {
+  const { store, theme, preview } = useStorefront();
+  const shell = SHELL[theme.layout.footer];
+
+  const socials = [
+    { key: 'tiktok', label: 'TikTok', href: socialUrl('tiktok', store.socialMedia?.tiktok), icon: <TikTokIcon size={24} /> },
+    { key: 'instagram', label: 'Instagram', href: socialUrl('instagram', store.socialMedia?.instagram), icon: <Instagram size={24} /> },
+    { key: 'facebook', label: 'Facebook', href: socialUrl('facebook', store.socialMedia?.facebook), icon: <Facebook size={24} /> },
+    { key: 'whatsapp', label: 'WhatsApp', href: store.whatsapp ? `https://wa.me/${store.whatsapp}` : null, icon: <MessageCircle size={24} /> },
+  ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
+
   return (
-    <footer className="bg-gray-900 text-white pt-16 pb-8 mt-20 rounded-t-[2.5rem]">
+    <footer className={`${shell.root} pt-14 pb-8 mt-20 rounded-t-sf-hero`}>
       <div className="container mx-auto px-6">
-        {/* Brand Name + Social Icons - Horizontal */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-8 mb-12">
-          {/* Left: Brand */}
-          <div className="text-center md:text-left">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-3 brand-font">
-              {tenant.name.split(' ')[0]}
-              <span style={{ color: getPrimaryColor(tenant) }}>{tenant.name.split(' ').slice(1).join(' ')}</span>
-            </h2>
-            <p className="text-gray-400 text-base">
-              Creando momentos inolvidables.
-            </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-10">
+          <div>
+            <p className="text-3xl md:text-4xl font-bold tracking-tight mb-2 brand-font">{store.name}</p>
+            {theme.content.footerTagline && <p className={`${shell.soft} text-base`}>{theme.content.footerTagline}</p>}
           </div>
-          
-          {/* Right: Social Icons - Large */}
-          <div className="flex gap-6">
-            <a 
-              href={tenant.socialMedia?.tiktok || '#'} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-16 h-16 bg-gray-800 rounded-full hover:bg-black hover:scale-110 transition-all text-white flex items-center justify-center shadow-lg"
-            >
-              <TikTokIcon size={28} />
-            </a>
-            <a 
-              href={tenant.socialMedia?.instagram || '#'} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-16 h-16 bg-gray-800 rounded-full hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 hover:scale-110 transition-all text-white flex items-center justify-center shadow-lg"
-            >
-              <Instagram size={28} />
-            </a>
-            <a 
-              href={tenant.socialMedia?.facebook || '#'} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="w-16 h-16 bg-gray-800 rounded-full hover:bg-blue-600 hover:scale-110 transition-all text-white flex items-center justify-center shadow-lg"
-            >
-              <Facebook size={28} />
-            </a>
-          </div>
+          {socials.length > 0 && (
+            <div className="flex gap-4">
+              {socials.map((s) => (
+                <a
+                  key={s.key}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className={`w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-110 ${shell.chip}`}
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="border-t border-gray-800 w-full mb-8" />
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} {tenant.name}.</p>
+        <div className={`border-t border-current opacity-10 w-full mb-6`} />
+        <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs ${shell.soft}`}>
+          <p>© {new Date().getFullYear()} {store.name}</p>
           <div className="flex items-center gap-6">
-            <Link href="/tenant-admin" className="flex items-center gap-1 hover:text-white transition-colors">
-              <Settings size={14} /> Admin
-            </Link>
-            <span className="flex items-center gap-1">
-              Powered by <span className="font-bold text-gray-300 flex items-center gap-0.5">
-                <Zap size={10} className="text-yellow-400 fill-current" /> Createam
-              </span>
-            </span>
+            {!preview && (
+              // Sin precarga: el panel trae su propio código y no tiene por qué bajarlo cada visitante.
+              <Link href="/tenant-admin" prefetch={false} className="flex items-center gap-1 hover:opacity-100">
+                <Settings size={14} /> Administrar
+              </Link>
+            )}
+            <a href="https://createam.cloud" target="_blank" rel="noopener" className="hover:opacity-100">
+              Catálogo hecho con <span className="font-bold">Createam</span>
+            </a>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { getCentralAdminDb } from './central-admin';
 import type { TenantConfig } from '@/lib/types';
 
 /**
- * La tienda que atiende un dominio, o `null` si ninguna tienda activa lo usa.
+ * La tienda que atiende un dominio, o `null` si ninguna lo usa.
  *
  * Se lee con el Admin SDK, no con el de cliente. La vitrina se renderiza en el
  * servidor y sin sesión: con el SDK de cliente la lectura dependía de las
@@ -14,42 +14,60 @@ import type { TenantConfig } from '@/lib/types';
  * existe" y "no se pudo consultar" son cosas distintas, y la página las cuenta
  * distinto (ver `src/app/store/error.tsx`).
  *
+ * Devuelve la tienda en cualquier estado: si su vitrina se ve o no lo decide
+ * `storefrontAvailability` (una tienda en prueba se ve; una suspendida muestra
+ * "en pausa"). Si dos tiendas comparten dominio o subdominio, gana la de mejor
+ * estado.
+ *
  * Busca, en este orden: dominio exacto, subdominio de la plataforma y, como
- * último recurso, una tienda cuyo nombre coincida con el subdominio.
+ * último recurso, una tienda abierta cuyo nombre coincida con el subdominio.
  */
 export async function getTenantByDomain(domain: string): Promise<TenantConfig | null> {
   const platformDomain = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'createam.cloud';
   const subdomain = domain.endsWith(`.${platformDomain}`) ? domain.split('.')[0] : null;
 
-  const activas = getCentralAdminDb().collection('tenants').where('status', '==', 'active');
+  const tenants = getCentralAdminDb().collection('tenants');
 
-  let docs = (await activas.where('domain', '==', domain).limit(1).get()).docs;
+  let docs = (await tenants.where('domain', '==', domain).limit(5).get()).docs;
 
   if (docs.length === 0 && subdomain) {
-    docs = (await activas.where('subdomain', '==', subdomain).limit(1).get()).docs;
+    docs = (await tenants.where('subdomain', '==', subdomain).limit(5).get()).docs;
   }
 
   // Tiendas dadas de alta sin subdominio: se reconocen por el nombre.
   if (docs.length === 0 && subdomain) {
     const buscado = normalizar(subdomain);
-    const todas = (await activas.get()).docs;
-    const porNombre = todas.find((doc) => {
+    const abiertas = (await tenants.where('status', 'in', ['active', 'trial']).get()).docs;
+    const porNombre = abiertas.find((doc) => {
       const nombre = normalizar(String(doc.data().name ?? ''));
       return nombre !== '' && (nombre.includes(buscado) || buscado.includes(nombre));
     });
     docs = porNombre ? [porNombre] : [];
   }
 
-  if (docs.length === 0) {
+  const elegida = [...docs].sort((a, b) => rangoEstado(a.data().status) - rangoEstado(b.data().status))[0];
+
+  if (!elegida) {
     console.log(`[getTenantByDomain] No se encontró tenant para dominio: ${domain}`);
     return null;
   }
 
-  return { id: docs[0].id, ...(plano(docs[0].data()) as object) } as TenantConfig;
+  return { id: elegida.id, ...(plano(elegida.data()) as object) } as TenantConfig;
+}
+
+const ORDEN_ESTADOS = ['active', 'trial', 'suspended', 'pending', 'rejected'];
+
+function rangoEstado(status: unknown): number {
+  const i = ORDEN_ESTADOS.indexOf(String(status));
+  return i === -1 ? ORDEN_ESTADOS.length : i;
 }
 
 function normalizar(texto: string): string {
-  return texto.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
 }
 
 /**

@@ -1,15 +1,18 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Product } from '@/lib/types';
+import type { StoreProduct } from '@/lib/storefront/catalog';
 
-interface CartItem extends Product {
+/** Lo que el carrito necesita de un producto, venga de donde venga. */
+export type CartProduct = Pick<StoreProduct, 'id' | 'name' | 'price'> & { imageUrls?: string[] };
+
+export interface CartItem extends CartProduct {
   quantity: number;
 }
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number) => void;
+  addToCart: (product: CartProduct, quantity?: number) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -45,7 +48,7 @@ export function CartProvider({ children, tenantId }: { children: ReactNode; tena
     }
   }, [cart, tenantId]);
 
-  const addToCart = (product: Product, quantity: number = 1) => {
+  const addToCart = (product: CartProduct, quantity: number = 1) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
@@ -56,7 +59,14 @@ export function CartProvider({ children, tenantId }: { children: ReactNode; tena
         );
         return updated;
       }
-      return [...prevCart, { ...product, quantity }];
+      const line: CartItem = {
+        id: product.id,
+        name: product.name,
+        price: Number(product.price) || 0,
+        imageUrls: product.imageUrls?.slice(0, 1) ?? [],
+        quantity,
+      };
+      return [...prevCart, line];
     });
   };
 
