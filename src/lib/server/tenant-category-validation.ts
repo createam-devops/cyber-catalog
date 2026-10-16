@@ -7,7 +7,10 @@ function normalizeText(value: string): string {
 }
 
 function toSlug(label: string): string {
+  // Primero se quitan las tildes (í → i) para no perder letras: "Gasfitería" → "gasfiteria".
   return normalizeText(label)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-');

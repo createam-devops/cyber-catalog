@@ -6,6 +6,9 @@ import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantSettingsPatchSchema } from '@/lib/server/tenant-settings-validation';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
+import { getTenantPlanInfo } from '@/lib/server/tenant-plan';
+import { getPlan } from '@/lib/plans';
+import { normalizeWhatsapp } from '@/lib/storefront/public-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,6 +70,12 @@ export async function PATCH(request: NextRequest) {
     };
     const changedFields: string[] = [];
 
+    const planFeatures = getPlan((await getTenantPlanInfo(tenantId)).plan).features;
+
+    if (typeof payload.name === 'string') {
+      updateData.name = payload.name;
+      changedFields.push('name');
+    }
     if (typeof payload.logo === 'string') {
       updateData.logo = payload.logo;
       changedFields.push('logo');
@@ -76,8 +85,35 @@ export async function PATCH(request: NextRequest) {
       changedFields.push('primaryColor');
     }
     if (typeof payload.whatsapp === 'string') {
-      updateData.whatsapp = payload.whatsapp;
+      // Se guarda listo para wa.me. Un número que no sirve se rechaza: los
+      // pedidos de la tienda llegan a ese número.
+      const whatsapp = payload.whatsapp ? normalizeWhatsapp(payload.whatsapp) : '';
+      if (whatsapp === null) {
+        return NextResponse.json(
+          { error: 'El número de WhatsApp no es válido. Escríbelo con código de país, por ejemplo 51987654321.' },
+          { status: 400 }
+        );
+      }
+      updateData.whatsapp = whatsapp;
       changedFields.push('whatsapp');
+    }
+    // El SEO personalizado es del plan Pro; en los demás se ignora.
+    if (planFeatures.seo && typeof payload.seoTitle === 'string') {
+      updateData.seoTitle = payload.seoTitle;
+      changedFields.push('seoTitle');
+    }
+    if (planFeatures.seo && typeof payload.seoDescription === 'string') {
+      updateData.seoDescription = payload.seoDescription;
+      changedFields.push('seoDescription');
+    }
+    if (payload.storefront) {
+      const storefront = { ...payload.storefront };
+      // Mostrar el stock en la vitrina también es del plan Pro.
+      if (storefront.layout?.showStock && !planFeatures.stock) {
+        storefront.layout = { ...storefront.layout, showStock: false };
+      }
+      updateData.storefront = storefront;
+      changedFields.push('storefront');
     }
     if (typeof payload.domain === 'string' || payload.domain === null) {
       updateData.domain = payload.domain;

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutGrid, Package, Layers, Settings as SettingsIcon, LogOut, User, ChevronDown, Zap, Clock, CreditCard } from 'lucide-react';
+import { LayoutGrid, Package, Layers, Palette, Settings as SettingsIcon, LogOut, User, ChevronDown, Zap, Clock, CreditCard } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { logout } from '@/lib/auth';
@@ -17,6 +17,7 @@ const MENU = [
   { id: 'home', icon: LayoutGrid, label: 'Inicio', path: '/tenant-admin' },
   { id: 'products', icon: Package, label: 'Productos', path: '/tenant-admin/products' },
   { id: 'categories', icon: Layers, label: 'Categorías', path: '/tenant-admin/categories' },
+  { id: 'design', icon: Palette, label: 'Diseño', path: '/tenant-admin/diseno' },
   { id: 'settings', icon: SettingsIcon, label: 'Ajustes', path: '/tenant-admin/settings' },
   { id: 'billing', icon: CreditCard, label: 'Planes', path: '/tenant-admin/billing' },
 ];
@@ -75,6 +76,7 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
     if (pathname === '/tenant-admin') return 'home';
     if (pathname?.startsWith('/tenant-admin/products')) return 'products';
     if (pathname?.startsWith('/tenant-admin/categories')) return 'categories';
+    if (pathname?.startsWith('/tenant-admin/diseno') || pathname?.startsWith('/tenant-admin/bienvenida')) return 'design';
     if (pathname?.startsWith('/tenant-admin/settings')) return 'settings';
     if (pathname?.startsWith('/tenant-admin/billing')) return 'billing';
     return 'home';
