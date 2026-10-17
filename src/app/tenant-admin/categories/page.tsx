@@ -6,10 +6,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Edit3, Coffee, Flower, Gift, Heart, Sparkles, Package, ShoppingBag, Star, Cake, Wine, Palette, Home, Shirt, Watch, Footprints, Baby, Music, Book, Camera, Gamepad2, Dumbbell, Pizza, IceCream } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth } from "@/lib/auth";
+import { tenantApiFetch } from '@/lib/tenant-api';
 import { Category } from "@/lib/types";
 import { toast } from "sonner";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ErpCatalogGate from '@/components/tenant-admin/ErpCatalogGate';
 import * as LucideIcons from "lucide-react";
 
 // Íconos disponibles para categorías
@@ -50,35 +51,6 @@ interface ApiError extends Error {
   limitReached?: boolean;
 }
 
-async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = await auth.currentUser?.getIdToken(true);
-
-  if (!token) {
-    throw new Error('No hay sesión activa');
-  }
-
-  const headers = new Headers(options.headers);
-  headers.set('Authorization', `Bearer ${token}`);
-
-  if (options.body) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const err: ApiError = new Error(payload?.error || 'Error en API tenant-admin');
-    err.limitReached = payload?.limitReached ?? false;
-    throw err;
-  }
-
-  return payload as T;
-}
 
 function CategoriesContent() {
   const router = useRouter();
@@ -373,7 +345,9 @@ function CategoriesContent() {
 export default function CategoriesPage() {
   return (
     <ProtectedRoute>
-      <CategoriesContent />
+      <ErpCatalogGate what="categorías">
+        <CategoriesContent />
+      </ErpCatalogGate>
     </ProtectedRoute>
   );
 }

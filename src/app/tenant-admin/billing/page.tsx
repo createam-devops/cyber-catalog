@@ -8,8 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { auth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { doc, getDoc } from 'firebase/firestore';
-import { centralDb } from '@/lib/firebase';
+import { tenantApiFetch } from '@/lib/tenant-api';
 import { TenantConfig } from '@/lib/types';
 import { PLANS, getYearlyDiscount, isTrialExpired } from '@/lib/plans';
 import { Check, Zap, ArrowLeft, Loader2, Lock, Star } from 'lucide-react';
@@ -30,15 +29,19 @@ function BillingContent() {
 
   useEffect(() => {
     if (!user?.tenantId) return;
-    getDoc(doc(centralDb, 'tenants', user.tenantId)).then(snap => {
-      if (snap.exists()) {
-        setTenant({ id: snap.id, ...snap.data() } as TenantConfig);
-      }
-    });
+    tenantApiFetch<{ tenant: TenantConfig }>('/api/tenant-admin/settings')
+      .then(({ tenant }) => setTenant(tenant))
+      .catch(() => {});
   }, [user]);
 
   async function handleSubscribe(planId: 'starter' | 'pro') {
     if (!user) return;
+    // Quien entró con CyberPOS tiene su plan en el ERP: se cambia desde allá
+    // (quién cobra el catálogo es la decisión D3 pendiente con el ERP).
+    if (user.provider === 'erp') {
+      toast.info('Tu plan se administra desde CyberPOS. Escríbenos para cambiarlo.');
+      return;
+    }
     setLoadingPlan(planId);
 
     try {

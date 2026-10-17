@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { UserData, onAuthChange } from '@/lib/auth';
+import { UserData, getErpSessionUser, onAuthChange } from '@/lib/auth';
 
 interface AuthContextType {
   user: UserData | null;
@@ -26,12 +26,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthChange((userData) => {
-      setUser(userData);
+    let active = true;
+    const unsubscribe = onAuthChange(async (userData) => {
+      // Sin sesión de Firebase, el dueño pudo haber entrado con CyberPOS.
+      const current = userData ? { ...userData, provider: 'firebase' as const } : await getErpSessionUser();
+      if (!active) return;
+      setUser(current);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   return (

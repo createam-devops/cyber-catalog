@@ -20,6 +20,7 @@ function serializeTenant(data: FirebaseFirestore.DocumentData, tenantId: string)
     createdAt: data.createdAt?.toDate?.()?.toISOString?.() || null,
     updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() || null,
     approvedAt: data.approvedAt?.toDate?.()?.toISOString?.() || null,
+    trialEndsAt: data.trialEndsAt?.toDate?.()?.toISOString?.() || data.trialEndsAt || null,
   };
 }
 

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, MousePointerClick, Package, Plus, ChevronDown, LogOut, Lock, Zap, Clock } from 'lucide-react';
-import { doc, getDoc, collection, getCountFromServer } from 'firebase/firestore';
-import { centralDb, initTenantFirebase } from '@/lib/firebase';
+import { collection, getCountFromServer } from 'firebase/firestore';
+import { initTenantFirebase } from '@/lib/firebase';
+import { tenantApiFetch } from '@/lib/tenant-api';
 import { TenantConfig } from '@/lib/types';
 import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -59,19 +60,25 @@ export default function TenantAdminDashboard() {
       if (!user?.tenantId) return;
       
       try {
-        const tenantDoc = await getDoc(doc(centralDb, 'tenants', user.tenantId));
-        if (tenantDoc.exists()) {
-          const tenantData = { id: tenantDoc.id, ...tenantDoc.data() } as TenantConfig;
-          setTenant(tenantData);
+        // Por la API del servidor: sirve igual si entró con Firebase o con CyberPOS.
+        const { tenant: tenantData } = await tenantApiFetch<{ tenant: TenantConfig }>('/api/tenant-admin/settings');
+        setTenant(tenantData);
 
-          // Cargar conteo de productos desde Firebase del tenant
-          try {
+        // Conteo de productos: del catálogo publicado si la tienda está en el
+        // ERP; si no, de su Firebase. No es crítico: si falla queda vacío.
+        try {
+          if (tenantData.erp?.partnerId) {
+            const platform = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'createam.cloud';
+            const domain = tenantData.domain || `${tenantData.subdomain}.${platform}`;
+            const res = await fetch(`/api/storefront/products?limit=1&_domain=${encodeURIComponent(domain)}`);
+            if (res.ok) setProductCount(((await res.json()) as { total: number }).total);
+          } else if (tenantData.firebaseConfig?.projectId) {
             const { db } = initTenantFirebase(tenantData.id, tenantData.firebaseConfig);
             const snap = await getCountFromServer(collection(db, 'products'));
             setProductCount(snap.data().count);
-          } catch {
-            // Si falla, dejamos null (no crítico)
           }
+        } catch {
+          // No crítico.
         }
       } catch (error) {
         console.error('Error loading tenant:', error);

@@ -13,7 +13,8 @@ import { ArrowLeft, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { auth } from "@/lib/auth";
+import ErpCatalogGate from '@/components/tenant-admin/ErpCatalogGate';
+import { tenantApiFetch } from '@/lib/tenant-api';
 import { initTenantFirebase } from "@/lib/firebase";
 import { uploadProductImage } from "@/lib/products";
 import { Category, TenantConfig } from "@/lib/types";
@@ -23,35 +24,6 @@ interface ApiError extends Error {
   limitReached?: boolean;
 }
 
-async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = await auth.currentUser?.getIdToken(true);
-
-  if (!token) {
-    throw new Error('No hay sesión activa');
-  }
-
-  const headers = new Headers(options.headers);
-  headers.set('Authorization', `Bearer ${token}`);
-
-  if (options.body) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const err: ApiError = new Error(payload?.error || 'Error en API tenant-admin');
-    err.limitReached = payload?.limitReached ?? false;
-    throw err;
-  }
-
-  return payload as T;
-}
 
 function NewProductContent() {
   const router = useRouter();
@@ -331,7 +303,9 @@ function NewProductContent() {
 export default function NewProductPage() {
   return (
     <ProtectedRoute>
-      <NewProductContent />
+      <ErpCatalogGate what="productos">
+        <NewProductContent />
+      </ErpCatalogGate>
     </ProtectedRoute>
   );
 }

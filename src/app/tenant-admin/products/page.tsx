@@ -7,39 +7,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Search, MousePointerClick } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth } from "@/lib/auth";
+import { tenantApiFetch } from '@/lib/tenant-api';
 import { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { toast } from "sonner";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ErpCatalogGate from '@/components/tenant-admin/ErpCatalogGate';
 
-async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = await auth.currentUser?.getIdToken(true);
-
-  if (!token) {
-    throw new Error('No hay sesión activa');
-  }
-
-  const headers = new Headers(options.headers);
-  headers.set('Authorization', `Bearer ${token}`);
-
-  if (options.body) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload?.error || 'Error en API tenant-admin');
-  }
-
-  return payload as T;
-}
 
 function ProductsContent() {
   const router = useRouter();
@@ -183,7 +157,9 @@ function ProductsContent() {
 export default function ProductsPage() {
   return (
     <ProtectedRoute>
-      <ProductsContent />
+      <ErpCatalogGate what="productos">
+        <ProductsContent />
+      </ErpCatalogGate>
     </ProtectedRoute>
   );
 }

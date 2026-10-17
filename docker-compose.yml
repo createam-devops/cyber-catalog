@@ -25,6 +25,10 @@ services:
       - ERP_APP_CLIENT_ID=${ERP_APP_CLIENT_ID:-catalog}
       - ERP_APP_CLIENT_SECRET=${ERP_APP_CLIENT_SECRET:-}
       - ERP_WEBHOOK_SECRET=${ERP_WEBHOOK_SECRET:-}
+      # Ingreso del dueño con su usuario de CyberPOS: firma de la cookie de sesión
+      # (32+ caracteres) y dirección de CyberPOS para el botón "Abrir CyberPOS".
+      - ERP_SESSION_SECRET=${ERP_SESSION_SECRET:-}
+      - ERP_APP_URL=${ERP_APP_URL:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://createam.cloud}
       - GOOGLE_CLOUD_QUOTA_PROJECT=
       - NODE_ENV=production

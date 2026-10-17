@@ -10,7 +10,21 @@ export interface UserData {
   tenantId: string;
   role: 'admin' | 'owner';
   displayName?: string;
+  /** Con qué entró: su cuenta del catálogo (Firebase) o su usuario de CyberPOS. */
+  provider?: 'firebase' | 'erp';
 }
+
+/** Usuario que entró con CyberPOS (sesión en cookie del servidor), o null. */
+export const getErpSessionUser = async (): Promise<UserData | null> => {
+  try {
+    const res = await fetch('/api/auth/erp/session', { credentials: 'include', cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { user?: UserData | null };
+    return data.user ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export const loginWithEmail = async (email: string, password: string): Promise<UserData> => {
   try {
@@ -45,10 +59,10 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
 
 export const logout = async () => {
   try {
-    await fetch('/api/auth/session', {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    await Promise.all([
+      fetch('/api/auth/session', { method: 'DELETE', credentials: 'include' }),
+      fetch('/api/auth/erp/session', { method: 'DELETE', credentials: 'include' }),
+    ]);
 
     await signOut(auth);
   } catch (error) {
