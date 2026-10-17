@@ -22,6 +22,17 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.cloudinary.com',
       },
+      // Fotos de producto del ERP (/media). api-dev para las pruebas de la integración.
+      {
+        protocol: 'https',
+        hostname: 'api.createam.cloud',
+        pathname: '/media/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api-dev.createam.cloud',
+        pathname: '/media/**',
+      },
     ],
   },
   // Permitir múltiples dominios

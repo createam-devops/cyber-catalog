@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from '@/lib/server/storefront-data';
 import { queryCatalog } from '@/lib/storefront/catalog';
+import { isAppNotEnabled } from '@/lib/server/erp/client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,9 @@ export async function GET(request: NextRequest) {
       headers: { 'Cache-Control': 'public, max-age=30, stale-while-revalidate=120' },
     });
   } catch (error) {
+    if (isAppNotEnabled(error)) {
+      return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+    }
     console.error('[storefront/products] No se pudo leer el catálogo:', error);
     return NextResponse.json({ error: 'Catalog unavailable' }, { status: 503 });
   }

@@ -74,6 +74,10 @@ export const storefrontSettingsSchema = z
       .strict()
       .optional(),
     content: storefrontContentSchema.optional(),
+    categoryIcons: z
+      .record(z.string().regex(/^\d{1,10}$/), z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,40}$/))
+      .refine((icons) => Object.keys(icons).length <= 200, 'Too many category icons')
+      .optional(),
   })
   .strict();
 

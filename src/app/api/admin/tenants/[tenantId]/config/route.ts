@@ -35,6 +35,16 @@ function pickConfigUpdates(payload: Record<string, unknown>): FirebaseFirestore.
     updates.subdomain = payload.subdomain;
   }
 
+  // Negocio del ERP del que la vitrina lee sus productos; null lo desconecta.
+  if (payload.erp === null) {
+    updates.erp = FieldValue.delete();
+  } else if (payload.erp && typeof payload.erp === 'object') {
+    const partnerId = Number((payload.erp as { partnerId?: unknown }).partnerId);
+    if (Number.isInteger(partnerId) && partnerId > 0) {
+      updates.erp = { partnerId };
+    }
+  }
+
   return updates;
 }
 

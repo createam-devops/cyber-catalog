@@ -5,6 +5,7 @@ import CartProviderWrapper from "@/components/store/CartProviderWrapper";
 import StorefrontRoot from "@/components/store/StorefrontRoot";
 import StoreUnavailable from "@/components/store/StoreUnavailable";
 import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from "@/lib/server/storefront-data";
+import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { FULL_CATALOG_THRESHOLD } from "@/lib/storefront/catalog";
 import { toPublicStore } from "@/lib/storefront/public-store";
 import { resolveStorefront } from "@/lib/storefront/theme";
@@ -30,7 +31,14 @@ export default async function StorePage({ searchParams }: StorePageProps) {
     return <StoreUnavailable reason={availability === 'open' ? 'missing' : availability} storeName={tenant?.name} />;
   }
 
-  const catalog = await getStoreCatalog(tenant);
+  let catalog;
+  try {
+    catalog = await getStoreCatalog(tenant);
+  } catch (error) {
+    // El plan del negocio en el ERP ya no incluye el catálogo: tienda en pausa, no una falla.
+    if (isAppNotEnabled(error)) return <StoreUnavailable reason="paused" storeName={tenant.name} />;
+    throw error;
+  }
   const total = catalog.products.length;
   const initialProducts = total <= FULL_CATALOG_THRESHOLD ? catalog.products : catalog.products.slice(0, 24);
 

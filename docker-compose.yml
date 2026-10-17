@@ -20,6 +20,11 @@ services:
       - PLATFORM_ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - MP_ACCESS_TOKEN=${MP_ACCESS_TOKEN}
+      # Integración con el ERP. Vacías = apagada (las tiendas siguen en Firebase).
+      - ERP_API_BASE_URL=${ERP_API_BASE_URL:-}
+      - ERP_APP_CLIENT_ID=${ERP_APP_CLIENT_ID:-catalog}
+      - ERP_APP_CLIENT_SECRET=${ERP_APP_CLIENT_SECRET:-}
+      - ERP_WEBHOOK_SECRET=${ERP_WEBHOOK_SECRET:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://createam.cloud}
       - GOOGLE_CLOUD_QUOTA_PROJECT=
       - NODE_ENV=production
