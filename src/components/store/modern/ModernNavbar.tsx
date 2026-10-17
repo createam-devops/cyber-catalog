@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Search, Instagram, Facebook, MessageCircle, MoreVertical } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
@@ -54,7 +54,13 @@ export default function ModernNavbar({
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => setQuery(searchQuery), [searchQuery]);
-  useEffect(() => setLogoError(false), [store.logo]);
+  const logoRef = useRef<HTMLImageElement>(null);
+  // Si el logo falla antes de que React se conecte (la página llega ya armada del
+  // servidor), onError no alcanza a dispararse: se revisa la imagen al montar.
+  useEffect(() => {
+    const img = logoRef.current;
+    setLogoError(Boolean(img && img.complete && img.naturalWidth === 0));
+  }, [store.logo]);
 
   const solid = isScrolled || heroTone === 'none';
   // Color del texto de la barra según lo que tiene detrás.
@@ -100,7 +106,7 @@ export default function ModernNavbar({
         >
           {showLogo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={store.logo!.trim()} alt={store.name} className="h-8 md:h-10 w-auto max-w-[140px] object-contain" onError={() => setLogoError(true)} />
+            <img ref={logoRef} src={store.logo!.trim()} alt={store.name} className="h-8 md:h-10 w-auto max-w-[140px] object-contain" onError={() => setLogoError(true)} />
           )}
           <span className={`brand-font text-lg md:text-2xl tracking-tight truncate ${showLogo ? 'hidden md:inline' : ''}`}>
             {store.name}
