@@ -1,5 +1,6 @@
 // Tipos para el sistema multi-tenant
 import type { PlanId, BillingCycle } from './plans';
+import type { StorefrontSettings } from './storefront/theme';
 
 export type TenantStatus = 'pending' | 'active' | 'trial' | 'suspended' | 'rejected';
 
@@ -53,6 +54,9 @@ export interface TenantConfig {
   // SEO
   seoTitle?: string;
   seoDescription?: string;
+
+  // Diseño de la vitrina: rubro, estilo y lo que la tienda personalizó (ver lib/storefront)
+  storefront?: StorefrontSettings | null;
 
   // Plan y suscripción
   plan?: PlanId;

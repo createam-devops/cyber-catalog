@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, MousePointerClick, Package, Plus, ChevronDown, LogOut, Lock, Zap, Clock } from 'lucide-react';
 import { doc, getDoc, collection, getCountFromServer } from 'firebase/firestore';
@@ -137,6 +138,20 @@ export default function TenantAdminDashboard() {
             )}
           </div>
         </div>
+
+        {/* Tiendas que aún no pasaron por el asistente de alta */}
+        {tenant && !tenant.storefront?.rubro && (
+          <Link
+            href="/tenant-admin/bienvenida"
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-900 text-white p-6 rounded-[2rem] shadow-sm hover:bg-black transition-colors"
+          >
+            <span>
+              <span className="block text-lg font-bold">Termina de armar tu tienda</span>
+              <span className="block text-sm text-white/70">Elige tu rubro, tu estilo y tu WhatsApp en 4 pasos.</span>
+            </span>
+            <span className="font-bold whitespace-nowrap">Empezar →</span>
+          </Link>
+        )}
 
         {/* Plan badge */}
         {tenant && (

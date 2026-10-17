@@ -1,441 +1,180 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Sparkles, Coffee, Flower, Gift, Heart } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ModernNavbar from './ModernNavbar';
-import ModernHero from './ModernHero';
+import ModernHero, { heroToneFor } from './ModernHero';
 import ModernCategories from './ModernCategories';
 import ModernProductGrid from './ModernProductGrid';
 import ModernCart from './ModernCart';
 import ModernFooter from './ModernFooter';
-import { TenantConfig, Product } from '@/lib/types';
-import { collection, getDocs, query, where, orderBy, limit, startAfter, QueryDocumentSnapshot, DocumentData, doc, getDoc } from 'firebase/firestore';
-import { initTenantFirebase } from '@/lib/firebase';
+import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
-
-interface Category {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-}
+import { filterProducts, type CatalogPage, type StoreProduct } from '@/lib/storefront/catalog';
 
 interface ModernStoreHomeProps {
-  tenant: TenantConfig;
+  /** Primeros productos, ya renderizados en el servidor. */
+  initialProducts: StoreProduct[];
+  /** Total de productos de la tienda. Si coincide con `initialProducts`, todo se filtra aquí. */
+  total: number;
+  /** Dominio de la tienda; la API lo necesita cuando se prueba en localhost. */
   domain: string;
-  initialProducts?: Product[]; // Productos cargados en el servidor
+  initialQuery?: string;
 }
 
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'Todo', label: 'Todo', icon: <Sparkles size={18} /> },
-  { id: 'Desayunos', label: 'Desayunos', icon: <Coffee size={18} /> },
-  { id: 'Flores', label: 'Flores', icon: <Flower size={18} /> },
-  { id: 'Peluches', label: 'Peluches', icon: <Gift size={18} /> },
-  { id: 'Globos', label: 'Globos', icon: <Heart size={18} /> },
-];
+const PAGE_SIZE = 24;
 
-export default function ModernStoreHome({ tenant, domain, initialProducts = [] }: ModernStoreHomeProps) {
-  const router = useRouter();
-  const { cart, addToCart, removeFromCart, getCartCount } = useCart();
+export default function ModernStoreHome({ initialProducts, total, domain, initialQuery = '' }: ModernStoreHomeProps) {
+  const { store, theme, preview } = useStorefront();
+  const { cart, addToCart, removeFromCart, updateQuantity, getCartCount } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('Todo');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+
+  // Catálogo completo en memoria: filtros instantáneos, sin pedir nada al servidor.
+  const complete = initialProducts.length >= total;
+
+  // Catálogo grande: páginas que llegan de /api/storefront/products.
+  const [remote, setRemote] = useState<{ items: StoreProduct[]; total: number; nextOffset: number | null }>({
+    items: initialProducts,
+    total,
+    nextOffset: initialProducts.length < total ? initialProducts.length : null,
+  });
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const requestId = useRef(0);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const productosSectionRef = useRef<HTMLDivElement>(null);
+  const isFirstFilter = useRef(true);
 
-  // Scroll detection
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Load products and categories solo si no hay productos iniciales
+  const fetchPage = useCallback(
+    async (offset: number): Promise<CatalogPage> => {
+      const params = new URLSearchParams({ offset: String(offset), limit: String(PAGE_SIZE), _domain: domain });
+      if (activeCategory) params.set('category', activeCategory);
+      if (searchQuery.trim()) params.set('q', searchQuery.trim());
+      const res = await fetch(`/api/storefront/products?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    [activeCategory, searchQuery, domain]
+  );
+
+  // Catálogo grande: al cambiar categoría o búsqueda se pide la primera página.
   useEffect(() => {
-    if (initialProducts.length === 0) {
-      loadProducts(true);
-    } else {
-      // Extraer categorías de los productos iniciales
-      const uniqueCategoryNames = Array.from(new Set(initialProducts.map(p => p.category).filter(Boolean)));
-      const categoryObjects: Category[] = [
-        { id: 'Todo', label: 'Todo', icon: <Sparkles size={18} /> },
-        ...uniqueCategoryNames.map(name => ({
-          id: name,
-          label: name,
-          icon: getCategoryIcon(name)
-        }))
-      ];
-      setCategories(categoryObjects);
-      // Si hay productos iniciales, preparar para cargar más
-      setHasMore(initialProducts.length >= 12);
+    if (complete) return;
+    if (isFirstFilter.current) {
+      isFirstFilter.current = false;
+      if (!activeCategory && !searchQuery.trim()) return;
     }
-  }, [tenant.id, initialProducts.length]);
+    const id = ++requestId.current;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      fetchPage(0)
+        .then((page) => {
+          if (id === requestId.current) setRemote({ items: page.items, total: page.total, nextOffset: page.nextOffset });
+        })
+        .catch((error) => console.error('[storefront] No se pudo filtrar el catálogo:', error))
+        .finally(() => {
+          if (id === requestId.current) setLoading(false);
+        });
+    }, searchQuery ? 250 : 0);
+    return () => clearTimeout(timer);
+  }, [complete, fetchPage, activeCategory, searchQuery]);
 
-  // Listen for add to cart events from product detail pages
+  // Catálogo grande: scroll infinito.
   useEffect(() => {
-    const handleAddToCart = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const product = customEvent.detail.product;
-      const quantity = customEvent.detail.quantity || 1;
-      addToCart(product, quantity);
-      setIsCartOpen(true);
-    };
-    
-    window.addEventListener('addToCart', handleAddToCart);
-    return () => window.removeEventListener('addToCart', handleAddToCart);
-  }, [addToCart]);
-
-  const loadMoreProducts = async () => {
-    if (loadingMore || !hasMore) return;
-    
-    try {
-      setLoadingMore(true);
-      const { db } = initTenantFirebase(tenant.id, tenant.firebaseConfig);
-      const productsRef = collection(db, 'products');
-      
-      let q;
-      if (activeCategory === 'Todo') {
-        if (lastVisible) {
-          q = query(productsRef, orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(12));
-        } else {
-          // Si no hay lastVisible, usar el último producto actual como referencia
-          const currentProducts = activeCategory === 'Todo' ? products : products.filter(p => p.category === activeCategory);
-          if (currentProducts.length === 0) {
-            setHasMore(false);
-            return;
-          }
-          // Necesitamos obtener el documento desde Firebase para usarlo como startAfter
-          const lastProduct = currentProducts[currentProducts.length - 1];
-          const lastDocRef = doc(db, 'products', lastProduct.id);
-          const lastDocSnap = await getDoc(lastDocRef);
-          if (lastDocSnap.exists()) {
-            q = query(productsRef, orderBy('createdAt', 'desc'), startAfter(lastDocSnap), limit(12));
-          } else {
-            q = query(productsRef, orderBy('createdAt', 'desc'), limit(12));
-          }
-        }
-      } else {
-        if (lastVisible) {
-          q = query(
-            productsRef,
-            where('category', '==', activeCategory),
-            orderBy('createdAt', 'desc'),
-            startAfter(lastVisible),
-            limit(12)
-          );
-        } else {
-          const currentProducts = products.filter(p => p.category === activeCategory);
-          if (currentProducts.length === 0) {
-            setHasMore(false);
-            return;
-          }
-          const lastProduct = currentProducts[currentProducts.length - 1];
-          const lastDocRef = doc(db, 'products', lastProduct.id);
-          const lastDocSnap = await getDoc(lastDocRef);
-          if (lastDocSnap.exists()) {
-            q = query(
-              productsRef,
-              where('category', '==', activeCategory),
-              orderBy('createdAt', 'desc'),
-              startAfter(lastDocSnap),
-              limit(12)
-            );
-          } else {
-            q = query(
-              productsRef,
-              where('category', '==', activeCategory),
-              orderBy('createdAt', 'desc'),
-              limit(12)
-            );
-          }
-        }
-      }
-      
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
-        setHasMore(false);
-        return;
-      }
-      
-      const loadedProducts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      })) as Product[];
-      
-      setProducts(prev => [...prev, ...loadedProducts]);
-      
-      // Guardar último documento visible para paginación
-      const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-      setLastVisible(lastDoc);
-      
-      // Si hay menos de 12 productos, no hay más
-      if (snapshot.docs.length < 12) {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error('Error loading more products:', error);
-      setHasMore(false);
-    } finally {
-      setLoadingMore(false);
-    }
-  };
-
-  const loadProducts = async (reset: boolean = false) => {
-    try {
-      if (reset) {
-        setLoading(true);
-        setProducts([]);
-        setLastVisible(null);
-        setHasMore(true);
-      } else {
-        setLoadingMore(true);
-      }
-
-      const { db } = initTenantFirebase(tenant.id, tenant.firebaseConfig);
-      const productsRef = collection(db, 'products');
-      
-      let q;
-      if (activeCategory === 'Todo') {
-        if (lastVisible && !reset) {
-          q = query(productsRef, orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(12));
-        } else {
-          q = query(productsRef, orderBy('createdAt', 'desc'), limit(12));
-        }
-      } else {
-        if (lastVisible && !reset) {
-          q = query(
-            productsRef,
-            where('category', '==', activeCategory),
-            orderBy('createdAt', 'desc'),
-            startAfter(lastVisible),
-            limit(12)
-          );
-        } else {
-          q = query(
-            productsRef,
-            where('category', '==', activeCategory),
-            orderBy('createdAt', 'desc'),
-            limit(12)
-          );
-        }
-      }
-      
-      const snapshot = await getDocs(q);
-      
-      if (snapshot.empty) {
-        setHasMore(false);
-        return;
-      }
-      
-      const loadedProducts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate(),
-      })) as Product[];
-      
-      if (reset) {
-        setProducts(loadedProducts);
-      } else {
-        setProducts(prev => [...prev, ...loadedProducts]);
-      }
-      
-      // Guardar último documento visible para paginación
-      const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-      setLastVisible(lastDoc);
-      
-      // Si hay menos de 12 productos, no hay más
-      if (snapshot.docs.length < 12) {
-        setHasMore(false);
-      }
-      
-      // Extract unique categories and create Category objects (solo en reset)
-      if (reset) {
-        const uniqueCategoryNames = Array.from(new Set(loadedProducts.map(p => p.category).filter(Boolean)));
-        const categoryObjects: Category[] = [
-          { id: 'Todo', label: 'Todo', icon: <Sparkles size={18} /> },
-          ...uniqueCategoryNames.map(name => ({
-            id: name,
-            label: name,
-            icon: getCategoryIcon(name)
-          }))
-        ];
-        setCategories(categoryObjects);
-      }
-    } catch (error) {
-      console.error('Error loading products:', error);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
-  // Recargar productos cuando cambia la categoría (solo si no hay productos iniciales)
-  useEffect(() => {
-    if (initialProducts.length > 0 && activeCategory === 'Todo') {
-      // Si hay productos iniciales y categoría es "Todo", solo filtrar localmente
-      setLastVisible(null);
-      setHasMore(initialProducts.length >= 12); // Permitir cargar más si hay 12 o más iniciales
-      return;
-    }
-    // Si no hay productos iniciales o cambió la categoría, recargar desde Firebase
-    if (initialProducts.length === 0) {
-      loadProducts(true);
-    }
-  }, [activeCategory]);
-
-  // Infinite scroll con IntersectionObserver
-  useEffect(() => {
-    if (!loadMoreRef.current || !hasMore || loadingMore) return;
-
+    if (complete || remote.nextOffset === null || loading || loadingMore || !loadMoreRef.current) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          if (initialProducts.length > 0 && activeCategory === 'Todo') {
-            loadMoreProducts();
-          } else {
-            loadProducts(false);
-          }
-        }
+        if (!entries[0].isIntersecting || remote.nextOffset === null) return;
+        const id = requestId.current;
+        setLoadingMore(true);
+        fetchPage(remote.nextOffset)
+          .then((page) => {
+            if (id !== requestId.current) return;
+            setRemote((prev) => ({
+              items: [...prev.items, ...page.items.filter((p) => !prev.items.some((q) => q.id === p.id))],
+              total: page.total,
+              nextOffset: page.nextOffset,
+            }));
+          })
+          .catch((error) => console.error('[storefront] No se pudieron cargar más productos:', error))
+          .finally(() => setLoadingMore(false));
       },
-      { threshold: 0.1 }
+      { rootMargin: '400px 0px' }
     );
-
     observer.observe(loadMoreRef.current);
-
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, activeCategory, initialProducts.length]);
+  }, [complete, remote.nextOffset, loading, loadingMore, fetchPage]);
 
-  const getCategoryIcon = (categoryName: string) => {
-    const lowerName = categoryName.toLowerCase();
-    if (lowerName.includes('desayuno')) return <Coffee size={18} />;
-    if (lowerName.includes('flor')) return <Flower size={18} />;
-    if (lowerName.includes('peluch')) return <Gift size={18} />;
-    if (lowerName.includes('globo')) return <Heart size={18} />;
-    return <Sparkles size={18} />;
+  const products = useMemo(
+    () => (complete ? filterProducts(initialProducts, activeCategory, searchQuery) : remote.items),
+    [complete, initialProducts, activeCategory, searchQuery, remote.items]
+  );
+
+  const scrollToProducts = () => {
+    if (preview) return;
+    setTimeout(() => document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
 
-  const handleAddProduct = (product: Product) => {
-    const quantity = (product as any).quantity || 1;
-    addToCart(product, quantity);
+  const handleAddProduct = (product: StoreProduct) => {
+    addToCart(product, 1);
     setIsCartOpen(true);
   };
 
-  const handleRemoveItem = (productId: string) => {
-    removeFromCart(productId);
-  };
-
-  const handleGoHome = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleProductClick = (product: Product) => {
-    // Navegar a /product/[id] - el middleware se encargará de reescribir internamente
-    router.push(`/product/${product.id}`);
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    // Si hay búsqueda, hacer scroll a la sección de productos
-    if (query.trim() && productosSectionRef.current) {
-      setTimeout(() => {
-        productosSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-  };
-
-  // Filtrar productos por categoría y búsqueda
-  const filteredProducts = products.filter(product => {
-    // Filtro por categoría
-    const matchesCategory = activeCategory === 'Todo' || product.category === activeCategory;
-    
-    // Filtro por búsqueda
-    if (!searchQuery.trim()) {
-      return matchesCategory;
-    }
-    
-    const query = searchQuery.toLowerCase().trim();
-    const matchesSearch = 
-      product.name.toLowerCase().includes(query) ||
-      product.description?.toLowerCase().includes(query) ||
-      product.category?.toLowerCase().includes(query);
-    
-    return matchesCategory && matchesSearch;
-  });
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Navbar */}
+    <>
       <ModernNavbar
-        tenant={tenant}
         cartCount={getCartCount()}
         onOpenCart={() => setIsCartOpen(true)}
         isScrolled={isScrolled}
-        onGoHome={handleGoHome}
-        isProductPage={false}
+        heroTone={heroToneFor(store, theme)}
+        onGoHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         searchQuery={searchQuery}
-        onSearchChange={handleSearchChange}
-      />
-
-      {/* Hero */}
-      <ModernHero tenant={tenant} />
-
-      {/* Categories */}
-      <ModernCategories
-        categories={categories}
-        activeCategory={activeCategory}
-        tenant={tenant}
-        onCategoryChange={(category) => {
-          setActiveCategory(category);
-          setSearchQuery(''); // Limpiar búsqueda al cambiar categoría
-          // Hacer scroll a productos cuando se cambia categoría
-          setTimeout(() => {
-            productosSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 100);
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          if (value.trim()) scrollToProducts();
         }}
       />
 
-      {/* Products Grid */}
-      <div ref={productosSectionRef}>
-        <ModernProductGrid
-          products={filteredProducts}
-          loading={loading}
-          loadingMore={loadingMore}
-          activeCategory={activeCategory}
-          searchQuery={searchQuery}
-          tenant={tenant}
-          onAddToCart={handleAddProduct}
-          onProductClick={handleProductClick}
-        />
-      </div>
-      
-      {/* Trigger para infinite scroll */}
-      {hasMore && <div ref={loadMoreRef} className="h-20" />}
+      {theme.layout.hero === 'none' && <div className="h-32 md:h-28" />}
+      <ModernHero />
 
-      {/* Cart */}
+      <ModernCategories
+        activeCategory={activeCategory}
+        onCategoryChange={(category) => {
+          setActiveCategory(category);
+          setSearchQuery('');
+          scrollToProducts();
+        }}
+      />
+
+      <ModernProductGrid
+        products={products}
+        loading={loading}
+        loadingMore={loadingMore}
+        activeCategory={activeCategory}
+        searchQuery={searchQuery}
+        onAddToCart={handleAddProduct}
+      />
+
+      {!complete && remote.nextOffset !== null && <div ref={loadMoreRef} className="h-20" />}
+
       <ModernCart
         cart={cart}
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
-        onRemoveItem={handleRemoveItem}
-        tenant={tenant}
+        onRemoveItem={removeFromCart}
+        onUpdateQuantity={updateQuantity}
       />
 
-      {/* Footer */}
-      <ModernFooter tenant={tenant} />
-    </div>
+      <ModernFooter />
+    </>
   );
 }

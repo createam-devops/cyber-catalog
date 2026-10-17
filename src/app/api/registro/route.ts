@@ -9,6 +9,38 @@ import { getTrialEndDate } from '@/lib/plans';
 
 export const runtime = 'nodejs';
 
+// Subdominios de createam.cloud que ya usan otros servicios: una tienda con
+// alguno de estos nombres nunca recibiría visitas.
+const RESERVED_SUBDOMAINS = new Set([
+  'www', 'api', 'app', 'app-dev', 'auth', 'admin', 'mail', 'cdn', 'static', 'dev', 'beta',
+  'createam', 'cyberpos', 'cyberposapp', 'onturn', 'tenant-admin', 'registro', 'login', 'tienda',
+]);
+
+/**
+ * Subdominio para una tienda nueva a partir de su nombre: sin tildes
+ * ("Café Aroma" → "cafe-aroma"), sin chocar con otra tienda ni con un
+ * subdominio reservado. Si ya existe, agrega -2, -3…
+ */
+async function uniqueSubdomain(db: FirebaseFirestore.Firestore, businessName: string): Promise<string> {
+  const base =
+    businessName
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 30)
+      .replace(/-+$/, '') || 'tienda';
+
+  for (let i = 1; i <= 20; i++) {
+    const candidate = i === 1 ? base : `${base.slice(0, 26).replace(/-+$/, '')}-${i}`;
+    if (RESERVED_SUBDOMAINS.has(candidate)) continue;
+    const taken = await db.collection('tenants').where('subdomain', '==', candidate).limit(1).get();
+    if (taken.empty) return candidate;
+  }
+  return `${base.slice(0, 20).replace(/-+$/, '')}-${Date.now().toString(36)}`;
+}
+
 export async function POST(request: NextRequest) {
   const rateLimit = checkRateLimit(request, 'registro-verify', 10, 60 * 60 * 1000);
   if (rateLimit.limited) {
@@ -69,12 +101,7 @@ export async function POST(request: NextRequest) {
 
     const { businessName, phone, wantsDomain, customDomain } = pending;
 
-    const subdomain = String(businessName)
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 30);
+    const subdomain = await uniqueSubdomain(db, String(businessName));
 
     // 1. Crear usuario en el proveedor de autenticación
     let uid: string;

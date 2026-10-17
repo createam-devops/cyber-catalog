@@ -59,6 +59,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copiar archivos públicos (logo, favicon, etc.)
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
+# Caché de imágenes optimizadas. En docker-compose va en un volumen para que
+# sobreviva a cada despliegue; se crea aquí para que el volumen nazca con este dueño.
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+
 USER nextjs
 
 EXPOSE 3000

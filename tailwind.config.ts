@@ -21,8 +21,24 @@ const config: Config = {
         heading: ['var(--font-days-one)', 'Days One', 'sans-serif'],
         'landing-display': ['var(--font-landing-display)', 'sans-serif'],
         'landing-body': ['var(--font-landing-body)', 'sans-serif'],
+        // Vitrina: la tipografía la elige cada tienda (ver src/lib/storefront/theme.ts)
+        'sf-heading': ['var(--font-heading)'],
+        'sf-body': ['var(--font-body)'],
       },
       colors: {
+        // Vitrina: colores de cada tienda, definidos como variables en <StorefrontRoot>
+        sf: {
+          primary: "rgb(var(--sf-primary-rgb) / <alpha-value>)",
+          "on-primary": "var(--sf-on-primary)",
+          secondary: "rgb(var(--sf-secondary-rgb) / <alpha-value>)",
+          "on-secondary": "var(--sf-on-secondary)",
+          accent: "rgb(var(--sf-accent-rgb) / <alpha-value>)",
+          bg: "rgb(var(--sf-bg-rgb) / <alpha-value>)",
+          text: "rgb(var(--sf-text-rgb) / <alpha-value>)",
+          surface: "var(--sf-surface)",
+          border: "var(--sf-border)",
+          muted: "var(--sf-muted)",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -61,6 +77,10 @@ const config: Config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "sf-card": "var(--sf-radius-card)",
+        "sf-btn": "var(--sf-radius-btn)",
+        "sf-hero": "var(--sf-radius-hero)",
+        "sf-chip": "var(--sf-radius-chip)",
       },
       boxShadow: {
         'card': '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06)',

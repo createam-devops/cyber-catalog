@@ -1,80 +1,82 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTenantByDomain } from "@/lib/server/tenants";
-import { extractDomain } from "@/lib/utils";
-import { getTenantProducts } from "@/lib/products-server";
 import ModernStoreHome from "@/components/store/modern/ModernStoreHome";
 import CartProviderWrapper from "@/components/store/CartProviderWrapper";
+import StorefrontRoot from "@/components/store/StorefrontRoot";
+import StoreUnavailable from "@/components/store/StoreUnavailable";
+import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from "@/lib/server/storefront-data";
+import { FULL_CATALOG_THRESHOLD } from "@/lib/storefront/catalog";
+import { toPublicStore } from "@/lib/storefront/public-store";
+import { resolveStorefront } from "@/lib/storefront/theme";
 
-// Cache por 60 segundos para mejorar rendimiento
-export const revalidate = 60;
+// El dominio llega como parámetro: la página se arma en cada visita, pero el
+// catálogo sale de la caché en memoria de storefront-data (como mucho una
+// consulta a la base por minuto y por tienda).
 export const dynamic = 'force-dynamic';
 
 interface StorePageProps {
-  searchParams: Promise<{ _domain?: string }>;
+  searchParams: { _domain?: string; q?: string };
 }
 
 export default async function StorePage({ searchParams }: StorePageProps) {
-  const params = await searchParams;
-  const domain = params._domain;
-
+  const domain = searchParams._domain;
   if (!domain) {
     return notFound();
   }
 
-  // Obtener configuración del tenant
-  const tenant = await getTenantByDomain(domain);
-
-  if (!tenant || tenant.status !== 'active') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Tienda no encontrada</h1>
-          <p className="text-muted-foreground mb-8">
-            Esta tienda no existe o está temporalmente deshabilitada.
-          </p>
-          <a 
-            href="https://createam.cloud" 
-            className="text-primary hover:underline"
-          >
-            Volver a Createam
-          </a>
-        </div>
-      </div>
-    );
+  const tenant = await findStoreByDomain(domain);
+  const availability = storefrontAvailability(tenant);
+  if (!tenant || availability !== 'open') {
+    return <StoreUnavailable reason={availability === 'open' ? 'missing' : availability} storeName={tenant?.name} />;
   }
 
-  // Cargar solo 12 productos iniciales (3 filas) para optimizar primera carga y SEO
-  const products = await getTenantProducts(tenant.id, tenant.firebaseConfig, {
-    limit: 12, // Solo 3 filas iniciales para carga rápida
-  });
+  const catalog = await getStoreCatalog(tenant);
+  const total = catalog.products.length;
+  const initialProducts = total <= FULL_CATALOG_THRESHOLD ? catalog.products : catalog.products.slice(0, 24);
 
   return (
-    <CartProviderWrapper tenant={tenant}>
-      <ModernStoreHome tenant={tenant} domain={domain} initialProducts={products} />
-    </CartProviderWrapper>
+    <StorefrontRoot store={toPublicStore(tenant)} categories={catalog.categories}>
+      <CartProviderWrapper storeId={tenant.id}>
+        <ModernStoreHome
+          initialProducts={initialProducts}
+          total={total}
+          domain={domain}
+          initialQuery={typeof searchParams.q === 'string' ? searchParams.q.slice(0, 80) : ''}
+        />
+      </CartProviderWrapper>
+    </StorefrontRoot>
   );
 }
 
-export async function generateMetadata({ searchParams }: StorePageProps) {
-  const params = await searchParams;
-  const domain = params._domain;
+export async function generateMetadata({ searchParams }: StorePageProps): Promise<Metadata> {
+  const domain = searchParams._domain;
+  const tenant = domain ? await findStoreByDomain(domain) : null;
 
-  if (!domain) {
-    return {
-      title: 'Tienda no encontrada',
-    };
+  if (!tenant || storefrontAvailability(tenant) === 'missing') {
+    return { title: 'Tienda no encontrada', robots: { index: false } };
   }
 
-  const tenant = await getTenantByDomain(domain);
-
-  if (!tenant) {
-    return {
-      title: 'Tienda no encontrada',
-    };
-  }
+  const theme = resolveStorefront(tenant);
+  const title = tenant.seoTitle?.trim() || tenant.name;
+  const description =
+    tenant.seoDescription?.trim() ||
+    [theme.content.heroTitle, `Mira el catálogo de ${tenant.name} y haz tu pedido por WhatsApp.`].filter(Boolean).join('. ');
+  const image = tenant.heroSlides?.find((s) => s.image)?.image || tenant.logo || undefined;
+  const url = `https://${domain}/`;
 
   return {
-    title: `${tenant.name} - Tienda Online`,
-    description: `Compra en ${tenant.name}. Los mejores productos con envío rápido.`,
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      url,
+      siteName: tenant.name,
+      title,
+      description,
+      locale: 'es_PE',
+      ...(image ? { images: [{ url: image }] } : {}),
+    },
+    twitter: { card: image ? 'summary_large_image' : 'summary', title, description },
   };
 }

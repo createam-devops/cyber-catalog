@@ -6,11 +6,6 @@ import {
   doc, 
   Timestamp,
   Firestore,
-  getDocs,
-  query,
-  limit,
-  orderBy,
-  where
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -20,59 +15,53 @@ import {
   FirebaseStorage 
 } from 'firebase/storage';
 import { Product } from './types';
+import { shrinkImage, storageFileName } from './image-compress';
 
 /**
- * Sube una imagen a Firebase Storage
+ * Reduce la imagen y la sube. Cada archivo tiene nombre único y no cambia
+ * nunca, así que se marca para guardarse en caché por un año.
+ */
+async function uploadShrunk(storage: FirebaseStorage, folder: string, prefix: string, file: File, maxSide: number): Promise<string> {
+  const { blob, extension } = await shrinkImage(file, maxSide);
+  const storageRef = ref(storage, `${folder}/${storageFileName(prefix, file.name, extension)}`);
+  await uploadBytes(storageRef, blob, {
+    contentType: blob.type || file.type,
+    cacheControl: 'public, max-age=31536000, immutable',
+  });
+  return getDownloadURL(storageRef);
+}
+
+/**
+ * Sube una foto de producto (máximo 1600 px de lado).
  */
 export async function uploadProductImage(
   storage: FirebaseStorage,
   tenantId: string,
   file: File
 ): Promise<string> {
-  const timestamp = Date.now();
-  const filename = `${timestamp}_${file.name}`;
-  const storageRef = ref(storage, `products/${tenantId}/${filename}`);
-  
-  await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(storageRef);
-  
-  return downloadURL;
+  return uploadShrunk(storage, `products/${tenantId}`, '', file, 1600);
 }
 
 /**
- * Sube el logo del tenant a Firebase Storage
+ * Sube el logo de la tienda (máximo 800 px de lado).
  */
 export async function uploadLogoImage(
   storage: FirebaseStorage,
   tenantId: string,
   file: File
 ): Promise<string> {
-  const timestamp = Date.now();
-  const filename = `logo_${timestamp}_${file.name}`;
-  const storageRef = ref(storage, `branding/${tenantId}/${filename}`);
-  
-  await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(storageRef);
-  
-  return downloadURL;
+  return uploadShrunk(storage, `branding/${tenantId}`, 'logo_', file, 800);
 }
 
 /**
- * Sube una imagen de banner del carrusel a Firebase Storage
+ * Sube un banner del carrusel (máximo 2000 px de lado).
  */
 export async function uploadBannerImage(
   storage: FirebaseStorage,
   tenantId: string,
   file: File
 ): Promise<string> {
-  const timestamp = Date.now();
-  const filename = `banner_${timestamp}_${file.name}`;
-  const storageRef = ref(storage, `branding/${tenantId}/banners/${filename}`);
-  
-  await uploadBytes(storageRef, file);
-  const downloadURL = await getDownloadURL(storageRef);
-  
-  return downloadURL;
+  return uploadShrunk(storage, `branding/${tenantId}/banners`, 'banner_', file, 2000);
 }
 
 /**

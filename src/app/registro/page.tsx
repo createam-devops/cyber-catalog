@@ -110,7 +110,7 @@ export default function RegistroPage() {
 
       try {
         await loginWithEmail(String(formData.email), String(formData.password));
-        setTimeout(() => router.push('/tenant-admin'), 1500);
+        setTimeout(() => router.push('/tenant-admin/bienvenida'), 1500);
       } catch (loginErr) {
         console.error("Auto-login fallido, redirigiendo a login:", loginErr);
         // Si el auto-login falla, ir al tab de login con email pre-llenado
