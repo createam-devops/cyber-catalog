@@ -13,6 +13,8 @@ import type { StoreCatalog, StoreProduct } from '@/lib/storefront/catalog';
 import { labelFromCategoryValue, type StoreCategory } from '@/lib/storefront/public-store';
 import { getTenantDbFromConfig } from './tenant-firestore';
 import { getTenantByDomain } from './tenants';
+import { getErpConfig } from './erp/config';
+import { loadErpCatalog } from './erp/catalog-source';
 
 export interface StorefrontDataSource {
   /** Todo el catálogo de la tienda. Lanza si la fuente no responde. */
@@ -89,7 +91,16 @@ const firebaseDataSource: StorefrontDataSource = {
   },
 };
 
-const dataSource: StorefrontDataSource = firebaseDataSource;
+const erpDataSource: StorefrontDataSource = { loadCatalog: loadErpCatalog };
+
+/**
+ * Las tiendas con negocio en el ERP leen del ERP; las demás, de su Firebase.
+ * Si la integración no está configurada (sin URL o sin secreto), todas siguen
+ * en Firebase: el paso a producción es solo configurar las variables ERP_*.
+ */
+function dataSourceFor(store: TenantConfig): StorefrontDataSource {
+  return store.erp?.partnerId && getErpConfig() ? erpDataSource : firebaseDataSource;
+}
 
 // ---------------------------------------------------------------------------
 // Caché en memoria por tienda. Una vitrina se visita mucho y cambia poco: la
@@ -99,11 +110,14 @@ const dataSource: StorefrontDataSource = firebaseDataSource;
 // ---------------------------------------------------------------------------
 
 const TTL_MS = 60_000;
+/** Si la fuente falla y no hay copia, el error se recuerda este tiempo para no insistir en cada visita. */
+const ERROR_TTL_MS = 15_000;
 
 interface CacheEntry {
   at: number;
   data?: StoreCatalog;
   pending?: Promise<StoreCatalog>;
+  error?: unknown;
 }
 
 const catalogs = new Map<string, CacheEntry>();
@@ -113,11 +127,14 @@ export async function getStoreCatalog(store: TenantConfig): Promise<StoreCatalog
   if (entry?.data && Date.now() - entry.at < TTL_MS) {
     return entry.data;
   }
+  if (entry?.error !== undefined && Date.now() - entry.at < ERROR_TTL_MS) {
+    throw entry.error;
+  }
   if (entry?.pending) {
     return entry.data ?? entry.pending;
   }
 
-  const pending = dataSource
+  const pending = dataSourceFor(store)
     .loadCatalog(store)
     .then((data) => {
       catalogs.set(store.id, { at: Date.now(), data });
@@ -127,14 +144,15 @@ export async function getStoreCatalog(store: TenantConfig): Promise<StoreCatalog
       const current = catalogs.get(store.id);
       if (current?.data) {
         console.error(`[storefront] La base de la tienda ${store.id} no respondió; se muestra la última copia.`, error);
-        catalogs.set(store.id, { at: current.at, data: current.data });
+        // La copia sigue valiendo y se vuelve a intentar en ERROR_TTL_MS, no en cada visita.
+        catalogs.set(store.id, { at: Date.now() - TTL_MS + ERROR_TTL_MS, data: current.data });
         return current.data;
       }
-      catalogs.delete(store.id);
+      catalogs.set(store.id, { at: Date.now(), error });
       throw error;
     });
 
-  catalogs.set(store.id, { at: entry?.at ?? 0, data: entry?.data, pending });
+  catalogs.set(store.id, { at: entry?.data ? entry.at : 0, data: entry?.data, pending });
   // Con una copia vencida se responde con ella mientras se renueva por detrás.
   return entry?.data ?? pending;
 }
@@ -147,8 +165,43 @@ export function invalidateStoreCatalog(tenantId: string): void {
 // Tienda por dominio y si su vitrina está abierta.
 // ---------------------------------------------------------------------------
 
+/**
+ * Tiendas de prueba para desarrollo local, sin Firebase: `STOREFRONT_DEV_STORES`
+ * es un JSON con una lista de tiendas (como mínimo `domain` y `name`; para leer
+ * del ERP, `erp: { partnerId }`). Se ignora en producción.
+ *
+ *   STOREFRONT_DEV_STORES=[{"domain":"demo.localhost","name":"Tienda demo","erp":{"partnerId":1},"storefront":{"rubro":"ferreteria-tecnologia"}}]
+ *
+ * y se abre con http://localhost:3000/store?_domain=demo.localhost
+ */
+export function listDevStores(): TenantConfig[] {
+  const raw = process.env.STOREFRONT_DEV_STORES;
+  if (process.env.NODE_ENV === 'production' || !raw) return [];
+  try {
+    const now = new Date();
+    return (JSON.parse(raw) as Array<Partial<TenantConfig>>).map(
+      (store, index) =>
+        ({
+          id: `dev-${index + 1}`,
+          email: '',
+          status: 'active',
+          firebaseConfig: {} as TenantConfig['firebaseConfig'],
+          createdAt: now,
+          updatedAt: now,
+          ...store,
+          name: store.name || store.domain || `Tienda ${index + 1}`,
+        }) as TenantConfig
+    );
+  } catch (error) {
+    console.error('[storefront] STOREFRONT_DEV_STORES no es un JSON válido:', error);
+    return [];
+  }
+}
+
 /** Una sola consulta por petición aunque la pidan la página y sus metadatos. */
-export const findStoreByDomain = cache((domain: string) => getTenantByDomain(domain));
+export const findStoreByDomain = cache(
+  async (domain: string) => listDevStores().find((store) => store.domain === domain) ?? getTenantByDomain(domain)
+);
 
 export type StorefrontAvailability = 'open' | 'paused' | 'missing';
 

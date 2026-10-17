@@ -58,6 +58,9 @@ export interface TenantConfig {
   // Diseño de la vitrina: rubro, estilo y lo que la tienda personalizó (ver lib/storefront)
   storefront?: StorefrontSettings | null;
 
+  // Negocio del ERP del que salen sus productos. Sin esto, la tienda lee su Firebase.
+  erp?: { partnerId: number } | null;
+
   // Plan y suscripción
   plan?: PlanId;
   billingCycle?: BillingCycle;

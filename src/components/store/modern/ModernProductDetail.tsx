@@ -138,7 +138,15 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
 
             <h1 className="text-2xl sm:text-3xl lg:text-4xl leading-tight mb-4">{product.name}</h1>
 
-            <p className="text-3xl font-black mb-6">{formatPrice(product.price)}</p>
+            <p className="flex items-baseline gap-3 mb-6">
+              <span className="text-3xl font-black">{formatPrice(product.price)}</span>
+              {product.compareAtPrice && (
+                <span className="text-lg text-sf-muted line-through">
+                  <span className="sr-only">Antes </span>
+                  {formatPrice(product.compareAtPrice)}
+                </span>
+              )}
+            </p>
 
             {product.description && (
               <p className="text-sf-text/80 text-sm sm:text-base leading-relaxed mb-8 max-w-xl whitespace-pre-line">{product.description}</p>

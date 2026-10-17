@@ -5,6 +5,7 @@ import CartProviderWrapper from "@/components/store/CartProviderWrapper";
 import StorefrontRoot from "@/components/store/StorefrontRoot";
 import StoreUnavailable from "@/components/store/StoreUnavailable";
 import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from "@/lib/server/storefront-data";
+import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
 import type { StoreCatalog, StoreProduct } from "@/lib/storefront/catalog";
 
@@ -28,7 +29,14 @@ async function load(domain: string | undefined, id: string) {
   const tenant = await findStoreByDomain(domain);
   const availability = storefrontAvailability(tenant);
   if (!tenant || availability !== 'open') return { tenant, availability, catalog: null, product: null };
-  const catalog = await getStoreCatalog(tenant);
+  let catalog: StoreCatalog;
+  try {
+    catalog = await getStoreCatalog(tenant);
+  } catch (error) {
+    // El plan del negocio en el ERP ya no incluye el catálogo: tienda en pausa.
+    if (isAppNotEnabled(error)) return { tenant, availability: 'paused' as const, catalog: null, product: null };
+    throw error;
+  }
   const product = catalog.products.find((p) => p.id === id) ?? null;
   return { tenant, availability, catalog, product };
 }

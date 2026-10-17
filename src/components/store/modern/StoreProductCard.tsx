@@ -10,13 +10,19 @@ import { formatPrice } from '@/lib/storefront/public-store';
 import type { StoreProduct } from '@/lib/storefront/catalog';
 import type { CardStyle } from '@/lib/storefront/presets';
 
-const OPTIMIZABLE_HOSTS = [/^firebasestorage\.googleapis\.com$/, /\.cloudinary\.com$/];
+// Debe coincidir con images.remotePatterns de next.config.mjs: una URL fuera de
+// esa lista hace fallar a next/image, así que se muestra sin optimizar.
+const OPTIMIZABLE: Array<(url: URL) => boolean> = [
+  (url) => url.hostname === 'firebasestorage.googleapis.com',
+  (url) => url.hostname.endsWith('.cloudinary.com'),
+  (url) => /^api(-dev)?\.createam\.cloud$/.test(url.hostname) && url.pathname.startsWith('/media/'),
+];
 
-/** next/image solo optimiza los dominios permitidos en next.config; el resto se muestra tal cual. */
-export function canOptimizeImage(url: string): boolean {
+/** next/image solo optimiza los orígenes permitidos en next.config; el resto se muestra tal cual. */
+export function canOptimizeImage(src: string): boolean {
   try {
-    const host = new URL(url).hostname;
-    return OPTIMIZABLE_HOSTS.some((pattern) => pattern.test(host));
+    const url = new URL(src);
+    return url.protocol === 'https:' && OPTIMIZABLE.some((allowed) => allowed(url));
   } catch {
     return false;
   }
@@ -127,7 +133,15 @@ export default function StoreProductCard({
           <h3 className="font-sf-body text-sm font-medium leading-snug line-clamp-2 flex-1 group-hover:text-sf-primary transition-colors">
             {product.name}
           </h3>
-          <span className="font-bold text-sm whitespace-nowrap">{formatPrice(product.price)}</span>
+          <span className="flex flex-col items-end">
+            <span className="font-bold text-sm whitespace-nowrap">{formatPrice(product.price)}</span>
+            {product.compareAtPrice && (
+              <span className="text-[11px] text-sf-muted line-through whitespace-nowrap">
+                <span className="sr-only">Antes </span>
+                {formatPrice(product.compareAtPrice)}
+              </span>
+            )}
+          </span>
         </div>
         {categoryLabel && <p className="text-[11px] text-sf-muted uppercase tracking-wider mt-1">{categoryLabel}</p>}
       </ProductLink>

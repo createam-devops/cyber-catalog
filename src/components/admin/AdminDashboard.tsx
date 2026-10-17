@@ -586,16 +586,26 @@ function TenantConfigEditor({
     primaryColor: tenant.colors?.primary || "",
     secondaryColor: tenant.colors?.secondary || "",
     whatsapp: tenant.whatsapp || "",
-    firebaseApiKey: tenant.firebaseConfig.apiKey || "",
-    firebaseAuthDomain: tenant.firebaseConfig.authDomain || "",
-    firebaseProjectId: tenant.firebaseConfig.projectId || "",
-    firebaseStorageBucket: tenant.firebaseConfig.storageBucket || "",
-    firebaseMessagingSenderId: tenant.firebaseConfig.messagingSenderId || "",
-    firebaseAppId: tenant.firebaseConfig.appId || "",
+    erpPartnerId: tenant.erp?.partnerId ? String(tenant.erp.partnerId) : "",
+    // Las tiendas que se registran solas nacen sin configuración de Firebase.
+    firebaseApiKey: tenant.firebaseConfig?.apiKey || "",
+    firebaseAuthDomain: tenant.firebaseConfig?.authDomain || "",
+    firebaseProjectId: tenant.firebaseConfig?.projectId || "",
+    firebaseStorageBucket: tenant.firebaseConfig?.storageBucket || "",
+    firebaseMessagingSenderId: tenant.firebaseConfig?.messagingSenderId || "",
+    firebaseAppId: tenant.firebaseConfig?.appId || "",
   });
 
+  const erpPartnerId = Number(config.erpPartnerId);
+  const erpPartnerIdValid = config.erpPartnerId.trim() === "" || (Number.isInteger(erpPartnerId) && erpPartnerId > 0);
+
   const handleSave = () => {
+    if (!erpPartnerIdValid) {
+      toast.error("El ID del negocio en el ERP debe ser un número entero");
+      return;
+    }
     onSave(tenant.id, {
+      erp: config.erpPartnerId.trim() ? { partnerId: erpPartnerId } : null,
       logo: config.logo,
       colors: {
         primary: config.primaryColor,
@@ -670,6 +680,24 @@ function TenantConfigEditor({
                   onChange={(e) => setConfig({ ...config, whatsapp: e.target.value })}
                   placeholder="+51999999999"
                 />
+              </div>
+            </div>
+
+            {/* ERP */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Productos desde el ERP</h3>
+              <div className="space-y-2">
+                <Label>ID del negocio en el ERP (partner_id)</Label>
+                <Input
+                  value={config.erpPartnerId}
+                  inputMode="numeric"
+                  onChange={(e) => setConfig({ ...config, erpPartnerId: e.target.value })}
+                  placeholder="Vacío: la tienda sigue leyendo su Firebase"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Con un ID, la vitrina lee los productos publicados de ese negocio en el ERP. El plan del negocio debe incluir la app Catálogo.
+                </p>
+                {!erpPartnerIdValid && <p className="text-xs text-destructive">Debe ser un número entero mayor que cero.</p>}
               </div>
             </div>
 

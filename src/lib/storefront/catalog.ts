@@ -9,6 +9,8 @@ export interface StoreProduct {
   name: string;
   description?: string;
   price: number;
+  /** Precio "antes" (tachado). Solo si es mayor que `price`. */
+  compareAtPrice?: number | null;
   category: string;
   imageUrls: string[];
   featured: boolean;

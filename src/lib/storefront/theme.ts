@@ -30,6 +30,11 @@ export interface StorefrontSettings {
     showStock?: boolean;
   };
   content?: Partial<StorefrontContent>;
+  /**
+   * Ícono elegido por la tienda para cada categoría del ERP (id → nombre de
+   * STOREFRONT_ICONS). Sin elegir, se sugiere uno por el nombre.
+   */
+  categoryIcons?: Record<string, string>;
 }
 
 /** Lo mínimo de una tienda que hace falta para armar su tema. */
