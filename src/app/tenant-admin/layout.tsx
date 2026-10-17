@@ -9,8 +9,8 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { logout } from '@/lib/auth';
 import { toast } from 'sonner';
-import { doc, getDoc } from 'firebase/firestore';
-import { centralDb } from '@/lib/firebase';
+import { tenantApiFetch } from '@/lib/tenant-api';
+import type { TenantConfig } from '@/lib/types';
 import { isTrialExpired } from '@/lib/plans';
 
 const MENU = [
@@ -33,15 +33,13 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
   // Cargar info de plan del tenant
   useEffect(() => {
     if (!user?.tenantId) return;
-    getDoc(doc(centralDb, 'tenants', user.tenantId)).then(snap => {
-      if (snap.exists()) {
-        const d = snap.data();
-        setTenantPlan({
-          plan: d.plan,
-          status: d.status,
-          trialEndsAt: d.trialEndsAt?.toDate?.()?.toISOString() ?? d.trialEndsAt ?? null,
-        });
-      }
+    // Por la API del servidor: sirve igual si entró con Firebase o con CyberPOS.
+    tenantApiFetch<{ tenant: TenantConfig }>('/api/tenant-admin/settings').then(({ tenant }) => {
+      setTenantPlan({
+        plan: tenant.plan,
+        status: tenant.status,
+        trialEndsAt: tenant.trialEndsAt ? String(tenant.trialEndsAt) : null,
+      });
     }).catch(() => {});
   }, [user?.tenantId]);
 

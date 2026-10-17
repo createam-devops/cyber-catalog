@@ -30,6 +30,7 @@ export async function middleware(request: NextRequest) {
     url.pathname === '/terminos' ||
     url.pathname === '/privacidad' ||
     url.pathname === '/vista-previa' ||
+    url.pathname === '/recuperar-password' ||
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api')
   ) {

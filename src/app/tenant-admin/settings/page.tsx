@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { auth } from '@/lib/auth';
+import { tenantApiFetch } from '@/lib/tenant-api';
 import { TenantConfig } from '@/lib/types';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,33 +10,6 @@ import { Upload, Save, Palette, Globe, Hash, MessageCircle, Instagram, Facebook,
 import { initTenantFirebase } from '@/lib/firebase';
 import { uploadLogoImage, uploadBannerImage } from '@/lib/products';
 
-async function tenantApiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = await auth.currentUser?.getIdToken(true);
-
-  if (!token) {
-    throw new Error('No hay sesión activa');
-  }
-
-  const headers = new Headers(options.headers);
-  headers.set('Authorization', `Bearer ${token}`);
-
-  if (options.body) {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(payload?.error || 'Error en API tenant-admin');
-  }
-
-  return payload as T;
-}
 
 function SettingsContent() {
   const { user } = useAuth();

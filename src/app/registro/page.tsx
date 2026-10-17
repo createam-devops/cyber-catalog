@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -46,6 +46,16 @@ export default function RegistroPage() {
     email: "",
     password: "",
   });
+  // Ingreso con el usuario de CyberPOS (ERP): solo se ofrece si el servidor lo tiene configurado.
+  const [erpLoginAvailable, setErpLoginAvailable] = useState(false);
+  const [loginMode, setLoginMode] = useState<"catalog" | "erp">("catalog");
+
+  useEffect(() => {
+    fetch("/api/auth/erp/login")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { enabled?: boolean } | null) => setErpLoginAvailable(Boolean(data?.enabled)))
+      .catch(() => {});
+  }, []);
 
   // Paso 1: enviar código al email
   const handleSubmit = async (e: React.FormEvent) => {
@@ -131,6 +141,34 @@ export default function RegistroPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    if (loginMode === "erp") {
+      // Usuario de CyberPOS: el servidor valida con el ERP y abre la sesión en una cookie.
+      try {
+        const res = await fetch("/api/auth/erp/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: loginData.email, password: loginData.password }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string; mustChangePassword?: boolean };
+        if (!res.ok) {
+          toast.error(data.error || "No pudimos iniciar sesión con CyberPOS");
+          return;
+        }
+        if (data.mustChangePassword) {
+          toast.warning("Tu contraseña es temporal: cámbiala en CyberPOS cuando puedas.");
+        }
+        toast.success("¡Bienvenido!", { description: "Redirigiendo a tu panel..." });
+        // Recarga completa para que el panel lea la sesión nueva.
+        window.location.href = "/tenant-admin";
+      } catch {
+        toast.error("No pudimos comunicarnos con el servidor. Inténtalo de nuevo.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     try {
       await loginWithEmail(loginData.email, loginData.password);
@@ -253,6 +291,32 @@ export default function RegistroPage() {
               {/* Formulario de Login */}
               {isLogin ? (
                 <form onSubmit={handleLogin} className="space-y-4">
+                  {erpLoginAvailable && (
+                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1" role="radiogroup" aria-label="Con qué cuenta entras">
+                      {([
+                        ["catalog", "Cuenta del catálogo"],
+                        ["erp", "Usuario de CyberPOS"],
+                      ] as const).map(([mode, label]) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          role="radio"
+                          aria-checked={loginMode === mode}
+                          onClick={() => setLoginMode(mode)}
+                          className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
+                            loginMode === mode ? "bg-cyan-500 text-black" : "text-gray-300 hover:text-white"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {loginMode === "erp" && (
+                    <p className="text-xs text-gray-400">
+                      Usa el mismo correo y contraseña con los que entras a CyberPOS. Tu tienda muestra los productos que publicas allí.
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="login-email" className="text-white">Email</Label>
                     <Input
@@ -280,9 +344,13 @@ export default function RegistroPage() {
                   </div>
 
                   <div className="flex items-center justify-end text-sm">
-                    <Link href="/recuperar-password" className="text-cyan-400 hover:text-cyan-300 transition-colors">
-                      ¿Olvidaste tu contraseña?
-                    </Link>
+                    {loginMode === "erp" ? (
+                      <span className="text-gray-400">¿Olvidaste tu contraseña? Pídela a quien administra tu CyberPOS.</span>
+                    ) : (
+                      <Link href="/recuperar-password" className="text-cyan-400 hover:text-cyan-300 transition-colors">
+                        ¿Olvidaste tu contraseña?
+                      </Link>
+                    )}
                   </div>
 
                   <div className="pt-2">
