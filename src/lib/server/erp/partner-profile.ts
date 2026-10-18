@@ -2,10 +2,11 @@
 // nace de un negocio que ya los tiene, así que no se duplican: la vitrina y el
 // editor usan estos, y los que guardó la tienda quedan solo de respaldo.
 //
-// Sale de GET /integrations/partner con el token de la app. Hoy el ERP responde
-// 403 a la app y no entrega el logo (pedido 6 de
-// cyberERP/PETICION_ERP_AL_CATALOGO_PANEL.md): mientras tanto todo sigue con
-// los datos de la tienda, sin cambiar nada aquí.
+// Sale de GET /integrations/partner con el token de la app (permiso
+// partner.profile.view; pedido 6 de cyberERP/PETICION_ERP_AL_CATALOGO_PANEL.md).
+// El ERP tiene un solo teléfono del negocio: sirve de WhatsApp si es un celular.
+// Se recuerda 5 minutos y se olvida con el aviso partner.updated. Si el ERP no
+// lo entrega (403 sin el permiso), todo sigue con los datos de la tienda.
 
 import type { TenantConfig } from '@/lib/types';
 import { normalizeWhatsapp } from '@/lib/storefront/public-store';
@@ -39,6 +40,11 @@ function toProfile(body: Record<string, unknown>): PartnerProfile | null {
     whatsapp: normalizeWhatsapp(text(body.whatsapp)) ?? mobileFromPhone(text(body.phone)),
   };
   return profile.name || profile.logo || profile.whatsapp ? profile : null;
+}
+
+/** Olvida el perfil recordado de un negocio (aviso `partner.updated` del ERP). */
+export function forgetPartnerProfile(partnerId: number): void {
+  profiles.delete(partnerId);
 }
 
 /** El perfil del negocio, o null si el ERP no lo entrega. Se recuerda 5 minutos (también el «no»). */
