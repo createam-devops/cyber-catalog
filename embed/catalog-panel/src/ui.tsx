@@ -1,4 +1,4 @@
-import { useId, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useId, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react';
 import { ChevronDown, Loader2 } from 'lucide-react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -51,6 +51,18 @@ export function Field({
       </label>
       {children(id)}
       {error ? <span className="cs-hint !text-cm-danger">{error}</span> : hint ? <span className="cs-hint">{hint}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * Elementos que se reacomodan según el ancho del contenedor: uno al lado del
+ * otro mientras quepan con `min` de ancho, y uno debajo del otro si no.
+ */
+export function FluidGrid({ min = '16rem', className = '', children }: { min?: string; className?: string; children: ReactNode }) {
+  return (
+    <div className={`cs-fluid-grid ${className}`} style={{ '--cs-min': min } as CSSProperties}>
+      {children}
     </div>
   );
 }

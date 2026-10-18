@@ -40,6 +40,8 @@ erpStyles.textContent = `
       .erp-main { flex: 1; min-width: 0; }
       .erp-head { padding: 14px 18px 4px; font-size: 13px; color: var(--cm-muted); }
       .erp-head h1 { margin: 2px 0 0; font-size: 20px; color: var(--cm-ink); }
+      .erp-content { padding: 0 12px 12px; }
+      @media (min-width: 768px) { .erp-content { padding: 0 24px 24px; } }
       .erp-sections { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
       .erp-sections button { border: 1px solid var(--cm-line); background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; color: var(--cm-ink-soft); cursor: pointer; }
       .erp-sections button.on { background: var(--cm-primary); border-color: var(--cm-primary); color: #fff; font-weight: 700; }
@@ -118,6 +120,7 @@ function drawSections() {
 }
 if (hostNavigation) {
   el.navigation = 'host';
+  document.getElementById('slot')!.className = 'erp-content';
   document.querySelector('.erp-head')?.append(sectionsBar);
   el.addEventListener('sections', (event) => {
     sections = (event as CustomEvent<PanelSection[]>).detail;

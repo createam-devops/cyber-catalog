@@ -9,7 +9,7 @@ import { RUBROS, RUBRO_IDS, type RubroId } from '@shared/storefront/rubros';
 import { resolveStorefront, type HeroMode, type StorefrontSettings } from '@shared/storefront/theme';
 import type { PreviewPayload } from '@shared/storefront/preview';
 import type { Draft, StoreResponse } from '../store';
-import { Collapsible, Field, Notice, Pill, Section, Segmented } from '../ui';
+import { Collapsible, Field, FluidGrid, Notice, Pill, Section, Segmented } from '../ui';
 import { PreviewPanel, PreviewSheetButton } from '../Preview';
 
 interface Props {
@@ -80,7 +80,7 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
   const editor = (
     <div className="min-w-0 space-y-3">
       <Section title="Rubro" description="Con esto preparamos los textos y las categorías sugeridas.">
-        <div className="grid grid-cols-1 gap-2 @lg:grid-cols-2">
+        <FluidGrid min="17rem" className="gap-2">
           {RUBRO_IDS.map((id) => {
             const r = RUBROS[id];
             const Icon = getStorefrontIcon(RUBRO_ICON[id]);
@@ -107,11 +107,11 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
               </button>
             );
           })}
-        </div>
+        </FluidGrid>
       </Section>
 
       <Section title="Estilo" description="La forma de tu tienda: letras, curvas y mayúsculas.">
-        <div className="grid grid-cols-1 gap-2 @md:grid-cols-2">
+        <FluidGrid min="15rem" className="gap-2">
           {STYLE_PRESET_IDS.map((id: StylePresetId) => {
             const preset = STYLE_PRESETS[id];
             const selected = theme.style === id;
@@ -143,7 +143,7 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
               </button>
             );
           })}
-        </div>
+        </FluidGrid>
       </Section>
 
       <Section title="Color principal" description="El de botones y destacados.">
@@ -166,7 +166,7 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
       </Section>
 
       <Collapsible title="Más opciones de diseño" description="Colores de la página, letras, portada y tarjetas">
-        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+        <FluidGrid min="15rem">
           <ColorInput label="Color secundario" value={draft.colors.secondary} onChange={(secondary) => setColors({ secondary })} disabled={disabled} />
           <ColorInput label="Color de acento" value={draft.colors.accent} onChange={(accent) => setColors({ accent })} disabled={disabled} />
           <ColorInput label="Fondo de la página" value={s.colors?.background ?? theme.colors.background} onChange={(background) => update({ colors: { ...s.colors, background } })} disabled={disabled} />
@@ -191,8 +191,8 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
               )}
             </Field>
           ))}
-        </div>
-        <div className="space-y-3">
+        </FluidGrid>
+        <FluidGrid min="15rem">
           <div>
             <p className="cs-label">Portada</p>
             <Segmented<HeroMode>
@@ -248,11 +248,11 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
               Mostrar stock y «Agotado» {!data.features.stock && <Pill tone="pro">Pro</Pill>}
             </span>
           </label>
-        </div>
+        </FluidGrid>
       </Collapsible>
 
       <Collapsible title="Textos de tu tienda" description={`Vienen del rubro ${rubro.label.toLowerCase()}; cambia los que quieras`}>
-        <div className="grid grid-cols-1 gap-3 @lg:grid-cols-2">
+        <FluidGrid min="18rem">
           {CONTENT_KEYS.map((key) => {
             const field = CONTENT_FIELDS[key];
             const override = s.content?.[key];
@@ -279,13 +279,14 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
               </Field>
             );
           })}
-        </div>
+        </FluidGrid>
       </Collapsible>
     </div>
   );
 
+  // Con espacio, la vista previa al lado: mide lo que el teléfono y el editor toma el resto. Si no, va en un botón.
   return (
-    <div className="grid grid-cols-1 items-start gap-3 @4xl:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid grid-cols-1 items-start gap-3 @4xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="@4xl:hidden">
         <PreviewSheetButton src={previewUrl} payload={preview} />
       </div>

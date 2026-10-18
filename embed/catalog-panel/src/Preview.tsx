@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Eye, X } from 'lucide-react';
 import { PREVIEW_MESSAGE, PREVIEW_READY, type PreviewPayload } from '@shared/storefront/preview';
 
@@ -7,14 +7,39 @@ import { PREVIEW_MESSAGE, PREVIEW_READY, type PreviewPayload } from '@shared/sto
  * dominio), con el diseño que se está editando. Vive en otro origen que el
  * ERP: se le habla por postMessage solo con ese origen, nunca con `*`.
  */
-function PreviewFrame({ src, payload, width = 390, height = 760 }: { src: string; payload: PreviewPayload; width?: number; height?: number }) {
+/** Borde del marco de teléfono (6 px por lado). */
+const FRAME_BORDER = 12;
+
+/**
+ * El teléfono se dibuja a su tamaño real (`width` × `height`, el de un
+ * celular) y se achica para caber en `maxHeight` y, salvo `fitWidth={false}`,
+ * en el ancho de su caja. Nunca se agranda.
+ */
+function PreviewFrame({
+  src,
+  payload,
+  maxHeight,
+  fitWidth: limitByWidth = true,
+  width = 390,
+  height = 760,
+}: {
+  src: string;
+  payload: PreviewPayload;
+  maxHeight?: number;
+  fitWidth?: boolean;
+  width?: number;
+  height?: number;
+}) {
   const origin = new URL(src, window.location.href).origin;
   const frameRef = useRef<HTMLIFrameElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const payloadRef = useRef(payload);
   payloadRef.current = payload;
   const [ready, setReady] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [boxWidth, setBoxWidth] = useState(width + FRAME_BORDER);
+  const fitWidth = limitByWidth ? (boxWidth - FRAME_BORDER) / width : 1;
+  const fitHeight = maxHeight ? (maxHeight - FRAME_BORDER) / height : 1;
+  const scale = Math.max(0.2, Math.min(1, fitWidth, fitHeight));
 
   const send = (data: PreviewPayload) => frameRef.current?.contentWindow?.postMessage({ type: PREVIEW_MESSAGE, payload: data }, origin);
 
@@ -36,14 +61,14 @@ function PreviewFrame({ src, payload, width = 390, height = 760 }: { src: string
 
   useEffect(() => {
     if (!boxRef.current) return;
-    const observer = new ResizeObserver(([entry]) => setScale(Math.min(1, entry.contentRect.width / width)));
+    const observer = new ResizeObserver(([entry]) => setBoxWidth(entry.contentRect.width));
     observer.observe(boxRef.current);
     return () => observer.disconnect();
-  }, [width]);
+  }, []);
 
   return (
     <div ref={boxRef} className="flex w-full justify-center">
-      <div className="overflow-hidden rounded-[1.75rem] border-[6px] border-cm-ink bg-white shadow-lg" style={{ width: width * scale + 12, height: height * scale + 12 }}>
+      <div className="overflow-hidden rounded-[1.75rem] border-[6px] border-cm-ink bg-white shadow-lg" style={{ width: width * scale + FRAME_BORDER, height: height * scale + FRAME_BORDER }}>
         <iframe
           ref={frameRef}
           src={src}
@@ -55,12 +80,45 @@ function PreviewFrame({ src, payload, width = 390, height = 760 }: { src: string
   );
 }
 
-/** Columna fija cuando el contenedor es ancho. */
+/**
+ * Alto disponible para el teléfono dentro de `container`: el alto visible
+ * (`available()`) menos lo que ocupa lo demás del contenedor (título, nota).
+ */
+function useAvailableHeight(container: RefObject<HTMLElement>, frameBox: RefObject<HTMLElement>, available: () => number) {
+  const [maxHeight, setMaxHeight] = useState<number>();
+  useEffect(() => {
+    const box = container.current;
+    const frame = frameBox.current;
+    if (!box || !frame) return;
+    const update = () => setMaxHeight(available() - (box.offsetHeight - frame.offsetHeight));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(box);
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return maxHeight;
+}
+
+/**
+ * Columna al lado del editor cuando el contenedor es ancho. Mide lo que el
+ * teléfono, y el teléfono se achica para caber en el alto de la pantalla.
+ */
 export function PreviewPanel({ src, payload }: { src: string; payload: PreviewPayload }) {
+  const asideRef = useRef<HTMLElement>(null);
+  const frameBoxRef = useRef<HTMLDivElement>(null);
+  // La columna queda fija arriba (sticky, a 0.75rem): cabe en la ventana menos ese margen arriba y abajo.
+  const maxHeight = useAvailableHeight(asideRef, frameBoxRef, () => window.innerHeight - 24);
   return (
-    <aside className="cs-card sticky top-3 space-y-3">
+    <aside ref={asideRef} className="cs-card sticky top-3 space-y-3">
       <p className="text-cm-label font-semibold text-cm-ink-soft">Así se ve tu tienda</p>
-      <PreviewFrame src={src} payload={payload} />
+      <div ref={frameBoxRef}>
+        <PreviewFrame src={src} payload={payload} maxHeight={maxHeight} fitWidth={false} />
+      </div>
       <p className="text-center text-cm-caption text-cm-muted">Se actualiza mientras editas. Se publica al guardar.</p>
     </aside>
   );
@@ -92,11 +150,27 @@ export function PreviewSheetButton({ src, payload }: { src: string; payload: Pre
               <X size={20} />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-auto">
-            <PreviewFrame src={src} payload={payload} height={720} />
-          </div>
+          <SheetFrame src={src} payload={payload} />
         </div>
       )}
     </>
+  );
+}
+
+/** El teléfono dentro de la hoja: cabe en lo que queda de pantalla bajo su título. */
+function SheetFrame({ src, payload }: { src: string; payload: PreviewPayload }) {
+  const areaRef = useRef<HTMLDivElement>(null);
+  const [maxHeight, setMaxHeight] = useState<number>();
+  useEffect(() => {
+    const area = areaRef.current;
+    if (!area) return;
+    const observer = new ResizeObserver(([entry]) => setMaxHeight(entry.contentRect.height));
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div ref={areaRef} className="min-h-0 flex-1 overflow-auto">
+      <PreviewFrame src={src} payload={payload} maxHeight={maxHeight} />
+    </div>
   );
 }

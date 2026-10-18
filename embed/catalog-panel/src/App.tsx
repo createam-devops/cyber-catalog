@@ -146,7 +146,7 @@ export default function App({ host, path, navigation, onSections }: AppProps) {
     );
   } else if (state === 'error') {
     content = (
-      <div className="cs-card mx-auto max-w-md space-y-3 text-center">
+      <div className="cs-card space-y-3 text-center">
         <AlertCircle className="mx-auto text-cm-danger" size={28} />
         <p className="font-semibold">{loadError}</p>
         <Button icon={<RotateCcw size={16} />} onClick={() => void load()}>
@@ -198,7 +198,8 @@ export default function App({ host, path, navigation, onSections }: AppProps) {
 
   return (
     <HostProvider value={host}>
-      <div className="mx-auto max-w-6xl space-y-3 p-3 pb-6 @lg:p-4">
+      {/* El editor ocupa todo su contenedor. Dentro del ERP los márgenes los pone su pantalla. */}
+      <div className={navigation === 'host' ? 'space-y-3' : 'space-y-3 p-3 pb-6 @lg:p-4'}>
         {content}
 
         {dirty && (

@@ -4,7 +4,7 @@ import { normalizeWhatsapp } from '@shared/storefront/public-store';
 import { getStorefrontIcon } from '@shared/storefront/icons';
 import { RUBROS, RUBRO_IDS, type RubroId } from '@shared/storefront/rubros';
 import type { Api } from '../host';
-import { Button, Field, Notice } from '../ui';
+import { Button, Field, FluidGrid, Notice } from '../ui';
 
 const RUBRO_ICON: Record<RubroId, string> = {
   regalos: 'Gift',
@@ -66,7 +66,7 @@ export default function Bienvenida({ api, onCreated }: { api: Api; onCreated: ()
   };
 
   return (
-    <div className="cs-card mx-auto max-w-2xl space-y-5">
+    <div className="cs-card space-y-5">
       <div className="flex items-start gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-cm-md bg-cm-primary-bg text-cm-primary-deep">
           <Store size={22} />
@@ -79,19 +79,35 @@ export default function Bienvenida({ api, onCreated }: { api: Api; onCreated: ()
         </div>
       </div>
 
-      {erpName ? (
-        <p className="rounded-cm-md border border-cm-line bg-cm-field px-3 py-2.5 text-cm-body text-cm-ink">
-          Tu tienda se llamará <strong>{erpName}</strong>, el nombre comercial de tu negocio en CyberPOS.
-        </p>
-      ) : (
-        <Field label="Nombre de la tienda" hint="El que verán tus clientes. Puedes cambiarlo después.">
-          {(id) => <input id={id} className="cs-input" value={name} maxLength={60} placeholder="Ej.: Ferretería El Tornillo" onChange={(e) => setName(e.target.value)} />}
-        </Field>
-      )}
+      {/* Nombre y WhatsApp: lado a lado si hay espacio. Los que entrega el ERP no se piden. */}
+      <FluidGrid min="18rem">
+        {erpName ? (
+          <p className="rounded-cm-md border border-cm-line bg-cm-field px-3 py-2.5 text-cm-body text-cm-ink">
+            Tu tienda se llamará <strong>{erpName}</strong>, el nombre comercial de tu negocio en CyberPOS.
+          </p>
+        ) : (
+          <Field label="Nombre de la tienda" hint="El que verán tus clientes. Puedes cambiarlo después.">
+            {(id) => <input id={id} className="cs-input" value={name} maxLength={60} placeholder="Ej.: Ferretería El Tornillo" onChange={(e) => setName(e.target.value)} />}
+          </Field>
+        )}
+        {erpWhatsapp ? (
+          <p className="rounded-cm-md border border-cm-line bg-cm-field px-3 py-2.5 text-cm-body text-cm-ink">
+            Los pedidos llegarán al WhatsApp de tu negocio en CyberPOS: <strong>+{erpWhatsapp}</strong>.
+          </p>
+        ) : (
+          <Field
+            label="WhatsApp para pedidos"
+            error={whatsapp && !digits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
+            hint={digits ? `Los pedidos llegarán a +${digits}` : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'}
+          >
+            {(id) => <input id={id} type="tel" inputMode="tel" className="cs-input" value={whatsapp} placeholder="987 654 321" onChange={(e) => setWhatsapp(e.target.value)} />}
+          </Field>
+        )}
+      </FluidGrid>
 
       <div>
         <p className="cs-label">¿Qué vende tu negocio?</p>
-        <div className="grid grid-cols-1 gap-2 @lg:grid-cols-2">
+        <FluidGrid min="15rem" className="gap-2">
           {RUBRO_IDS.map((id) => {
             const r = RUBROS[id];
             const Icon = getStorefrontIcon(RUBRO_ICON[id]);
@@ -114,20 +130,8 @@ export default function Bienvenida({ api, onCreated }: { api: Api; onCreated: ()
               </button>
             );
           })}
-        </div>
+        </FluidGrid>
       </div>
-
-      {erpWhatsapp ? (
-        <p className="text-cm-label text-cm-muted">Los pedidos llegarán al WhatsApp de tu negocio en CyberPOS: +{erpWhatsapp}.</p>
-      ) : (
-        <Field
-          label="WhatsApp para pedidos"
-          error={whatsapp && !digits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
-          hint={digits ? `Los pedidos llegarán a +${digits}` : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'}
-        >
-          {(id) => <input id={id} type="tel" inputMode="tel" className="cs-input" value={whatsapp} placeholder="987 654 321" onChange={(e) => setWhatsapp(e.target.value)} />}
-        </Field>
-      )}
 
       {error && <Notice tone="danger">{error}</Notice>}
 
