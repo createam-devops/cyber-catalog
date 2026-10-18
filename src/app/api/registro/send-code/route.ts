@@ -3,6 +3,10 @@ import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { sendVerificationCode } from '@/lib/email';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import * as admin from 'firebase-admin';
+import { randomInt } from 'node:crypto';
+import { ERP_PASSWORD_RULE, erpPasswordOk, erpSignupPlanCode } from '@/lib/server/erp/signup';
+import { saveSignupCode } from '@/lib/server/store-db';
+import { normalizeWhatsapp } from '@/lib/storefront/public-store';
 
 export const runtime = 'nodejs';
 
@@ -26,6 +30,9 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'JSON inválido' }, { status: 400 });
   }
+
+  // Registro con alta en el ERP (ERP_SIGNUP_PLAN_CODE): sin Firebase.
+  if (erpSignupPlanCode()) return sendErpSignupCode(body);
 
   const { businessName, email, phone, password } = body;
 
@@ -68,5 +75,42 @@ export async function POST(request: NextRequest) {
     code,
   });
 
+  return NextResponse.json({ ok: true });
+}
+
+const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+
+/**
+ * Paso 1 del registro con alta en el ERP: revisa los datos con las reglas del
+ * ERP (así el dueño no se entera al final) y manda el código al correo. La
+ * solicitud se guarda en la base propia, sin la contraseña.
+ */
+async function sendErpSignupCode(body: Record<string, unknown>) {
+  const businessName = text(body.businessName);
+  const ownerName = text(body.ownerName);
+  const email = text(body.email).toLowerCase();
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (!businessName || !ownerName || !email || !text(body.phone) || !password) {
+    return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
+  }
+  if (!erpPasswordOk(password)) {
+    return NextResponse.json({ error: ERP_PASSWORD_RULE }, { status: 400 });
+  }
+  const whatsapp = normalizeWhatsapp(text(body.phone));
+  if (!whatsapp) {
+    return NextResponse.json({ error: 'El WhatsApp no es válido. Escribe tu celular de 9 dígitos.' }, { status: 400 });
+  }
+
+  const code = String(randomInt(100000, 1000000));
+  saveSignupCode(email, code, { businessName, ownerName, phone: `+${whatsapp}` });
+  try {
+    await sendVerificationCode({ businessName, email, code });
+  } catch (error) {
+    console.error('[registro/send-code] No se pudo enviar el código:', error);
+    return NextResponse.json({ error: 'No pudimos enviarte el código. Revisa tu correo e inténtalo de nuevo.' }, { status: 503 });
+  }
   return NextResponse.json({ ok: true });
 }

@@ -29,6 +29,8 @@ services:
       # (32+ caracteres) y dirección de CyberPOS para el botón "Abrir CyberPOS".
       - ERP_SESSION_SECRET=${ERP_SESSION_SECRET:-}
       - ERP_APP_URL=${ERP_APP_URL:-}
+      # Registro con alta en CyberPOS: plan del alta (en dev, catalogo_digital). Vacía = registro de siempre.
+      - ERP_SIGNUP_PLAN_CODE=${ERP_SIGNUP_PLAN_CODE:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://createam.cloud}
       # Base propia del catálogo (SQLite), sus copias diarias e imágenes de las tiendas.
       - DATA_DIR=/app/data

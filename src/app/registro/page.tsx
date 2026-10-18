@@ -36,6 +36,7 @@ export default function RegistroPage() {
   const [verifyCode, setVerifyCode] = useState('');
   const [formData, setFormData] = useState({
     businessName: "",
+    ownerName: "",
     email: "",
     phone: "",
     password: "",
@@ -50,6 +51,17 @@ export default function RegistroPage() {
   const [erpLoginAvailable, setErpLoginAvailable] = useState(false);
   const [loginMode, setLoginMode] = useState<"catalog" | "erp">("catalog");
 
+  // Registro con alta en CyberPOS (ERP): pide el nombre del dueño y la regla de contraseña del ERP.
+  const [erpSignup, setErpSignup] = useState<{ passwordRule: string } | null>(null);
+  useEffect(() => {
+    fetch("/api/registro")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { erp?: boolean; passwordRule?: string } | null) => {
+        if (data?.erp) setErpSignup({ passwordRule: data.passwordRule || "" });
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch("/api/auth/erp/login")
       .then((res) => (res.ok ? res.json() : null))
@@ -60,6 +72,11 @@ export default function RegistroPage() {
   // Paso 1: enviar código al email
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const pw = formData.password;
+    if (erpSignup && !(pw.length >= 8 && /\p{Lu}/u.test(pw) && /\p{Ll}/u.test(pw) && /\p{N}/u.test(pw))) {
+      toast.error(erpSignup.passwordRule);
+      return;
+    }
     setLoading(true);
 
     try {
@@ -107,11 +124,25 @@ export default function RegistroPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(data.error || "Código incorrecto");
+        // El correo ya tiene cuenta en CyberPOS: que entre con ella.
+        if (data.loginUrl) {
+          toast.error(data.error, { action: { label: "Entrar a CyberPOS", onClick: () => window.location.assign(data.loginUrl) } });
+        } else {
+          toast.error(data.error || "Código incorrecto");
+        }
         return;
       }
 
       trackEvent("sign_up", { method: "email" });
+
+      // Alta en CyberPOS: el dueño entra al ERP y ahí crea su tienda.
+      if (data.provider === "erp") {
+        toast.success("¡Tu negocio ya está en CyberPOS!", {
+          description: "Entra con tu correo y tu contraseña para crear tu tienda.",
+        });
+        if (data.loginUrl) setTimeout(() => window.location.assign(data.loginUrl), 1500);
+        return;
+      }
 
       // Login automático después de registrar
       toast.success("¡Cuenta activada!", {
@@ -458,6 +489,21 @@ export default function RegistroPage() {
                   />
                 </div>
 
+                {erpSignup && (
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerName" className="text-white">Tu nombre *</Label>
+                    <Input
+                      id="ownerName"
+                      placeholder="Ej: María Quispe"
+                      autoComplete="name"
+                      value={formData.ownerName}
+                      onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
+                      required
+                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-white">Email de Contacto *</Label>
                   <Input
@@ -492,18 +538,22 @@ export default function RegistroPage() {
                   <Input
                     id="regPassword"
                     type="password"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={erpSignup ? "Mínimo 8 caracteres" : "Mínimo 6 caracteres"}
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
-                    minLength={6}
+                    minLength={erpSignup ? 8 : 6}
                     className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
                   />
                   <p className="text-xs text-gray-500">
-                    Usarás esta contraseña para ingresar a tu panel
+                    {erpSignup
+                      ? `${erpSignup.passwordRule} Con ella entrarás a CyberPOS.`
+                      : "Usarás esta contraseña para ingresar a tu panel"}
                   </p>
                 </div>
 
+                {/* Con CyberPOS, el dominio propio se pide después, desde Ajustes de la tienda. */}
+                {!erpSignup && (
                 <div className="space-y-4 p-4 border border-white/10 rounded-xl bg-white/5">
                   <Label className="text-base text-white">Tipo de Dominio</Label>
                   
@@ -557,6 +607,7 @@ export default function RegistroPage() {
                     </div>
                   )}
                 </div>
+                )}
 
                 <div className="pt-2">
                   <button 
@@ -581,7 +632,9 @@ export default function RegistroPage() {
                 </p>
 
                 <p className="text-center text-xs text-gray-500">
-                  Verificaremos tu email para activar tu catálogo gratis por 30 días
+                  {erpSignup
+                    ? "Verificaremos tu email y crearemos tu cuenta de CyberPOS con tu prueba gratis"
+                    : "Verificaremos tu email para activar tu catálogo gratis por 30 días"}
                 </p>
 
                 <p className="text-center text-xs text-gray-500">
