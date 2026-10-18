@@ -211,6 +211,18 @@ export const findStoreByDomain = cache(async (domain: string) => {
   return store ? (await withPartnerProfile(store)).tenant : null;
 });
 
+/**
+ * El dominio de la tienda en una ruta de API de la vitrina (robots.txt,
+ * sitemap.xml). Las páginas lo reciben en `_domain`, pero a un route handler
+ * reescrito por el middleware no le llega ese parámetro: se usa el Host, el
+ * mismo dato del que lo saca el middleware.
+ */
+export function storeDomainFromRequest(request: Request): string | null {
+  const param = new URL(request.url).searchParams.get('_domain');
+  const host = (request.headers.get('host') || '').split(':')[0].trim().toLowerCase();
+  return param || host || null;
+}
+
 export type StorefrontAvailability = 'open' | 'paused' | 'missing';
 
 /**
