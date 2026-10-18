@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { isLocalStore } from '@/lib/server/store-db';
 import { verifyPlatformAdminRequest } from '@/lib/server/admin-auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 
@@ -39,9 +40,11 @@ function pickConfigUpdates(payload: Record<string, unknown>): FirebaseFirestore.
   if (payload.erp === null) {
     updates.erp = FieldValue.delete();
   } else if (payload.erp && typeof payload.erp === 'object') {
-    const partnerId = Number((payload.erp as { partnerId?: unknown }).partnerId);
+    const { partnerId: rawPartnerId, api } = payload.erp as { partnerId?: unknown; api?: unknown };
+    const partnerId = Number(rawPartnerId);
     if (Number.isInteger(partnerId) && partnerId > 0) {
-      updates.erp = { partnerId };
+      // Se conserva el servidor del ERP del enlace, si lo tenía (ver linkedToCurrentErp).
+      updates.erp = typeof api === 'string' && api ? { partnerId, api } : { partnerId };
     }
   }
 
@@ -78,6 +81,11 @@ export async function PATCH(
 
   if (!tenantId) {
     return NextResponse.json({ error: 'Missing tenantId' }, { status: 400 });
+  }
+
+  // Las tiendas nacidas en CyberPOS se configuran desde su editor, dentro del ERP.
+  if (isLocalStore(tenantId)) {
+    return NextResponse.json({ error: 'Esta tienda se administra desde CyberPOS (Venta online › Tienda).' }, { status: 409 });
   }
 
   try {

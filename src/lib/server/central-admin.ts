@@ -20,6 +20,14 @@ function getCentralServiceAccount() {
   };
 }
 
+/**
+ * Si hay credenciales del proyecto central. En local suele no haberlas: ahí
+ * solo cuentan las tiendas de la base propia (store-db) y las de prueba.
+ */
+export function centralAdminConfigured(): boolean {
+  return Boolean(process.env.FIREBASE_ADMIN_PROJECT_ID && process.env.FIREBASE_ADMIN_CLIENT_EMAIL && process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+}
+
 function getCentralAdminApp() {
   const existing = admin.apps.find((app) => app?.name === CENTRAL_ADMIN_APP_NAME);
   if (existing) {
@@ -43,16 +51,4 @@ export function getCentralAdminAuth() {
 
 export function getCentralAdminDb() {
   return admin.firestore(getCentralAdminApp());
-}
-
-/**
- * Bucket de Storage del proyecto central. Ahí van las imágenes de las tiendas
- * que no tienen Firebase propio (las del ERP): portada y logo.
- */
-export function getCentralAdminBucket() {
-  const bucket = process.env.FIREBASE_ADMIN_STORAGE_BUCKET || process.env.NEXT_PUBLIC_CENTRAL_FIREBASE_STORAGE_BUCKET;
-  if (!bucket) {
-    throw new Error('Missing storage bucket: FIREBASE_ADMIN_STORAGE_BUCKET or NEXT_PUBLIC_CENTRAL_FIREBASE_STORAGE_BUCKET.');
-  }
-  return admin.storage(getCentralAdminApp()).bucket(bucket);
 }

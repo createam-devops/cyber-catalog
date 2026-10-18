@@ -1,4 +1,5 @@
-import { getCentralAdminDb } from './central-admin';
+import { centralAdminConfigured, getCentralAdminDb } from './central-admin';
+import { localAddressTaken } from './store-db';
 
 // Subdominios de createam.cloud que ya usan otros servicios: una tienda con
 // alguno de estos nombres nunca recibiría visitas.
@@ -23,8 +24,10 @@ export function slugifySubdomain(name: string): string {
   );
 }
 
-/** ¿Otra tienda ya usa este dominio o subdominio? */
+/** ¿Otra tienda ya usa este dominio o subdominio? Mira la base propia y Firestore. */
 export async function addressTakenByOther(field: 'domain' | 'subdomain', value: string, tenantId: string | null): Promise<boolean> {
+  if (localAddressTaken(field, value, tenantId)) return true;
+  if (!centralAdminConfigured()) return false;
   const snap = await getCentralAdminDb().collection('tenants').where(field, '==', value).limit(3).get();
   return snap.docs.some((doc) => doc.id !== tenantId);
 }

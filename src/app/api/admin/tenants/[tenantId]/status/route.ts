@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { isLocalStore, updateLocalStore } from '@/lib/server/store-db';
+import type { TenantStatus } from '@/lib/types';
 import { verifyPlatformAdminRequest } from '@/lib/server/admin-auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { sendTenantApprovedEmail, sendTenantRejectedEmail } from '@/lib/email';
@@ -47,6 +49,12 @@ export async function PATCH(
 
     if (!ALLOWED_STATUSES.has(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    }
+
+    // Tienda nacida en CyberPOS: su estado vive en la base propia (sin correos: el dueño está en el ERP).
+    if (isLocalStore(tenantId)) {
+      updateLocalStore(tenantId, { status: status as TenantStatus });
+      return NextResponse.json({ ok: true });
     }
 
     const db = getCentralAdminDb();

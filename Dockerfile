@@ -1,4 +1,6 @@
-FROM node:20-alpine AS base
+# Node 24 (LTS hasta abril de 2028). better-sqlite3 pide Node 22 o más y trae su
+# binario para Alpine (linuxmusl-x64): no compila nada al instalar.
+FROM node:24-alpine AS base
 
 # Instalar dependencias solo cuando sea necesario
 FROM base AS deps
@@ -59,9 +61,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copiar archivos públicos (logo, favicon, etc.)
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Caché de imágenes optimizadas. En docker-compose va en un volumen para que
-# sobreviva a cada despliegue; se crea aquí para que el volumen nazca con este dueño.
-RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next/cache
+# Caché de imágenes optimizadas y datos del catálogo (base SQLite, sus copias y
+# las imágenes de las tiendas). En docker-compose van en volúmenes para que
+# sobrevivan a cada despliegue; se crean aquí para que nazcan con este dueño.
+RUN mkdir -p .next/cache data && chown -R nextjs:nodejs .next/cache data
+ENV DATA_DIR=/app/data
 
 USER nextjs
 

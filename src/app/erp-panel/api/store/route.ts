@@ -1,11 +1,10 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { FieldValue } from 'firebase-admin/firestore';
-import { panelError, panelJson, STORE_NOT_CREATED, verifyPanelRequest } from '@/lib/server/erp/panel-auth';
+import { catalogPublicUrl, panelError, panelJson, STORE_NOT_CREATED, verifyPanelRequest } from '@/lib/server/erp/panel-auth';
+import { toPublicMediaUrl, toStoredMediaUrl } from '@/lib/server/store-media';
 import { getAppToken, isAppNotEnabled } from '@/lib/server/erp/client';
 import { erpApiHost } from '@/lib/server/erp/config';
-import { forgetPartnerTenants } from '@/lib/server/erp/webhooks';
-import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { createLocalStore, isUniqueViolation, localStoreIdsForPartner } from '@/lib/server/store-db';
 import { getTenantById } from '@/lib/server/tenants';
 import { applyTenantSettingsPatch } from '@/lib/server/tenant-settings-update';
 import { tenantSettingsPatchSchema } from '@/lib/server/tenant-settings-validation';
@@ -15,23 +14,12 @@ import { checkRateLimit } from '@/lib/server/rate-limit';
 import { getPlan } from '@/lib/plans';
 import { normalizeWhatsapp } from '@/lib/storefront/public-store';
 import { RUBRO_IDS, type RubroId } from '@/lib/storefront/rubros';
+import type { TenantConfig } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const platformDomain = () => process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'createam.cloud';
-
-/**
- * Dirección pública del catálogo, para la vista previa (/vista-previa va en
- * un iframe del dominio del catálogo, no por el proxy del ERP).
- */
-function catalogPublicUrl(request: NextRequest): string {
-  const configured = process.env.CATALOG_PUBLIC_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (configured) return configured.replace(/\/+$/, '');
-  const host = request.nextUrl.hostname;
-  if (host === 'localhost' || host === '127.0.0.1') return request.nextUrl.origin;
-  return `https://${platformDomain()}`;
-}
 
 /** La presentación de la tienda del negocio. 404 STORE_NOT_CREATED si todavía no tiene. */
 export async function GET(request: NextRequest) {
@@ -41,6 +29,8 @@ export async function GET(request: NextRequest) {
   const tenant = auth.tenantId ? await getTenantById(auth.tenantId) : null;
   if (!tenant) return STORE_NOT_CREATED();
 
+  // Las imágenes guardadas en el catálogo van con su URL absoluta: el editor vive en el dominio del ERP.
+  const base = catalogPublicUrl(request);
   const address = tenant.domain || (tenant.subdomain ? `${tenant.subdomain}.${platformDomain()}` : null);
   return panelJson({
     canManage: auth.canManage,
@@ -49,10 +39,10 @@ export async function GET(request: NextRequest) {
       name: tenant.name,
       status: tenant.status,
       plan: tenant.plan ?? 'starter',
-      logo: tenant.logo ?? '',
+      logo: toPublicMediaUrl(tenant.logo ?? '', base),
       colors: tenant.colors ?? null,
       primaryColor: tenant.primaryColor ?? null,
-      heroSlides: tenant.heroSlides ?? [],
+      heroSlides: (tenant.heroSlides ?? []).map((slide) => ({ ...slide, image: toPublicMediaUrl(slide.image, base) })),
       whatsapp: tenant.whatsapp ?? '',
       socialMedia: tenant.socialMedia ?? {},
       storefront: tenant.storefront ?? {},
@@ -62,7 +52,7 @@ export async function GET(request: NextRequest) {
       seoDescription: tenant.seoDescription ?? '',
     },
     storeUrl: address ? `https://${address}` : null,
-    previewUrl: `${catalogPublicUrl(request)}/vista-previa`,
+    previewUrl: `${base}/vista-previa`,
     platformDomain: platformDomain(),
     features: getPlan(tenant.plan).features,
     limits: getPlan(tenant.plan).limits,
@@ -80,6 +70,12 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const payload = tenantSettingsPatchSchema.parse(await request.json());
+    // Las imágenes del catálogo vuelven absolutas; se guardan como ruta (/media/...).
+    const base = catalogPublicUrl(request);
+    if (typeof payload.logo === 'string') payload.logo = toStoredMediaUrl(payload.logo, base);
+    if (Array.isArray(payload.heroSlides)) {
+      payload.heroSlides = payload.heroSlides.map((slide) => ({ ...slide, image: toStoredMediaUrl(slide.image, base) }));
+    }
     const { claims } = auth;
     const result = await applyTenantSettingsPatch(auth.tenantId, payload, {
       uid: `erp:${claims.userId}`,
@@ -124,36 +120,42 @@ export async function POST(request: NextRequest) {
     return panelError(503, 'ERP_UNAVAILABLE', 'No pudimos confirmar tu plan con CyberPOS. Inténtalo en unos minutos.');
   }
 
+  const erpApi = erpApiHost();
+  if (!erpApi) return panelError(503, 'ERP_NOT_CONFIGURED', 'La tienda online no está disponible en este servidor.');
+
   try {
-    const subdomain = await uniqueSubdomain(name);
-    const ref = await getCentralAdminDb().collection('tenants').add({
-      name,
-      email: claims.email,
-      status: 'active',
-      // El plan comercial y el cobro son del ERP (D3); aquí solo limita funciones.
-      plan: 'starter',
-      subdomain,
-      domain: null,
-      whatsapp,
-      erp: { partnerId: claims.partnerId, api: erpApiHost() },
-      storefront: rubro ? { rubro } : {},
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      approvedAt: FieldValue.serverTimestamp(),
-      approvedBy: 'cyberpos',
-    });
-    forgetPartnerTenants(claims.partnerId);
+    let store: TenantConfig | null = null;
+    for (let attempt = 0; !store; attempt++) {
+      const subdomain = await uniqueSubdomain(name);
+      try {
+        store = createLocalStore({
+          partnerId: claims.partnerId,
+          erpApi,
+          email: claims.email,
+          subdomain,
+          // El plan comercial y el cobro son del ERP (D3); aquí solo limita funciones.
+          plan: 'starter',
+          status: 'active',
+          settings: { name, ...(whatsapp ? { whatsapp } : {}), storefront: rubro ? { rubro } : {} },
+        });
+      } catch (error) {
+        if (!isUniqueViolation(error) || attempt >= 2) throw error;
+        // Otro pedido creó la tienda del negocio, o tomó el subdominio, al mismo tiempo.
+        const existing = localStoreIdsForPartner(claims.partnerId, erpApi)[0];
+        if (existing) return panelJson({ ok: true, tenantId: existing, alreadyCreated: true });
+      }
+    }
 
     await logTenantAdminEvent({
-      tenantId: ref.id,
+      tenantId: store.id,
       action: 'tenant.created',
       resource: 'tenant',
-      resourceId: ref.id,
+      resourceId: store.id,
       actor: { uid: `erp:${claims.userId}`, email: claims.email, role: claims.role },
-      metadata: { source: 'cyberpos', partnerId: claims.partnerId, subdomain },
+      metadata: { source: 'cyberpos', partnerId: claims.partnerId, subdomain: store.subdomain },
     });
 
-    return panelJson({ ok: true, tenantId: ref.id, storeUrl: `https://${subdomain}.${platformDomain()}` }, 201);
+    return panelJson({ ok: true, tenantId: store.id, storeUrl: `https://${store.subdomain}.${platformDomain()}` }, 201);
   } catch (error) {
     console.error('[erp-panel/store] No se pudo crear la tienda:', error);
     return panelError(500, 'CREATE_FAILED', 'No pudimos crear tu tienda. Inténtalo de nuevo.');

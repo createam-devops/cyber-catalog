@@ -30,12 +30,16 @@ services:
       - ERP_SESSION_SECRET=${ERP_SESSION_SECRET:-}
       - ERP_APP_URL=${ERP_APP_URL:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://createam.cloud}
+      # Base propia del catálogo (SQLite), sus copias diarias e imágenes de las tiendas.
+      - DATA_DIR=/app/data
       - GOOGLE_CLOUD_QUOTA_PROJECT=
       - NODE_ENV=production
     volumes:
       # Imágenes ya optimizadas: sin volumen, cada despliegue las borraba y el
       # servidor tenía que volver a procesar todas las fotos.
       - next-cache:/app/.next/cache
+      # Configuración de las tiendas del ERP: NO borrar este volumen.
+      - catalog-data:/app/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -45,3 +49,4 @@ services:
 
 volumes:
   next-cache:
+  catalog-data:
