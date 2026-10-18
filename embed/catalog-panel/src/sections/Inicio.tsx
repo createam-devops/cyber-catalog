@@ -5,7 +5,7 @@ import { RUBROS } from '@shared/storefront/rubros';
 import { useHost, type Api } from '../host';
 import type { Draft, StatsResponse, StoreResponse } from '../store';
 import type { Section } from '../App';
-import { Button, Pill } from '../ui';
+import { Button, FluidGrid, Pill } from '../ui';
 
 interface Props {
   data: StoreResponse;
@@ -89,7 +89,7 @@ export default function Inicio({ data, draft, api, goTo }: Props) {
       </section>
 
       {/* Números */}
-      <div className="grid grid-cols-1 gap-3 @md:grid-cols-3">
+      <FluidGrid min="12rem">
         {[
           { icon: <Package size={18} />, label: 'Productos publicados', value: stats ? formatNumber(stats.products) : '…', action: { text: 'Administrar', run: toSalesOnline } },
           { icon: <Eye size={18} />, label: 'Visitas a productos', value: stats ? formatNumber(stats.views) : '…' },
@@ -108,7 +108,7 @@ export default function Inicio({ data, draft, api, goTo }: Props) {
             )}
           </div>
         ))}
-      </div>
+      </FluidGrid>
 
       {/* Lo que falta */}
       <section className="cs-card space-y-3">

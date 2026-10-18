@@ -5,7 +5,7 @@ import { shrinkImage } from '@shared/image-compress';
 import type { PreviewPayload } from '@shared/storefront/preview';
 import type { Api } from '../host';
 import type { Draft, HeroSlide, StoreResponse } from '../store';
-import { Button, Field, Notice, Pill, Section } from '../ui';
+import { Button, Field, FluidGrid, Notice, Pill, Section } from '../ui';
 import { PreviewPanel, PreviewSheetButton } from '../Preview';
 
 interface Props {
@@ -105,11 +105,11 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
             </p>
           </div>
           {draft.heroSlides.length === 0 && <p className="text-cm-label text-cm-muted">Sin banners, la portada usa el color de tu marca con los textos de tu rubro.</p>}
-          {draft.heroSlides.map((slide, index) => (
-            <div key={slide.id} className="rounded-cm-md border border-cm-line bg-cm-field p-3">
-              <div className="flex gap-3">
-                <img src={slide.image} alt="" className="h-16 w-24 shrink-0 rounded-cm-sm object-cover @md:h-20 @md:w-32" />
-                <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 @xl:grid-cols-3">
+          <FluidGrid min="18rem">
+            {draft.heroSlides.map((slide, index) => (
+              <div key={slide.id} className="space-y-2 rounded-cm-md border border-cm-line bg-cm-field p-3">
+                <img src={slide.image} alt="" className="aspect-[16/7] w-full rounded-cm-sm object-cover" />
+                <FluidGrid min="9rem" className="gap-2">
                   {(['title', 'subtitle', 'buttonText'] as const).map((key) => (
                     <input
                       key={key}
@@ -122,23 +122,23 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
                       onChange={(e) => setSlides(draft.heroSlides.map((s, i) => (i === index ? { ...s, [key]: e.target.value } : s)))}
                     />
                   ))}
-                </div>
+                </FluidGrid>
+                {!disabled && (
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" aria-label="Subir" disabled={index === 0} onClick={() => setSlides(swap(draft.heroSlides, index, index - 1))}>
+                      <ArrowUp size={16} />
+                    </Button>
+                    <Button variant="ghost" aria-label="Bajar" disabled={index === draft.heroSlides.length - 1} onClick={() => setSlides(swap(draft.heroSlides, index, index + 1))}>
+                      <ArrowDown size={16} />
+                    </Button>
+                    <Button variant="danger" aria-label="Quitar banner" onClick={() => setSlides(draft.heroSlides.filter((_, i) => i !== index))}>
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                )}
               </div>
-              {!disabled && (
-                <div className="mt-2 flex justify-end gap-1">
-                  <Button variant="ghost" aria-label="Subir" disabled={index === 0} onClick={() => setSlides(swap(draft.heroSlides, index, index - 1))}>
-                    <ArrowUp size={16} />
-                  </Button>
-                  <Button variant="ghost" aria-label="Bajar" disabled={index === draft.heroSlides.length - 1} onClick={() => setSlides(swap(draft.heroSlides, index, index + 1))}>
-                    <ArrowDown size={16} />
-                  </Button>
-                  <Button variant="danger" aria-label="Quitar banner" onClick={() => setSlides(draft.heroSlides.filter((_, i) => i !== index))}>
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
+          </FluidGrid>
           <input
             ref={bannerInput}
             type="file"
@@ -166,29 +166,29 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
       </Section>
 
       <Section title="Contacto" description="Dónde te escriben tus clientes.">
-        <Field
-          label="WhatsApp para pedidos"
-          error={!fromErp.whatsapp && draft.whatsapp && !whatsappDigits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
-          hint={
-            fromErp.whatsapp
-              ? 'Es el WhatsApp de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.'
-              : whatsappDigits
-                ? `Los pedidos llegan a +${whatsappDigits}`
-                : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'
-          }
-        >
-          {(id) => (
-            <span className="flex gap-2">
-              <input id={id} type="tel" inputMode="tel" className="cs-input" disabled={disabled || fromErp.whatsapp} value={draft.whatsapp} placeholder="987 654 321" onChange={(e) => set({ whatsapp: e.target.value })} />
-              {whatsappDigits && (
-                <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 shrink-0 items-center rounded-cm-md border border-cm-line bg-cm-field px-3 text-cm-body font-semibold text-cm-ink">
-                  Probar
-                </a>
-              )}
-            </span>
-          )}
-        </Field>
-        <div className="grid grid-cols-1 gap-3 @xl:grid-cols-3">
+        <FluidGrid min="15rem">
+          <Field
+            label="WhatsApp para pedidos"
+            error={!fromErp.whatsapp && draft.whatsapp && !whatsappDigits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
+            hint={
+              fromErp.whatsapp
+                ? 'Es el WhatsApp de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.'
+                : whatsappDigits
+                  ? `Los pedidos llegan a +${whatsappDigits}`
+                  : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'
+            }
+          >
+            {(id) => (
+              <span className="flex gap-2">
+                <input id={id} type="tel" inputMode="tel" className="cs-input" disabled={disabled || fromErp.whatsapp} value={draft.whatsapp} placeholder="987 654 321" onChange={(e) => set({ whatsapp: e.target.value })} />
+                {whatsappDigits && (
+                  <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 shrink-0 items-center rounded-cm-md border border-cm-line bg-cm-field px-3 text-cm-body font-semibold text-cm-ink">
+                    Probar
+                  </a>
+                )}
+              </span>
+            )}
+          </Field>
           {(
             [
               ['instagram', 'Instagram', '@tutienda'],
@@ -209,72 +209,77 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
               )}
             </Field>
           ))}
-        </div>
+        </FluidGrid>
       </Section>
 
       <Section title="Nombre y dirección" description="Cómo se llama tu tienda y dónde la encuentran.">
-        <Field
-          label="Nombre de la tienda"
-          error={!fromErp.name && draft.name.trim().length < 2 ? 'Escribe el nombre de tu tienda.' : null}
-          hint={fromErp.name ? 'Es el nombre comercial de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.' : undefined}
-        >
-          {(id) => <input id={id} className="cs-input" disabled={disabled || fromErp.name} value={draft.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} />}
-        </Field>
-        <Field label="Dirección en Createam" error={subdomainError} hint="Si la cambias, la dirección anterior deja de funcionar.">
-          {(id) => (
-            <span className="flex items-stretch overflow-hidden rounded-cm-md border border-cm-line bg-cm-field focus-within:border-cm-primary">
+        <FluidGrid min="18rem">
+          <Field
+            label="Nombre de la tienda"
+            error={!fromErp.name && draft.name.trim().length < 2 ? 'Escribe el nombre de tu tienda.' : null}
+            hint={fromErp.name ? 'Es el nombre comercial de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.' : undefined}
+          >
+            {(id) => <input id={id} className="cs-input" disabled={disabled || fromErp.name} value={draft.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} />}
+          </Field>
+          <Field label="Dirección en Createam" error={subdomainError} hint="Si la cambias, la dirección anterior deja de funcionar.">
+            {(id) => (
+              <span className="flex items-stretch overflow-hidden rounded-cm-md border border-cm-line bg-cm-field focus-within:border-cm-primary">
+                <input
+                  id={id}
+                  className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-cm-body text-cm-ink outline-none disabled:opacity-60"
+                  disabled={disabled}
+                  value={draft.subdomain}
+                  maxLength={63}
+                  onChange={(e) => set({ subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                />
+                <span className="flex items-center border-l border-cm-line px-3 text-cm-label text-cm-muted">.{data.platformDomain}</span>
+              </span>
+            )}
+          </Field>
+          <Field
+            label="Dominio propio"
+            hint={data.features.customDomain ? 'Ej.: mitienda.pe. En tu proveedor de dominio, apúntalo a createam.cloud (registro CNAME) y escríbenos para activarlo.' : 'Disponible en el plan Pro.'}
+          >
+            {(id) => (
               <input
                 id={id}
-                className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-cm-body text-cm-ink outline-none disabled:opacity-60"
-                disabled={disabled}
-                value={draft.subdomain}
-                maxLength={63}
-                onChange={(e) => set({ subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                className="cs-input"
+                disabled={disabled || !data.features.customDomain}
+                value={draft.domain}
+                placeholder="mitienda.pe"
+                onChange={(e) => set({ domain: e.target.value.toLowerCase().trim() })}
               />
-              <span className="flex items-center border-l border-cm-line px-3 text-cm-label text-cm-muted">.{data.platformDomain}</span>
-            </span>
-          )}
-        </Field>
-        <Field
-          label="Dominio propio"
-          hint={data.features.customDomain ? 'Ej.: mitienda.pe. En tu proveedor de dominio, apúntalo a createam.cloud (registro CNAME) y escríbenos para activarlo.' : 'Disponible en el plan Pro.'}
-        >
-          {(id) => (
-            <input
-              id={id}
-              className="cs-input"
-              disabled={disabled || !data.features.customDomain}
-              value={draft.domain}
-              placeholder="mitienda.pe"
-              onChange={(e) => set({ domain: e.target.value.toLowerCase().trim() })}
-            />
-          )}
-        </Field>
+            )}
+          </Field>
+        </FluidGrid>
       </Section>
 
       <Section title="Cómo apareces en Google" description="Título y descripción para buscadores." action={!data.features.seo ? <Pill tone="pro">Pro</Pill> : undefined}>
-        <Field label="Título" hint={`${draft.seoTitle.length}/60`}>
-          {(id) => <input id={id} className="cs-input" disabled={disabled || !data.features.seo} value={draft.seoTitle} maxLength={70} placeholder={draft.name} onChange={(e) => set({ seoTitle: e.target.value })} />}
-        </Field>
-        <Field label="Descripción" hint={`${draft.seoDescription.length}/160`}>
-          {(id) => (
-            <textarea
-              id={id}
-              rows={3}
-              className="cs-input resize-y"
-              disabled={disabled || !data.features.seo}
-              value={draft.seoDescription}
-              maxLength={170}
-              onChange={(e) => set({ seoDescription: e.target.value })}
-            />
-          )}
-        </Field>
+        <FluidGrid min="18rem">
+          <Field label="Título" hint={`${draft.seoTitle.length}/60`}>
+            {(id) => <input id={id} className="cs-input" disabled={disabled || !data.features.seo} value={draft.seoTitle} maxLength={70} placeholder={draft.name} onChange={(e) => set({ seoTitle: e.target.value })} />}
+          </Field>
+          <Field label="Descripción" hint={`${draft.seoDescription.length}/160`}>
+            {(id) => (
+              <textarea
+                id={id}
+                rows={3}
+                className="cs-input resize-y"
+                disabled={disabled || !data.features.seo}
+                value={draft.seoDescription}
+                maxLength={170}
+                onChange={(e) => set({ seoDescription: e.target.value })}
+              />
+            )}
+          </Field>
+        </FluidGrid>
       </Section>
     </div>
   );
 
+  // Con espacio, la vista previa al lado: mide lo que el teléfono y el editor toma el resto. Si no, va en un botón.
   return (
-    <div className="grid grid-cols-1 items-start gap-3 @4xl:grid-cols-[minmax(0,1fr)_340px]">
+    <div className="grid grid-cols-1 items-start gap-3 @4xl:grid-cols-[minmax(0,1fr)_auto]">
       <div className="@4xl:hidden">
         <PreviewSheetButton src={previewUrl} payload={preview} />
       </div>

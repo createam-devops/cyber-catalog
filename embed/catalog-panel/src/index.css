@@ -37,4 +37,12 @@
   .cs-hint {
     @apply mt-1 block text-cm-caption text-cm-muted;
   }
+  /* Grilla que se adapta a su contenedor: tantas columnas como quepan, cada
+     una de al menos --cs-min y nunca más ancha que el contenedor. Las columnas
+     se reparten el espacio que sobra. */
+  .cs-fluid-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--cs-min, 16rem)), 1fr));
+  }
 }
