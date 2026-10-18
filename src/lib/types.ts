@@ -59,7 +59,8 @@ export interface TenantConfig {
   storefront?: StorefrontSettings | null;
 
   // Negocio del ERP del que salen sus productos. Sin esto, la tienda lee su Firebase.
-  erp?: { partnerId: number } | null;
+  // `api`: servidor del ERP en el que se enlazó (ver linkedToCurrentErp).
+  erp?: { partnerId: number; api?: string | null } | null;
 
   // Plan y suscripción
   plan?: PlanId;

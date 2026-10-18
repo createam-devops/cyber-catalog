@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { FieldValue } from 'firebase-admin/firestore';
 import { panelError, panelJson, STORE_NOT_CREATED, verifyPanelRequest } from '@/lib/server/erp/panel-auth';
 import { getAppToken, isAppNotEnabled } from '@/lib/server/erp/client';
+import { erpApiHost } from '@/lib/server/erp/config';
 import { forgetPartnerTenants } from '@/lib/server/erp/webhooks';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { getTenantById } from '@/lib/server/tenants';
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
       subdomain,
       domain: null,
       whatsapp,
-      erp: { partnerId: claims.partnerId },
+      erp: { partnerId: claims.partnerId, api: erpApiHost() },
       storefront: rubro ? { rubro } : {},
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),

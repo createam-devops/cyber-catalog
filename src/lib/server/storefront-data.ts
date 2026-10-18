@@ -13,7 +13,7 @@ import type { StoreCatalog, StoreProduct } from '@/lib/storefront/catalog';
 import { labelFromCategoryValue, type StoreCategory } from '@/lib/storefront/public-store';
 import { getTenantDbFromConfig } from './tenant-firestore';
 import { getTenantByDomain } from './tenants';
-import { getErpConfig } from './erp/config';
+import { getErpConfig, linkedToCurrentErp } from './erp/config';
 import { loadErpCatalog } from './erp/catalog-source';
 
 export interface StorefrontDataSource {
@@ -92,6 +92,8 @@ const firebaseDataSource: StorefrontDataSource = {
 };
 
 const erpDataSource: StorefrontDataSource = { loadCatalog: loadErpCatalog };
+// Tienda enlazada a otro ERP (una de prueba de api-dev, con la integración ya en producción).
+const emptyDataSource: StorefrontDataSource = { loadCatalog: async () => ({ products: [], categories: [] }) };
 
 /**
  * Las tiendas con negocio en el ERP leen del ERP; las demás, de su Firebase.
@@ -99,7 +101,8 @@ const erpDataSource: StorefrontDataSource = { loadCatalog: loadErpCatalog };
  * en Firebase: el paso a producción es solo configurar las variables ERP_*.
  */
 function dataSourceFor(store: TenantConfig): StorefrontDataSource {
-  return store.erp?.partnerId && getErpConfig() ? erpDataSource : firebaseDataSource;
+  if (!store.erp?.partnerId || !getErpConfig()) return firebaseDataSource;
+  return linkedToCurrentErp(store.erp) ? erpDataSource : emptyDataSource;
 }
 
 // ---------------------------------------------------------------------------

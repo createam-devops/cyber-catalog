@@ -6,6 +6,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { getCentralAdminDb } from '../central-admin';
 import { listDevStores } from '../storefront-data';
+import { linkedToCurrentErp } from './config';
 
 /** Avisos más viejos que esto se rechazan (un reenvío de un aviso capturado). */
 export const MAX_SIGNATURE_AGE_SECONDS = 300;
@@ -63,13 +64,14 @@ export async function tenantIdsForPartner(partnerId: number): Promise<string[]> 
   // esas: así se prueba también un negocio sin tienda, sin Firebase.
   const devStores = listDevStores();
   if (devStores.length) {
-    return devStores.filter((store) => store.erp?.partnerId === partnerId).map((store) => store.id);
+    return devStores.filter((store) => store.erp?.partnerId === partnerId && linkedToCurrentErp(store.erp)).map((store) => store.id);
   }
 
   const cached = tenantsByPartner.get(partnerId);
   if (cached && Date.now() - cached.at < TENANTS_TTL_MS) return cached.ids;
   const snap = await getCentralAdminDb().collection('tenants').where('erp.partnerId', '==', partnerId).get();
-  const ids = snap.docs.map((doc) => doc.id);
+  // Solo las enlazadas a este ERP: un mismo número de negocio existe en dev y en producción.
+  const ids = snap.docs.filter((doc) => linkedToCurrentErp(doc.get('erp'))).map((doc) => doc.id);
   tenantsByPartner.set(partnerId, { at: Date.now(), ids });
   return ids;
 }
