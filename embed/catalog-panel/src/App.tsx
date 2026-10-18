@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle2, Loader2, RotateCcw } from 'lucide-react';
 import { resolveStorefront } from '@shared/storefront/theme';
 import { normalizeWhatsapp, type PublicStore } from '@shared/storefront/public-store';
 import { sampleCatalog, type PreviewPayload } from '@shared/storefront/preview';
-import { ApiError, createApi, HostProvider, type PanelHost } from './host';
+import { ApiError, createApi, HostProvider, type PanelHost, type PanelSection } from './host';
 import { diffDraft, toDraft, type Draft, type PreviewCatalog, type StoreResponse } from './store';
 import { Button } from './ui';
 import Inicio from './sections/Inicio';
@@ -15,6 +15,14 @@ export type Section = 'inicio' | 'diseno' | 'ajustes' | 'bienvenida';
 
 const SECTION_PATHS: Record<Section, string> = { inicio: '/', diseno: '/diseno', ajustes: '/ajustes', bienvenida: '/bienvenida' };
 
+/** Las secciones de una tienda creada. Con el ERP de anfitrión van en su encabezado (P6). */
+const STORE_SECTIONS: PanelSection[] = [
+  { path: '/', label: 'Inicio', icon: 'home' },
+  { path: '/diseno', label: 'Diseño', icon: 'palette' },
+  { path: '/ajustes', label: 'Ajustes', icon: 'settings' },
+];
+const NO_SECTIONS: PanelSection[] = [];
+
 function sectionOf(path: string): Section {
   const clean = path.split('?')[0].replace(/\/+$/, '') || '/';
   if (clean === '/diseno') return 'diseno';
@@ -25,7 +33,15 @@ function sectionOf(path: string): Section {
 
 type Toast = { tone: 'ok' | 'error'; text: string } | null;
 
-export default function App({ host, path }: { host: PanelHost; path: string }) {
+interface AppProps {
+  host: PanelHost;
+  path: string;
+  /** 'host': el ERP dibuja las secciones; el paquete solo las publica. */
+  navigation: 'host' | 'self';
+  onSections: (sections: PanelSection[]) => void;
+}
+
+export default function App({ host, path, navigation, onSections }: AppProps) {
   const api = useMemo(() => createApi(host), [host]);
   const section = sectionOf(path);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
@@ -63,6 +79,11 @@ export default function App({ host, path }: { host: PanelHost; path: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Secciones para el encabezado del ERP: completas con tienda; vacías en Bienvenida o mientras carga.
+  useEffect(() => {
+    onSections(state === 'ready' ? STORE_SECTIONS : NO_SECTIONS);
+  }, [state, onSections]);
 
   // Sin tienda, siempre a Bienvenida; con tienda, Bienvenida ya no aplica.
   useEffect(() => {
@@ -139,22 +160,28 @@ export default function App({ host, path }: { host: PanelHost; path: string }) {
     const props = { data, draft, setDraft, canManage: data.canManage };
     content = (
       <>
-        <nav role="tablist" aria-label="Secciones de la tienda" className="flex gap-1 overflow-x-auto rounded-cm-md border border-cm-line bg-cm-field p-1">
-          {(['inicio', 'diseno', 'ajustes'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              role="tab"
-              aria-selected={section === s}
-              onClick={() => go(s)}
-              className={`min-h-9 flex-1 whitespace-nowrap rounded-cm-sm px-3 text-cm-body font-semibold transition ${
-                section === s ? 'bg-cm-primary text-white' : 'text-cm-ink-soft hover:bg-cm-primary-bg'
-              }`}
-            >
-              {s === 'inicio' ? 'Inicio' : s === 'diseno' ? 'Diseño' : 'Ajustes'}
-            </button>
-          ))}
-        </nav>
+        {/* Con el ERP de anfitrión, las secciones van en su encabezado (P6). */}
+        {navigation === 'self' && (
+          <nav role="tablist" aria-label="Secciones de la tienda" className="flex gap-1 overflow-x-auto rounded-cm-md border border-cm-line bg-cm-field p-1">
+            {STORE_SECTIONS.map((item) => {
+              const s = sectionOf(item.path);
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  role="tab"
+                  aria-selected={section === s}
+                  onClick={() => go(s)}
+                  className={`min-h-9 flex-1 whitespace-nowrap rounded-cm-sm px-3 text-cm-body font-semibold transition ${
+                    section === s ? 'bg-cm-primary text-white' : 'text-cm-ink-soft hover:bg-cm-primary-bg'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+        )}
         {!data.canManage && (
           <p className="rounded-cm-md bg-cm-info-bg px-3 py-2 text-cm-label font-medium text-cm-info">
             Puedes ver la tienda, pero tu usuario no puede cambiarla.

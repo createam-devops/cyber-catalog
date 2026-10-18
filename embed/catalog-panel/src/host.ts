@@ -18,6 +18,13 @@ export interface PanelHost {
   onSessionLost?: () => void;
 }
 
+/** Una sección del editor para el encabezado del ERP (P6). `icon`: home, palette, settings, chart o store. */
+export interface PanelSection {
+  path: string;
+  label: string;
+  icon: 'home' | 'palette' | 'settings' | 'chart' | 'store';
+}
+
 const HostContext = createContext<PanelHost | null>(null);
 export const HostProvider = HostContext.Provider;
 

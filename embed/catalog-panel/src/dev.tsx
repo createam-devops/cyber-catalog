@@ -8,9 +8,11 @@
  * - El token aud=catalog sale del login de un ERP simulado (/mock-erp → MOCK_ERP_URL)
  *   o, si se pasa ?token=…, de ese token tal cual (por ejemplo, uno real de api-dev).
  * - La navegación usa el hash (#/diseno) para que «atrás» funcione como en el ERP.
+ * - Con ?navigation=host las secciones van en el encabezado simulado del ERP,
+ *   como en Venta online › Tienda (P6).
  */
 import './element';
-import type { PanelHost } from './host';
+import type { PanelHost, PanelSection } from './host';
 
 // Estilos del ERP simulado. Van inyectados desde aquí y no en un <style> del
 // index.html: Vite pasaría ese CSS por el plugin que lo encierra bajo
@@ -38,6 +40,9 @@ erpStyles.textContent = `
       .erp-main { flex: 1; min-width: 0; }
       .erp-head { padding: 14px 18px 4px; font-size: 13px; color: var(--cm-muted); }
       .erp-head h1 { margin: 2px 0 0; font-size: 20px; color: var(--cm-ink); }
+      .erp-sections { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+      .erp-sections button { border: 1px solid var(--cm-line); background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; color: var(--cm-ink-soft); cursor: pointer; }
+      .erp-sections button.on { background: var(--cm-primary); border-color: var(--cm-primary); color: #fff; font-weight: 700; }
       @media (max-width: 767px) { .erp-menu { display: none; } }
 `;
 document.head.append(erpStyles);
@@ -63,7 +68,14 @@ async function getToken({ force = false }: { force?: boolean } = {}): Promise<st
 
 const pathFromHash = () => window.location.hash.replace(/^#/, '') || '/';
 
-const el = document.createElement('catalog-panel') as HTMLElement & { host: PanelHost; path: string; channel: string; theme: string };
+const el = document.createElement('catalog-panel') as HTMLElement & {
+  host: PanelHost;
+  path: string;
+  channel: string;
+  theme: string;
+  navigation: string;
+  readonly sections: PanelSection[];
+};
 el.host = {
   appBase: '/apps/catalog/',
   getToken,
@@ -80,7 +92,46 @@ el.host = {
 el.channel = 'catalog';
 el.theme = 'light';
 el.path = pathFromHash();
+
+// El ERP como anfitrión de las secciones (P6): las dibuja en su encabezado y marca
+// la activa según el.path (la de ruta más larga que calza).
+const hostNavigation = params.get('navigation') === 'host';
+const sectionsBar = document.createElement('div');
+sectionsBar.className = 'erp-sections';
+sectionsBar.setAttribute('aria-label', 'Secciones (dibujadas por el ERP)');
+let sections: PanelSection[] = [];
+function drawSections() {
+  const current = el.path.split('?')[0];
+  const matches = (p: string) => p === '/' || current === p || current.startsWith(`${p}/`);
+  const active = [...sections].filter((s) => matches(s.path)).sort((a, b) => b.path.length - a.path.length)[0];
+  sectionsBar.replaceChildren(
+    ...sections.map((s) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = s.label;
+      button.dataset.icon = s.icon;
+      if (s === active) button.className = 'on';
+      button.onclick = () => (window.location.hash = s.path);
+      return button;
+    })
+  );
+}
+if (hostNavigation) {
+  el.navigation = 'host';
+  document.querySelector('.erp-head')?.append(sectionsBar);
+  el.addEventListener('sections', (event) => {
+    sections = (event as CustomEvent<PanelSection[]>).detail;
+    drawSections();
+  });
+}
+
 window.addEventListener('hashchange', () => {
   el.path = pathFromHash();
+  drawSections();
 });
 document.getElementById('slot')!.append(el);
+// Por si las publicó antes de que escucháramos: también están en la propiedad.
+if (hostNavigation) {
+  sections = el.sections ?? [];
+  drawSections();
+}
