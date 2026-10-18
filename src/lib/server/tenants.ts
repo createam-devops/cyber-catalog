@@ -86,3 +86,15 @@ function plano(valor: unknown): unknown {
   }
   return Object.fromEntries(Object.entries(valor).map(([clave, v]) => [clave, plano(v)]));
 }
+
+/**
+ * Una tienda por su id, como datos planos, o null si no existe. En desarrollo
+ * reconoce también las tiendas de prueba (STOREFRONT_DEV_STORES).
+ */
+export async function getTenantById(tenantId: string): Promise<TenantConfig | null> {
+  const { listDevStores } = await import('./storefront-data');
+  const devStore = listDevStores().find((store) => store.id === tenantId);
+  if (devStore) return devStore;
+  const doc = await getCentralAdminDb().collection('tenants').doc(tenantId).get();
+  return doc.exists ? ({ id: doc.id, ...(plano(doc.data()) as object) } as TenantConfig) : null;
+}

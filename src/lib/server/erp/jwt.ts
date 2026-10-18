@@ -47,7 +47,7 @@ function decodePart(part: string): Record<string, unknown> {
   return JSON.parse(Buffer.from(part, 'base64url').toString('utf8')) as Record<string, unknown>;
 }
 
-/** Valida un access token del ERP. Lanza si es inválido, vencido o de otra app. */
+/** Valida un access token del ERP. Lanza si es inválido, vencido o de otra app (audiencia `catalog`). */
 export async function verifyErpAccessToken(token: string): Promise<ErpUserClaims> {
   const config = getErpConfig();
   if (!config) throw new Error('La integración con el ERP no está configurada.');

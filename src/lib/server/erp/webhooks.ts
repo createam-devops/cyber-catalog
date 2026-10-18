@@ -53,12 +53,18 @@ export function alreadyProcessed(eventId: string): boolean {
 const TENANTS_TTL_MS = 5 * 60 * 1000;
 const tenantsByPartner = new Map<number, { at: number; ids: string[] }>();
 
+/** Olvida la tienda recordada de un negocio (al activarla desde «Mi tienda»). */
+export function forgetPartnerTenants(partnerId: number): void {
+  tenantsByPartner.delete(partnerId);
+}
+
 export async function tenantIdsForPartner(partnerId: number): Promise<string[]> {
-  // En desarrollo, las tiendas de prueba (STOREFRONT_DEV_STORES) van primero.
-  const devIds = listDevStores()
-    .filter((store) => store.erp?.partnerId === partnerId)
-    .map((store) => store.id);
-  if (devIds.length) return devIds;
+  // En desarrollo con tiendas de prueba (STOREFRONT_DEV_STORES) solo cuentan
+  // esas: así se prueba también un negocio sin tienda, sin Firebase.
+  const devStores = listDevStores();
+  if (devStores.length) {
+    return devStores.filter((store) => store.erp?.partnerId === partnerId).map((store) => store.id);
+  }
 
   const cached = tenantsByPartner.get(partnerId);
   if (cached && Date.now() - cached.at < TENANTS_TTL_MS) return cached.ids;

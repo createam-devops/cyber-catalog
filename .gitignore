@@ -36,3 +36,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Paquete <catalog-panel> (se genera con npm run build:embed)
+/public/erp-panel/

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prueba de &lt;catalog-panel&gt; (simula el ERP)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="erp">
+      <nav class="erp-menu" aria-label="Menú del ERP (simulado)">
+        <b>CyberPOS</b>
+        <a href="#">Inicio</a><a href="#">Inventario</a><a href="#" class="on">Venta online</a><a href="#">Mi plan</a>
+      </nav>
+      <main class="erp-main">
+        <div class="erp-head">Venta online ›<h1>Tienda</h1></div>
+        <div id="slot"></div>
+      </main>
+    </div>
+    <script type="module" src="./src/dev.tsx"></script>
+  </body>
+</html>

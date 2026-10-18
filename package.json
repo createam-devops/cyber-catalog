@@ -4,13 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:ci": "next build --no-lint",
+    "build": "npm run build:embed && next build",
+    "build:ci": "npm run build:embed && next build --no-lint",
     "start": "next start",
     "lint": "next lint",
     "lint:critical": "next lint --file src/components/admin/AdminDashboard.tsx --file src/components/AdminOnlyRoute.tsx --file src/app/admin/page.tsx --file src/components/admin/AdminPageClient.tsx --file src/app/api/admin/tenants/route.ts --file src/app/api/admin/tenants/[tenantId]/status/route.ts --file src/app/api/admin/tenants/[tenantId]/config/route.ts --file src/app/api/admin/audit/route.ts --file src/app/api/auth/session/route.ts --file src/app/api/tenant-admin/settings/route.ts --file src/app/api/tenant-admin/categories/route.ts --file src/app/api/tenant-admin/categories/[categoryId]/route.ts --file src/app/api/tenant-admin/products/route.ts --file src/app/api/tenant-admin/products/[productId]/route.ts --file src/lib/server/central-admin.ts --file src/lib/server/admin-auth.ts --file src/lib/server/tenant-auth.ts --file src/lib/server/rate-limit.ts --file src/lib/server/tenant-firestore.ts --file src/lib/server/tenant-audit.ts --file src/lib/server/tenant-product-validation.ts --file src/lib/server/tenant-category-validation.ts --file src/lib/server/tenant-settings-validation.ts",
     "ready:prod": "powershell -ExecutionPolicy Bypass -File ./scripts/release-readiness.ps1",
-    "smoke:prod": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-test.ps1"
+    "smoke:prod": "powershell -ExecutionPolicy Bypass -File ./scripts/smoke-test.ps1",
+    "build:embed": "vite build --config embed/catalog-panel/vite.config.mjs && node embed/catalog-panel/check-scope.mjs",
+    "dev:embed": "vite --config embed/catalog-panel/vite.config.mjs",
+    "typecheck:embed": "tsc -p embed/catalog-panel/tsconfig.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -50,14 +53,17 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "^0.1.1",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4.3.3",
     "autoprefixer": "^10.4.20",
     "eslint": "^8",
     "eslint-config-next": "14.2.18",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^5.4.10"
   }
 }
