@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import './index.css';
 import App from './App';
-import type { PanelHost } from './host';
+import type { PanelHost, PanelSection } from './host';
 
 /*
  * <catalog-panel>: el editor de la tienda como componente web, para que el
@@ -13,7 +13,13 @@ import type { PanelHost } from './host';
  *   el.path = '/diseno'      // sección actual: '/', '/diseno', '/ajustes', '/bienvenida'
  *   el.channel = 'catalog'   // el canal (código de la app)
  *   el.theme = 'light'
+ *   el.navigation = 'host'   // 'host': las secciones las dibuja el ERP en su encabezado (P6)
  *   contenedor.append(el)
+ *
+ * Con `navigation = 'host'` el paquete no dibuja su barra de secciones: las
+ * publica en `el.sections` y con el evento `sections` (la misma lista en
+ * `detail`), y las vuelve a publicar cuando cambian. En /bienvenida, vacía.
+ * El ERP marca la activa según `el.path` y, al tocar una, cambia `el.path`.
  *
  * Sin shadow DOM, como el CRM: el aislamiento lo da el CSS, todo bajo
  * `.catalog-panel`. Los modales se montan dentro de esa raíz, no en `body`.
@@ -23,6 +29,8 @@ class CatalogPanelElement extends HTMLElement {
   #path = '/';
   #channel = 'catalog';
   #theme = 'light';
+  #navigation: 'host' | 'self' = 'self';
+  #sections: PanelSection[] = [];
   #root: Root | null = null;
   #mount: HTMLDivElement | null = null;
 
@@ -58,6 +66,25 @@ class CatalogPanelElement extends HTMLElement {
     return this.#theme;
   }
 
+  set navigation(value: string) {
+    this.#navigation = value === 'host' ? 'host' : 'self';
+    this.#render();
+  }
+  get navigation(): string {
+    return this.#navigation;
+  }
+
+  /** Las secciones del editor, para que el ERP las ponga en su encabezado. */
+  get sections(): PanelSection[] {
+    return this.#sections;
+  }
+
+  #publishSections = (sections: PanelSection[]) => {
+    if (JSON.stringify(sections) === JSON.stringify(this.#sections)) return;
+    this.#sections = sections;
+    this.dispatchEvent(new CustomEvent('sections', { detail: sections }));
+  };
+
   connectedCallback() {
     this.style.display = 'block';
     this.#mount = document.createElement('div');
@@ -83,7 +110,7 @@ class CatalogPanelElement extends HTMLElement {
     if (!this.#root || !this.#host) return;
     this.#root.render(
       <StrictMode>
-        <App host={this.#host} path={this.#path} />
+        <App host={this.#host} path={this.#path} navigation={this.#navigation} onSections={this.#publishSections} />
       </StrictMode>
     );
   }
