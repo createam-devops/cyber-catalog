@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutGrid, Package, Layers, Palette, Settings as SettingsIcon, LogOut, User, ChevronDown, Zap, Clock, CreditCard } from 'lucide-react';
+import { LayoutGrid, Package, Layers, Palette, Settings as SettingsIcon, LogOut, Zap, Clock, CreditCard } from 'lucide-react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { logout } from '@/lib/auth';
@@ -34,7 +34,17 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user?.tenantId) return;
     // Por la API del servidor: sirve igual si entró con Firebase o con CyberPOS.
-    tenantApiFetch<{ tenant: TenantConfig }>('/api/tenant-admin/settings').then(({ tenant }) => {
+    tenantApiFetch<{ tenant: TenantConfig }>('/api/tenant-admin/settings').then(async ({ tenant }) => {
+      // Una tienda enlazada al ERP se administra en el ERP (Venta online › Tienda):
+      // este panel queda solo para las tiendas que aún no migraron
+      // (cyberERP/PETICION_ERP_AL_CATALOGO_PANEL.md §7).
+      if (tenant.erp?.partnerId) {
+        const config = (await fetch('/api/auth/erp/login').then((res) => res.json()).catch(() => null)) as { appUrl?: string | null } | null;
+        if (config?.appUrl) {
+          window.location.replace(`${config.appUrl.replace(/\/+$/, '')}/app/admin/venta-online/tienda/catalog`);
+          return;
+        }
+      }
       setTenantPlan({
         plan: tenant.plan,
         status: tenant.status,
@@ -48,7 +58,7 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
       await logout();
       toast.success('Sesión cerrada');
       router.push('/registro');
-    } catch (error) {
+    } catch {
       toast.error('Error al cerrar sesión');
     }
   };

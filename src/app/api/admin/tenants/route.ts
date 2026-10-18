@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { listLocalStores } from '@/lib/server/store-db';
 import { verifyPlatformAdminRequest } from '@/lib/server/admin-auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 
@@ -55,7 +56,14 @@ export async function GET(request: NextRequest) {
     }
 
     const snapshot = await query.get();
-    const tenants = snapshot.docs.map(serializeTenant);
+    // Primero las tiendas nacidas en CyberPOS (base propia), después las de Firestore.
+    const local = listLocalStores(statusFilter).map((tenant) => ({
+      ...tenant,
+      source: 'cyberpos',
+      createdAt: tenant.createdAt.toISOString(),
+      updatedAt: tenant.updatedAt.toISOString(),
+    }));
+    const tenants = [...local, ...snapshot.docs.map(serializeTenant)];
 
     return NextResponse.json({ tenants });
   } catch (error) {

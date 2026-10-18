@@ -605,7 +605,8 @@ function TenantConfigEditor({
       return;
     }
     onSave(tenant.id, {
-      erp: config.erpPartnerId.trim() ? { partnerId: erpPartnerId } : null,
+      // Si el número no cambia, se conserva el enlace tal cual (incluido su servidor del ERP).
+      erp: config.erpPartnerId.trim() ? (tenant.erp?.partnerId === erpPartnerId ? tenant.erp : { partnerId: erpPartnerId }) : null,
       logo: config.logo,
       colors: {
         primary: config.primaryColor,

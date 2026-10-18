@@ -1,4 +1,5 @@
 import { getCentralAdminDb } from './central-admin';
+import { findLocalStore } from './store-db';
 import { getPlan, isTrialExpired } from '@/lib/plans';
 import type { PlanId } from '@/lib/plans';
 
@@ -10,6 +11,13 @@ export interface TenantPlanInfo {
 }
 
 export async function getTenantPlanInfo(tenantId: string): Promise<TenantPlanInfo> {
+  // Tienda del ERP: su plan comercial lo cobra el ERP; aquí solo limita funciones.
+  const local = findLocalStore(tenantId);
+  if (local) {
+    const plan = local.plan ?? 'starter';
+    return { plan, status: local.status, trialEndsAt: null, isActive: local.status === 'active' || local.status === 'trial' };
+  }
+
   const doc = await getCentralAdminDb().collection('tenants').doc(tenantId).get();
   const data = doc.data() ?? {};
 

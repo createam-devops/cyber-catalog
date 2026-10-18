@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * La raíz del componente hace de documento (scope-css.mjs convierte `:root` en
+ * `.catalog-panel`). Es también el contenedor de las container queries: el
+ * ancho lo da el espacio que deja el menú del ERP, no la pantalla.
+ */
+:root {
+  container-type: inline-size;
+  color: var(--cm-ink, #0f172a);
+  font-family: var(--font-family, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: var(--cm-fs-body, 0.85rem);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+@layer components {
+  .cs-card {
+    @apply rounded-cm-lg border border-cm-line bg-cm-surface p-4;
+    backdrop-filter: blur(12px);
+  }
+  .cs-input {
+    @apply w-full rounded-cm-md border border-cm-line bg-cm-field px-3 py-2.5 text-cm-body text-cm-ink outline-none transition;
+  }
+  .cs-input:focus {
+    border-color: var(--cm-primary, #10b981);
+    box-shadow: 0 0 0 3px var(--cm-primary-bg, rgba(16, 185, 129, 0.1));
+  }
+  .cs-input:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+  .cs-label {
+    @apply mb-1.5 block text-cm-label font-semibold text-cm-ink-soft;
+  }
+  .cs-hint {
+    @apply mt-1 block text-cm-caption text-cm-muted;
+  }
+}

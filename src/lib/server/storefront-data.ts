@@ -13,8 +13,9 @@ import type { StoreCatalog, StoreProduct } from '@/lib/storefront/catalog';
 import { labelFromCategoryValue, type StoreCategory } from '@/lib/storefront/public-store';
 import { getTenantDbFromConfig } from './tenant-firestore';
 import { getTenantByDomain } from './tenants';
-import { getErpConfig } from './erp/config';
+import { getErpConfig, linkedToCurrentErp } from './erp/config';
 import { loadErpCatalog } from './erp/catalog-source';
+import { withPartnerProfile } from './erp/partner-profile';
 
 export interface StorefrontDataSource {
   /** Todo el catálogo de la tienda. Lanza si la fuente no responde. */
@@ -92,6 +93,8 @@ const firebaseDataSource: StorefrontDataSource = {
 };
 
 const erpDataSource: StorefrontDataSource = { loadCatalog: loadErpCatalog };
+// Tienda enlazada a otro ERP (una de prueba de api-dev, con la integración ya en producción).
+const emptyDataSource: StorefrontDataSource = { loadCatalog: async () => ({ products: [], categories: [] }) };
 
 /**
  * Las tiendas con negocio en el ERP leen del ERP; las demás, de su Firebase.
@@ -99,7 +102,8 @@ const erpDataSource: StorefrontDataSource = { loadCatalog: loadErpCatalog };
  * en Firebase: el paso a producción es solo configurar las variables ERP_*.
  */
 function dataSourceFor(store: TenantConfig): StorefrontDataSource {
-  return store.erp?.partnerId && getErpConfig() ? erpDataSource : firebaseDataSource;
+  if (!store.erp?.partnerId || !getErpConfig()) return firebaseDataSource;
+  return linkedToCurrentErp(store.erp) ? erpDataSource : emptyDataSource;
 }
 
 // ---------------------------------------------------------------------------
@@ -198,10 +202,14 @@ export function listDevStores(): TenantConfig[] {
   }
 }
 
-/** Una sola consulta por petición aunque la pidan la página y sus metadatos. */
-export const findStoreByDomain = cache(
-  async (domain: string) => listDevStores().find((store) => store.domain === domain) ?? getTenantByDomain(domain)
-);
+/**
+ * Una sola consulta por petición aunque la pidan la página y sus metadatos.
+ * Las tiendas del ERP salen con el nombre, el logo y el WhatsApp de su negocio.
+ */
+export const findStoreByDomain = cache(async (domain: string) => {
+  const store = listDevStores().find((dev) => dev.domain === domain) ?? (await getTenantByDomain(domain));
+  return store ? (await withPartnerProfile(store)).tenant : null;
+});
 
 export type StorefrontAvailability = 'open' | 'paused' | 'missing';
 

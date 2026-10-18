@@ -20,6 +20,14 @@ function getCentralServiceAccount() {
   };
 }
 
+/**
+ * Si hay credenciales del proyecto central. En local suele no haberlas: ahí
+ * solo cuentan las tiendas de la base propia (store-db) y las de prueba.
+ */
+export function centralAdminConfigured(): boolean {
+  return Boolean(process.env.FIREBASE_ADMIN_PROJECT_ID && process.env.FIREBASE_ADMIN_CLIENT_EMAIL && process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+}
+
 function getCentralAdminApp() {
   const existing = admin.apps.find((app) => app?.name === CENTRAL_ADMIN_APP_NAME);
   if (existing) {

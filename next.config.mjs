@@ -35,51 +35,42 @@ const nextConfig = {
       },
     ],
   },
-  // Permitir múltiples dominios
   async headers() {
+    // Dominios del ERP que pueden encuadrar la vista previa del editor
+    // (cyberERP/PETICION_ERP_AL_CATALOGO_PANEL.md §6). En desarrollo, también localhost.
+    const erpOrigins = ['https://app-dev.createam.cloud', 'https://cyberposapp.createam.cloud', ...(isProduction ? [] : ['http://localhost:*'])];
+    const csp = (frameAncestors) =>
+      `default-src 'self'; base-uri 'self'; frame-ancestors ${frameAncestors}; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.g.doubleclick.net https://*.firebaseio.com https://firestore.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com wss://*.firebaseio.com; frame-src 'self'; form-action 'self'; upgrade-insecure-requests`;
+    const common = [
+      { key: 'X-DNS-Prefetch-Control', value: 'on' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+      ...(isProduction ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' }] : []),
+      { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
+      { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
+    ];
     return [
       {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'X-DNS-Prefetch-Control',
-            value: 'on'
-          },
-          {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff'
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'strict-origin-when-cross-origin'
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=()'
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; base-uri 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.g.doubleclick.net https://*.firebaseio.com https://firestore.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com wss://*.firebaseio.com; frame-src 'self'; form-action 'self'; upgrade-insecure-requests"
-          },
-          ...(isProduction
-            ? [{ key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' }]
-            : [])
-          ,
-          {
-            key: 'Cross-Origin-Opener-Policy',
-            value: 'same-origin'
-          },
-          {
-            key: 'Cross-Origin-Resource-Policy',
-            value: 'same-site'
-          }
-        ],
+        // Todo menos la vista previa: no se deja encuadrar por nadie más.
+        source: '/((?!vista-previa$).*)',
+        headers: [...common, { key: 'X-Frame-Options', value: 'SAMEORIGIN' }, { key: 'Content-Security-Policy', value: csp("'self'") }],
       },
-    ]
+      {
+        // La vista previa del editor la encuadra el ERP: manda el CSP, sin X-Frame-Options.
+        source: '/vista-previa',
+        headers: [...common, { key: 'Content-Security-Policy', value: csp(`'self' ${erpOrigins.join(' ')}`) }],
+      },
+      {
+        // Paquete <catalog-panel>: el ERP lee el manifiesto sin caché y guarda los archivos para siempre.
+        source: '/erp-panel/manifest.json',
+        headers: [{ key: 'Cache-Control', value: 'no-store' }],
+      },
+      {
+        source: '/erp-panel/assets/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+    ];
   },
 };
 

@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { isLocalStore, logLocalAudit } from '@/lib/server/store-db';
 
 interface TenantAuditActor {
   uid: string;
@@ -32,6 +33,16 @@ function toSerializableMetadata(metadata: Record<string, unknown> | undefined) {
 
 export async function logTenantAdminEvent(event: TenantAuditEvent): Promise<void> {
   try {
+    // Las tiendas del ERP guardan su historial en la base propia.
+    if (isLocalStore(event.tenantId)) {
+      logLocalAudit({
+        storeId: event.tenantId,
+        action: event.action,
+        actor: { uid: event.actor.uid, email: event.actor.email, role: event.actor.role || null },
+        metadata: { resource: event.resource, resourceId: event.resourceId || null, ...toSerializableMetadata(event.metadata) },
+      });
+      return;
+    }
     await getCentralAdminDb().collection('tenantAdminAuditLogs').add({
       tenantId: event.tenantId,
       action: event.action,

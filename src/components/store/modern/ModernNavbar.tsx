@@ -28,8 +28,10 @@ interface ModernNavbarProps {
   onSearchChange?: (query: string) => void;
 }
 
-function isHttpUrl(value?: string): boolean {
+/** URL http(s) o una imagen guardada en el propio catálogo (/media/...). */
+function isImageUrl(value?: string): boolean {
   if (!value?.trim()) return false;
+  if (value.trim().startsWith('/media/')) return true;
   try {
     const url = new URL(value.trim());
     return url.protocol === 'http:' || url.protocol === 'https:';
@@ -75,7 +77,7 @@ export default function ModernNavbar({
     { key: 'whatsapp', label: 'WhatsApp', href: store.whatsapp ? `https://wa.me/${store.whatsapp}` : null, icon: <MessageCircle size={22} strokeWidth={2.25} /> },
   ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
-  const showLogo = isHttpUrl(store.logo) && !logoError;
+  const showLogo = isImageUrl(store.logo) && !logoError;
 
   const submitSearch = () => {
     const value = query.trim();

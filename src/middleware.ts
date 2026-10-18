@@ -31,6 +31,8 @@ export async function middleware(request: NextRequest) {
     url.pathname === '/privacidad' ||
     url.pathname === '/vista-previa' ||
     url.pathname === '/recuperar-password' ||
+    // Editor de la tienda dentro del ERP: el ERP lo pide por su proxy con su propio Host.
+    url.pathname.startsWith('/erp-panel/') ||
     url.pathname.startsWith('/_next') ||
     url.pathname.startsWith('/api')
   ) {

@@ -26,3 +26,26 @@ export function getErpConfig(): ErpConfig | null {
     webhookSecret: process.env.ERP_WEBHOOK_SECRET?.trim() || null,
   };
 }
+
+/** Servidor del ERP configurado (p. ej. `api-dev.createam.cloud`). */
+export function erpApiHost(): string | null {
+  const config = getErpConfig();
+  if (!config) return null;
+  try {
+    return new URL(config.baseUrl).host;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Si el enlace de una tienda vale para el ERP configurado. Las tiendas creadas
+ * desde CyberPOS guardan en qué ERP nacieron (`api`): así, al pasar de api-dev
+ * a producción, una tienda de prueba del negocio 1 de dev no muestra los
+ * productos del negocio 1 de producción. Los enlaces sin `api` (puestos a mano
+ * por el superadmin) valen para cualquiera.
+ */
+export function linkedToCurrentErp(link: { partnerId?: number; api?: string | null } | null | undefined): boolean {
+  if (!link?.partnerId) return false;
+  return !link.api || link.api === erpApiHost();
+}
