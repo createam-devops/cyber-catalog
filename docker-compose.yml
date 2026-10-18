@@ -41,7 +41,8 @@ services:
       # Configuración de las tiendas del ERP: NO borrar este volumen.
       - catalog-data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      # La imagen (Alpine) no trae curl, sí wget. 127.0.0.1: Next escucha en IPv4.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
