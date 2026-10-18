@@ -8,6 +8,7 @@ import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from "@/li
 import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
 import type { StoreCatalog, StoreProduct } from "@/lib/storefront/catalog";
+import { absoluteUrl, jsonLdHtml, productJsonLd } from "@/lib/storefront/structured-data";
 
 export const dynamic = 'force-dynamic';
 
@@ -53,8 +54,12 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
     return notFound();
   }
 
+  const categoryLabel = catalog.categories.find((category) => category.id === product.category)?.label;
+  const jsonLd = productJsonLd(product, tenant, `https://${searchParams._domain}`, categoryLabel);
+
   return (
     <StorefrontRoot store={toPublicStore(tenant)} categories={catalog.categories}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }} />
       <CartProviderWrapper storeId={tenant.id}>
         <ModernProductDetail product={product} relatedProducts={relatedTo(product, catalog)} />
       </CartProviderWrapper>
@@ -72,9 +77,10 @@ export async function generateMetadata({ params, searchParams }: StoreProductPag
   const title = `${product.name} | ${tenant.name}`;
   const description = (product.description?.trim() || `${product.name} a ${formatPrice(product.price)} en ${tenant.name}. Pide por WhatsApp.`).slice(0, 200);
   const url = `https://${searchParams._domain}/product/${product.id}`;
-  const image = product.imageUrls[0];
+  const image = absoluteUrl(product.imageUrls[0], `https://${searchParams._domain}`);
 
   return {
+    metadataBase: new URL(`https://${searchParams._domain}`),
     title,
     description,
     alternates: { canonical: url },

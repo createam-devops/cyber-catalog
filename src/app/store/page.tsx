@@ -9,6 +9,7 @@ import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { FULL_CATALOG_THRESHOLD } from "@/lib/storefront/catalog";
 import { toPublicStore } from "@/lib/storefront/public-store";
 import { resolveStorefront } from "@/lib/storefront/theme";
+import { absoluteUrl, jsonLdHtml, storeJsonLd } from "@/lib/storefront/structured-data";
 
 // El dominio llega como parámetro: la página se arma en cada visita, pero el
 // catálogo sale de la caché en memoria de storefront-data (como mucho una
@@ -44,6 +45,7 @@ export default async function StorePage({ searchParams }: StorePageProps) {
 
   return (
     <StorefrontRoot store={toPublicStore(tenant)} categories={catalog.categories}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(storeJsonLd(tenant, `https://${domain}`)) }} />
       <CartProviderWrapper storeId={tenant.id}>
         <ModernStoreHome
           initialProducts={initialProducts}
@@ -69,10 +71,12 @@ export async function generateMetadata({ searchParams }: StorePageProps): Promis
   const description =
     tenant.seoDescription?.trim() ||
     [theme.content.heroTitle, `Mira el catálogo de ${tenant.name} y haz tu pedido por WhatsApp.`].filter(Boolean).join('. ');
-  const image = tenant.heroSlides?.find((s) => s.image)?.image || tenant.logo || undefined;
+  // Las imágenes guardadas en el catálogo son relativas (/media/...): se completan con el dominio de la tienda.
+  const image = absoluteUrl(tenant.heroSlides?.find((s) => s.image)?.image || tenant.logo, `https://${domain}`);
   const url = `https://${domain}/`;
 
   return {
+    metadataBase: new URL(`https://${domain}`),
     title,
     description,
     alternates: { canonical: url },
