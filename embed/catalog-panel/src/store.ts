@@ -30,6 +30,8 @@ export interface StoreSnapshot {
 
 export interface StoreResponse {
   canManage: boolean;
+  /** Datos que vienen del negocio en el ERP: se muestran, pero se cambian en CyberPOS. */
+  fromErp?: { name: boolean; logo: boolean; whatsapp: boolean };
   store: StoreSnapshot;
   storeUrl: string | null;
   /** /vista-previa en el dominio del catálogo (va en un iframe, no por el proxy del ERP). */

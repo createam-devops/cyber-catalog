@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { verifyTenantAdminRequest } from '@/lib/server/tenant-auth';
-import { getCentralAdminDb } from '@/lib/server/central-admin';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { tenantSettingsPatchSchema } from '@/lib/server/tenant-settings-validation';
 import { applyTenantSettingsPatch } from '@/lib/server/tenant-settings-update';
-import { listDevStores } from '@/lib/server/storefront-data';
+import { getTenantById } from '@/lib/server/tenants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function serializeTenant(data: FirebaseFirestore.DocumentData, tenantId: string) {
-  return {
-    id: tenantId,
-    ...data,
-    createdAt: data.createdAt?.toDate?.()?.toISOString?.() || null,
-    updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() || null,
-    approvedAt: data.approvedAt?.toDate?.()?.toISOString?.() || null,
-    trialEndsAt: data.trialEndsAt?.toDate?.()?.toISOString?.() || data.trialEndsAt || null,
-  };
-}
 
 export async function GET(request: NextRequest) {
   const rateLimit = checkRateLimit(request, 'tenant-settings-get');
@@ -33,21 +21,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tenantId = authResult.context.tenantId;
-
-    // Desarrollo local: las tiendas de STOREFRONT_DEV_STORES no están en Firestore.
-    const devStore = listDevStores().find((store) => store.id === tenantId);
-    if (devStore) {
-      return NextResponse.json({ tenant: devStore });
-    }
-
-    const tenantDoc = await getCentralAdminDb().collection('tenants').doc(tenantId).get();
-
-    if (!tenantDoc.exists) {
+    // De la base propia, de Firestore o, en desarrollo, de STOREFRONT_DEV_STORES.
+    // Las fechas viajan como texto ISO.
+    const tenant = await getTenantById(authResult.context.tenantId);
+    if (!tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ tenant: serializeTenant(tenantDoc.data() || {}, tenantId) });
+    return NextResponse.json({ tenant });
   } catch (error) {
     console.error('[tenant-admin/settings] Failed to load settings:', error);
     return NextResponse.json({ error: 'Failed to load tenant settings' }, { status: 500 });

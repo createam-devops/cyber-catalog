@@ -4,9 +4,10 @@
 // Contrato: cyberERP/RESPUESTA_ADECUACIONES_ERP_CATALOGO.md §H.4.
 
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { getCentralAdminDb } from '../central-admin';
+import { centralAdminConfigured, getCentralAdminDb } from '../central-admin';
 import { listDevStores } from '../storefront-data';
-import { linkedToCurrentErp } from './config';
+import { localStoreIdsForPartner } from '../store-db';
+import { erpApiHost, linkedToCurrentErp } from './config';
 
 /** Avisos más viejos que esto se rechazan (un reenvío de un aviso capturado). */
 export const MAX_SIGNATURE_AGE_SECONDS = 300;
@@ -51,27 +52,31 @@ export function alreadyProcessed(eventId: string): boolean {
 }
 
 // --- Qué tiendas usan un negocio del ERP (normalmente una).
-const TENANTS_TTL_MS = 5 * 60 * 1000;
-const tenantsByPartner = new Map<number, { at: number; ids: string[] }>();
+// Las tiendas viejas de Firestore enlazadas a mano por el superadmin se recuerdan 5 minutos.
+const LEGACY_TTL_MS = 5 * 60 * 1000;
+const legacyByPartner = new Map<number, { at: number; ids: string[] }>();
 
-/** Olvida la tienda recordada de un negocio (al activarla desde «Mi tienda»). */
-export function forgetPartnerTenants(partnerId: number): void {
-  tenantsByPartner.delete(partnerId);
-}
-
+/**
+ * Las tiendas del negocio en el ERP configurado, la de la base propia primero:
+ * las de prueba locales (STOREFRONT_DEV_STORES), las de la base propia y las
+ * viejas de Firestore enlazadas a mano. Un mismo número de negocio existe en
+ * dev y en producción: solo cuentan las enlazadas a este ERP.
+ */
 export async function tenantIdsForPartner(partnerId: number): Promise<string[]> {
-  // En desarrollo con tiendas de prueba (STOREFRONT_DEV_STORES) solo cuentan
-  // esas: así se prueba también un negocio sin tienda, sin Firebase.
-  const devStores = listDevStores();
-  if (devStores.length) {
-    return devStores.filter((store) => store.erp?.partnerId === partnerId && linkedToCurrentErp(store.erp)).map((store) => store.id);
-  }
+  const api = erpApiHost();
+  const ids = [
+    ...(api ? localStoreIdsForPartner(partnerId, api) : []),
+    ...listDevStores()
+      .filter((store) => store.erp?.partnerId === partnerId && linkedToCurrentErp(store.erp))
+      .map((store) => store.id),
+  ];
+  if (!centralAdminConfigured()) return ids;
 
-  const cached = tenantsByPartner.get(partnerId);
-  if (cached && Date.now() - cached.at < TENANTS_TTL_MS) return cached.ids;
-  const snap = await getCentralAdminDb().collection('tenants').where('erp.partnerId', '==', partnerId).get();
-  // Solo las enlazadas a este ERP: un mismo número de negocio existe en dev y en producción.
-  const ids = snap.docs.filter((doc) => linkedToCurrentErp(doc.get('erp'))).map((doc) => doc.id);
-  tenantsByPartner.set(partnerId, { at: Date.now(), ids });
-  return ids;
+  let legacy = legacyByPartner.get(partnerId);
+  if (!legacy || Date.now() - legacy.at >= LEGACY_TTL_MS) {
+    const snap = await getCentralAdminDb().collection('tenants').where('erp.partnerId', '==', partnerId).get();
+    legacy = { at: Date.now(), ids: snap.docs.filter((doc) => linkedToCurrentErp(doc.get('erp'))).map((doc) => doc.id) };
+    legacyByPartner.set(partnerId, legacy);
+  }
+  return [...ids, ...legacy.ids];
 }

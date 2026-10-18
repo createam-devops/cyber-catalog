@@ -27,6 +27,19 @@ export function panelError(status: number, code: string, error: string): NextRes
   return panelJson({ code, error }, status);
 }
 
+/**
+ * Dirección pública del catálogo. Las peticiones llegan por el proxy del ERP,
+ * con su dominio, pero la vista previa (/vista-previa) y las imágenes (/media)
+ * se piden directo al catálogo.
+ */
+export function catalogPublicUrl(request: NextRequest): string {
+  const configured = process.env.CATALOG_PUBLIC_URL?.trim() || process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, '');
+  const host = request.nextUrl.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') return request.nextUrl.origin;
+  return `https://${process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'createam.cloud'}`;
+}
+
 function hasPermission(claims: ErpUserClaims, permission: string): boolean {
   return claims.permissions.includes(permission) || claims.permissions.includes('*');
 }

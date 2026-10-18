@@ -1,9 +1,10 @@
 // Guardar los ajustes de una tienda. Lo usan el panel del catálogo
-// (/api/tenant-admin/settings) y «Mi tienda» dentro de CyberPOS
-// (/api/embed/store): mismas reglas en los dos lados.
+// (/api/tenant-admin/settings) y el editor dentro de CyberPOS
+// (/erp-panel/api/store): mismas reglas en los dos lados.
 
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from './central-admin';
+import { isLocalStore, isUniqueViolation, updateLocalStore } from './store-db';
 import { getTenantPlanInfo } from './tenant-plan';
 import { logTenantAdminEvent } from './tenant-audit';
 import { listDevStores } from './storefront-data';
@@ -27,12 +28,10 @@ export async function applyTenantSettingsPatch(
     return fail(501, 'Es una tienda de prueba local (STOREFRONT_DEV_STORES): los cambios no se guardan.');
   }
 
-  const updateData: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
-    updatedAt: FieldValue.serverTimestamp(),
-  };
+  const changes: Record<string, unknown> = {};
   const changedFields: string[] = [];
   const set = (field: string, value: unknown) => {
-    updateData[field] = value;
+    changes[field] = value;
     changedFields.push(field);
   };
 
@@ -100,7 +99,26 @@ export async function applyTenantSettingsPatch(
   if (payload.socialMedia && typeof payload.socialMedia === 'object') set('socialMedia', payload.socialMedia);
   if (Array.isArray(payload.heroSlides)) set('heroSlides', payload.heroSlides);
 
-  await getCentralAdminDb().collection('tenants').doc(tenantId).update(updateData);
+  // Tiendas del ERP: base propia. Las viejas: su documento de Firestore.
+  if (isLocalStore(tenantId)) {
+    const { subdomain, domain, ...settings } = changes;
+    try {
+      updateLocalStore(tenantId, {
+        ...('subdomain' in changes ? { subdomain: subdomain as string | null } : {}),
+        ...('domain' in changes ? { domain: domain as string | null } : {}),
+        settings,
+      });
+    } catch (error) {
+      // Otra tienda tomó la misma dirección entre la revisión y el guardado.
+      if (isUniqueViolation(error)) return fail(409, 'Esa dirección ya la usa otra tienda. Elige otra.');
+      throw error;
+    }
+  } else {
+    await getCentralAdminDb()
+      .collection('tenants')
+      .doc(tenantId)
+      .update({ ...changes, updatedAt: FieldValue.serverTimestamp() });
+  }
 
   await logTenantAdminEvent({
     tenantId,

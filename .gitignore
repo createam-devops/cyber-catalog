@@ -39,3 +39,6 @@ next-env.d.ts
 
 # Paquete <catalog-panel> (se genera con npm run build:embed)
 /public/erp-panel/
+
+# Base propia del catálogo en desarrollo (SQLite e imágenes de las tiendas)
+/data/

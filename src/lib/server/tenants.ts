@@ -1,4 +1,5 @@
-import { getCentralAdminDb } from './central-admin';
+import { centralAdminConfigured, getCentralAdminDb } from './central-admin';
+import { findLocalStore, findLocalStoreByAddress } from './store-db';
 import type { TenantConfig } from '@/lib/types';
 
 /**
@@ -19,12 +20,17 @@ import type { TenantConfig } from '@/lib/types';
  * "en pausa"). Si dos tiendas comparten dominio o subdominio, gana la de mejor
  * estado.
  *
- * Busca, en este orden: dominio exacto, subdominio de la plataforma y, como
+ * Busca primero en la base propia (las tiendas del ERP) y después en
+ * Firestore, en este orden: dominio exacto, subdominio de la plataforma y, como
  * último recurso, una tienda abierta cuyo nombre coincida con el subdominio.
  */
 export async function getTenantByDomain(domain: string): Promise<TenantConfig | null> {
   const platformDomain = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'createam.cloud';
   const subdomain = domain.endsWith(`.${platformDomain}`) ? domain.split('.')[0] : null;
+
+  const local = findLocalStoreByAddress('domain', domain) ?? (subdomain ? findLocalStoreByAddress('subdomain', subdomain) : null);
+  if (local) return local;
+  if (!centralAdminConfigured()) return null;
 
   const tenants = getCentralAdminDb().collection('tenants');
 
@@ -88,13 +94,17 @@ function plano(valor: unknown): unknown {
 }
 
 /**
- * Una tienda por su id, como datos planos, o null si no existe. En desarrollo
- * reconoce también las tiendas de prueba (STOREFRONT_DEV_STORES).
+ * Una tienda por su id, como datos planos, o null si no existe: de la base
+ * propia o de Firestore. En desarrollo reconoce también las tiendas de prueba
+ * (STOREFRONT_DEV_STORES).
  */
 export async function getTenantById(tenantId: string): Promise<TenantConfig | null> {
   const { listDevStores } = await import('./storefront-data');
   const devStore = listDevStores().find((store) => store.id === tenantId);
   if (devStore) return devStore;
+  const local = findLocalStore(tenantId);
+  if (local) return local;
+  if (!centralAdminConfigured()) return null;
   const doc = await getCentralAdminDb().collection('tenants').doc(tenantId).get();
   return doc.exists ? ({ id: doc.id, ...(plano(doc.data()) as object) } as TenantConfig) : null;
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCentralAdminDb } from '@/lib/server/central-admin';
+import { centralAdminConfigured, getCentralAdminDb } from '@/lib/server/central-admin';
+import { incrementLocalStoreStat } from '@/lib/server/store-db';
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import * as admin from 'firebase-admin';
 
@@ -33,6 +34,12 @@ export async function POST(request: NextRequest) {
   const field = (event as AnalyticsEvent) === 'view' ? 'analyticsViews' : 'analyticsWhatsapp';
 
   try {
+    // Tiendas del ERP: base propia. Las viejas: su documento de Firestore.
+    if (incrementLocalStoreStat(tenantId.trim(), event === 'view' ? 'views' : 'whatsapp_clicks')) {
+      return NextResponse.json({ ok: true });
+    }
+    if (!centralAdminConfigured()) return NextResponse.json({ ok: false }, { status: 404 });
+
     await getCentralAdminDb()
       .collection('tenants')
       .doc(tenantId.trim())
