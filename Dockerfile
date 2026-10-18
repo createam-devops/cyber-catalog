@@ -4,7 +4,10 @@ FROM node:24-alpine AS base
 
 # Instalar dependencias solo cuando sea necesario
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# python3, make y g++: npm corre node-gyp en better-sqlite3 (tiene binding.gyp).
+# Con su binario precompilado no compila nada, pero node-gyp igual pide Python.
+# Quedan solo en esta etapa: la imagen final no los lleva.
+RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 
 # Copiar archivos de dependencias
