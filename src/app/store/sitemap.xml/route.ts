@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from '@/lib/server/storefront-data';
+import { findStoreByDomain, storeDomainFromRequest, getStoreCatalog, storefrontAvailability } from '@/lib/server/storefront-data';
 import { absoluteUrl } from '@/lib/storefront/structured-data';
 
 export const runtime = 'nodejs';
@@ -14,7 +14,7 @@ const escapeXml = (value: string) =>
  * catálogo sale de la caché en memoria de storefront-data.
  */
 export async function GET(request: NextRequest) {
-  const domain = request.nextUrl.searchParams.get('_domain');
+  const domain = storeDomainFromRequest(request);
   const tenant = domain ? await findStoreByDomain(domain).catch(() => null) : null;
   if (!domain || !tenant || storefrontAvailability(tenant) !== 'open') return new Response('No encontrado', { status: 404 });
 
