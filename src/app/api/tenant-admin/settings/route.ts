@@ -9,6 +9,7 @@ import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
 import { getTenantPlanInfo } from '@/lib/server/tenant-plan';
 import { getPlan } from '@/lib/plans';
 import { normalizeWhatsapp } from '@/lib/storefront/public-store';
+import { listDevStores } from '@/lib/server/storefront-data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const tenantId = authResult.context.tenantId;
+
+    // Desarrollo local: las tiendas de STOREFRONT_DEV_STORES no están en Firestore.
+    const devStore = listDevStores().find((store) => store.id === tenantId);
+    if (devStore) {
+      return NextResponse.json({ tenant: devStore });
+    }
+
     const tenantDoc = await getCentralAdminDb().collection('tenants').doc(tenantId).get();
 
     if (!tenantDoc.exists) {
@@ -65,6 +73,13 @@ export async function PATCH(request: NextRequest) {
     const rawPayload = (await request.json()) as unknown;
     const payload = tenantSettingsPatchSchema.parse(rawPayload);
     const tenantId = authResult.context.tenantId;
+
+    if (listDevStores().some((store) => store.id === tenantId)) {
+      return NextResponse.json(
+        { error: 'Es una tienda de prueba local (STOREFRONT_DEV_STORES): los cambios no se guardan.' },
+        { status: 501 }
+      );
+    }
 
     const updateData: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
       updatedAt: FieldValue.serverTimestamp(),
