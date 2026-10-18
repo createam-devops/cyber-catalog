@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Store } from 'lucide-react';
 import { normalizeWhatsapp } from '@shared/storefront/public-store';
 import { getStorefrontIcon } from '@shared/storefront/icons';
@@ -14,26 +14,49 @@ const RUBRO_ICON: Record<RubroId, string> = {
   general: 'ShoppingBag',
 };
 
+interface Profile {
+  name: string | null;
+  whatsapp: string | null;
+}
+
 /**
- * Un negocio del ERP que todavía no tiene tienda online. Tres datos y listo:
- * los productos ya los tiene en el ERP; se publican desde Venta online.
+ * Un negocio del ERP que todavía no tiene tienda online. Los productos ya los
+ * tiene en el ERP (se publican desde Venta online), y el nombre comercial y el
+ * WhatsApp también, si el ERP los entrega: entonces solo falta elegir el rubro.
  */
 export default function Bienvenida({ api, onCreated }: { api: Api; onCreated: () => void }) {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [name, setName] = useState('');
   const [rubro, setRubro] = useState<RubroId | null>(null);
   const [whatsapp, setWhatsapp] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
 
-  const digits = normalizeWhatsapp(whatsapp);
-  const ready = name.trim().length >= 2 && rubro && digits;
+  useEffect(() => {
+    let alive = true;
+    api<Profile>('/profile')
+      .then((data) => alive && setProfile(data))
+      .catch(() => {
+        // Sin perfil, se piden los tres datos.
+      })
+      .finally(() => alive && setProfileLoaded(true));
+    return () => {
+      alive = false;
+    };
+  }, [api]);
+
+  const erpName = profile?.name ?? null;
+  const erpWhatsapp = profile?.whatsapp ?? null;
+  const digits = erpWhatsapp ?? normalizeWhatsapp(whatsapp);
+  const ready = profileLoaded && (erpName || name.trim().length >= 2) && rubro && digits;
 
   const create = async () => {
     if (!ready) return;
     setCreating(true);
     setError('');
     try {
-      await api('/store', { method: 'POST', body: { name: name.trim(), rubro, whatsapp: digits } });
+      await api('/store', { method: 'POST', body: { name: erpName ? undefined : name.trim(), rubro, whatsapp: erpWhatsapp ? undefined : digits } });
       onCreated();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No pudimos crear tu tienda.');
@@ -56,9 +79,15 @@ export default function Bienvenida({ api, onCreated }: { api: Api; onCreated: ()
         </div>
       </div>
 
-      <Field label="Nombre de la tienda" hint="El que verán tus clientes. Puedes cambiarlo después.">
-        {(id) => <input id={id} className="cs-input" value={name} maxLength={60} placeholder="Ej.: Ferretería El Tornillo" onChange={(e) => setName(e.target.value)} />}
-      </Field>
+      {erpName ? (
+        <p className="rounded-cm-md border border-cm-line bg-cm-field px-3 py-2.5 text-cm-body text-cm-ink">
+          Tu tienda se llamará <strong>{erpName}</strong>, el nombre comercial de tu negocio en CyberPOS.
+        </p>
+      ) : (
+        <Field label="Nombre de la tienda" hint="El que verán tus clientes. Puedes cambiarlo después.">
+          {(id) => <input id={id} className="cs-input" value={name} maxLength={60} placeholder="Ej.: Ferretería El Tornillo" onChange={(e) => setName(e.target.value)} />}
+        </Field>
+      )}
 
       <div>
         <p className="cs-label">¿Qué vende tu negocio?</p>
@@ -88,13 +117,17 @@ export default function Bienvenida({ api, onCreated }: { api: Api; onCreated: ()
         </div>
       </div>
 
-      <Field
-        label="WhatsApp para pedidos"
-        error={whatsapp && !digits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
-        hint={digits ? `Los pedidos llegarán a +${digits}` : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'}
-      >
-        {(id) => <input id={id} type="tel" inputMode="tel" className="cs-input" value={whatsapp} placeholder="987 654 321" onChange={(e) => setWhatsapp(e.target.value)} />}
-      </Field>
+      {erpWhatsapp ? (
+        <p className="text-cm-label text-cm-muted">Los pedidos llegarán al WhatsApp de tu negocio en CyberPOS: +{erpWhatsapp}.</p>
+      ) : (
+        <Field
+          label="WhatsApp para pedidos"
+          error={whatsapp && !digits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
+          hint={digits ? `Los pedidos llegarán a +${digits}` : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'}
+        >
+          {(id) => <input id={id} type="tel" inputMode="tel" className="cs-input" value={whatsapp} placeholder="987 654 321" onChange={(e) => setWhatsapp(e.target.value)} />}
+        </Field>
+      )}
 
       {error && <Notice tone="danger">{error}</Notice>}
 

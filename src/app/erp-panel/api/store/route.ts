@@ -4,6 +4,7 @@ import { catalogPublicUrl, panelError, panelJson, STORE_NOT_CREATED, verifyPanel
 import { toPublicMediaUrl, toStoredMediaUrl } from '@/lib/server/store-media';
 import { getAppToken, isAppNotEnabled } from '@/lib/server/erp/client';
 import { erpApiHost } from '@/lib/server/erp/config';
+import { getPartnerProfile, withPartnerProfile } from '@/lib/server/erp/partner-profile';
 import { createLocalStore, isUniqueViolation, localStoreIdsForPartner } from '@/lib/server/store-db';
 import { getTenantById } from '@/lib/server/tenants';
 import { applyTenantSettingsPatch } from '@/lib/server/tenant-settings-update';
@@ -26,14 +27,17 @@ export async function GET(request: NextRequest) {
   const auth = await verifyPanelRequest(request, 'view');
   if (!auth.ok) return panelError(auth.status, auth.code, auth.error);
 
-  const tenant = auth.tenantId ? await getTenantById(auth.tenantId) : null;
-  if (!tenant) return STORE_NOT_CREATED();
+  const stored = auth.tenantId ? await getTenantById(auth.tenantId) : null;
+  if (!stored) return STORE_NOT_CREATED();
+  // Nombre, logo y WhatsApp del negocio en el ERP; `fromErp` dice cuáles el editor muestra sin editar.
+  const { tenant, fromErp } = await withPartnerProfile(stored);
 
   // Las imágenes guardadas en el catálogo van con su URL absoluta: el editor vive en el dominio del ERP.
   const base = catalogPublicUrl(request);
   const address = tenant.domain || (tenant.subdomain ? `${tenant.subdomain}.${platformDomain()}` : null);
   return panelJson({
     canManage: auth.canManage,
+    fromErp,
     store: {
       id: tenant.id,
       name: tenant.name,
@@ -104,8 +108,7 @@ export async function POST(request: NextRequest) {
   if (auth.tenantId) return panelJson({ ok: true, tenantId: auth.tenantId, alreadyCreated: true });
 
   const body = (await request.json().catch(() => ({}))) as { name?: unknown; rubro?: unknown; whatsapp?: unknown };
-  const name = typeof body.name === 'string' ? body.name.trim() : '';
-  if (name.length < 2 || name.length > 60) return panelError(400, 'INVALID', 'Escribe el nombre de tu tienda (de 2 a 60 caracteres).');
+  const typedName = typeof body.name === 'string' ? body.name.trim() : '';
   const rubro = (RUBRO_IDS as readonly string[]).includes(String(body.rubro)) ? (body.rubro as RubroId) : undefined;
   const whatsappRaw = typeof body.whatsapp === 'string' ? body.whatsapp.trim() : '';
   const whatsapp = whatsappRaw ? normalizeWhatsapp(whatsappRaw) : '';
@@ -119,6 +122,12 @@ export async function POST(request: NextRequest) {
     console.error('[erp-panel/store] El ERP no confirmó la app del negocio', claims.partnerId, error);
     return panelError(503, 'ERP_UNAVAILABLE', 'No pudimos confirmar tu plan con CyberPOS. Inténtalo en unos minutos.');
   }
+
+  // Nombre comercial y WhatsApp del negocio en el ERP, si los entrega. Se guardan también
+  // en la tienda, de respaldo, por si el ERP deja de entregarlos.
+  const profile = await getPartnerProfile(claims.partnerId);
+  const name = typedName || profile?.name || '';
+  if (name.length < 2 || name.length > 60) return panelError(400, 'INVALID', 'Escribe el nombre de tu tienda (de 2 a 60 caracteres).');
 
   const erpApi = erpApiHost();
   if (!erpApi) return panelError(503, 'ERP_NOT_CONFIGURED', 'La tienda online no está disponible en este servidor.');
@@ -136,7 +145,7 @@ export async function POST(request: NextRequest) {
           // El plan comercial y el cobro son del ERP (D3); aquí solo limita funciones.
           plan: 'starter',
           status: 'active',
-          settings: { name, ...(whatsapp ? { whatsapp } : {}), storefront: rubro ? { rubro } : {} },
+          settings: { name, whatsapp: whatsapp || profile?.whatsapp || undefined, storefront: rubro ? { rubro } : {} },
         });
       } catch (error) {
         if (!isUniqueViolation(error) || attempt >= 2) throw error;

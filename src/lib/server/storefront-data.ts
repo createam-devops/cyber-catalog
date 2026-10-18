@@ -15,6 +15,7 @@ import { getTenantDbFromConfig } from './tenant-firestore';
 import { getTenantByDomain } from './tenants';
 import { getErpConfig, linkedToCurrentErp } from './erp/config';
 import { loadErpCatalog } from './erp/catalog-source';
+import { withPartnerProfile } from './erp/partner-profile';
 
 export interface StorefrontDataSource {
   /** Todo el catálogo de la tienda. Lanza si la fuente no responde. */
@@ -201,10 +202,14 @@ export function listDevStores(): TenantConfig[] {
   }
 }
 
-/** Una sola consulta por petición aunque la pidan la página y sus metadatos. */
-export const findStoreByDomain = cache(
-  async (domain: string) => listDevStores().find((store) => store.domain === domain) ?? getTenantByDomain(domain)
-);
+/**
+ * Una sola consulta por petición aunque la pidan la página y sus metadatos.
+ * Las tiendas del ERP salen con el nombre, el logo y el WhatsApp de su negocio.
+ */
+export const findStoreByDomain = cache(async (domain: string) => {
+  const store = listDevStores().find((dev) => dev.domain === domain) ?? (await getTenantByDomain(domain));
+  return store ? (await withPartnerProfile(store)).tenant : null;
+});
 
 export type StorefrontAvailability = 'open' | 'paused' | 'missing';
 

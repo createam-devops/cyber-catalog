@@ -20,6 +20,7 @@ interface Props {
 
 const SUBDOMAIN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
+
 export default function Ajustes({ data, draft, setDraft, canManage, api, preview, previewUrl }: Props) {
   const disabled = !canManage;
   const [uploading, setUploading] = useState<'logo' | 'banner' | null>(null);
@@ -27,6 +28,7 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
   const logoInput = useRef<HTMLInputElement>(null);
   const bannerInput = useRef<HTMLInputElement>(null);
 
+  const fromErp = data.fromErp ?? { name: false, logo: false, whatsapp: false };
   const set = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
   const setSlides = (heroSlides: HeroSlide[]) => set({ heroSlides });
   const maxSlides = data.limits.heroSlides;
@@ -61,29 +63,37 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
           <span className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-cm-md border border-cm-line bg-white">
             {draft.logo ? <img src={draft.logo} alt="Logo" className="max-h-full max-w-full object-contain" /> : <span className="text-cm-caption text-cm-faint">Sin logo</span>}
           </span>
-          <input
-            ref={logoInput}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            hidden
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              e.target.value = '';
-              if (!file) return;
-              const url = await upload(file, 'logo');
-              if (url) set({ logo: url });
-            }}
-          />
-          <Button disabled={disabled} loading={uploading === 'logo'} icon={<ImagePlus size={16} />} onClick={() => logoInput.current?.click()}>
-            {draft.logo ? 'Cambiar logo' : 'Subir logo'}
-          </Button>
-          {draft.logo && (
-            <Button variant="danger" disabled={disabled} onClick={() => set({ logo: '' })}>
-              Quitar
-            </Button>
+          {!fromErp.logo && (
+            <>
+              <input
+                ref={logoInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                hidden
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = '';
+                  if (!file) return;
+                  const url = await upload(file, 'logo');
+                  if (url) set({ logo: url });
+                }}
+              />
+              <Button disabled={disabled} loading={uploading === 'logo'} icon={<ImagePlus size={16} />} onClick={() => logoInput.current?.click()}>
+                {draft.logo ? 'Cambiar logo' : 'Subir logo'}
+              </Button>
+              {draft.logo && (
+                <Button variant="danger" disabled={disabled} onClick={() => set({ logo: '' })}>
+                  Quitar
+                </Button>
+              )}
+            </>
           )}
         </div>
-        <p className="cs-hint !mt-0">PNG con fondo transparente se ve mejor. La reducimos antes de subirla.</p>
+        <p className="cs-hint !mt-0">
+          {fromErp.logo
+            ? 'Es el logo de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.'
+            : 'PNG con fondo transparente se ve mejor. La reducimos antes de subirla.'}
+        </p>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -158,12 +168,18 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
       <Section title="Contacto" description="Dónde te escriben tus clientes.">
         <Field
           label="WhatsApp para pedidos"
-          error={draft.whatsapp && !whatsappDigits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
-          hint={whatsappDigits ? `Los pedidos llegan a +${whatsappDigits}` : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'}
+          error={!fromErp.whatsapp && draft.whatsapp && !whatsappDigits ? 'Ese número no parece válido. Escribe tu celular de 9 dígitos.' : null}
+          hint={
+            fromErp.whatsapp
+              ? 'Es el WhatsApp de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.'
+              : whatsappDigits
+                ? `Los pedidos llegan a +${whatsappDigits}`
+                : 'Tu celular de 9 dígitos; agregamos el 51 de Perú.'
+          }
         >
           {(id) => (
             <span className="flex gap-2">
-              <input id={id} type="tel" inputMode="tel" className="cs-input" disabled={disabled} value={draft.whatsapp} placeholder="987 654 321" onChange={(e) => set({ whatsapp: e.target.value })} />
+              <input id={id} type="tel" inputMode="tel" className="cs-input" disabled={disabled || fromErp.whatsapp} value={draft.whatsapp} placeholder="987 654 321" onChange={(e) => set({ whatsapp: e.target.value })} />
               {whatsappDigits && (
                 <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 shrink-0 items-center rounded-cm-md border border-cm-line bg-cm-field px-3 text-cm-body font-semibold text-cm-ink">
                   Probar
@@ -197,8 +213,12 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
       </Section>
 
       <Section title="Nombre y dirección" description="Cómo se llama tu tienda y dónde la encuentran.">
-        <Field label="Nombre de la tienda" error={draft.name.trim().length < 2 ? 'Escribe el nombre de tu tienda.' : null}>
-          {(id) => <input id={id} className="cs-input" disabled={disabled} value={draft.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} />}
+        <Field
+          label="Nombre de la tienda"
+          error={!fromErp.name && draft.name.trim().length < 2 ? 'Escribe el nombre de tu tienda.' : null}
+          hint={fromErp.name ? 'Es el nombre comercial de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.' : undefined}
+        >
+          {(id) => <input id={id} className="cs-input" disabled={disabled || fromErp.name} value={draft.name} maxLength={60} onChange={(e) => set({ name: e.target.value })} />}
         </Field>
         <Field label="Dirección en Createam" error={subdomainError} hint="Si la cambias, la dirección anterior deja de funcionar.">
           {(id) => (
