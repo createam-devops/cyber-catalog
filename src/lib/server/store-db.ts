@@ -13,7 +13,7 @@
 import Database from 'better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import type { PlanId } from '@/lib/plans';
 import type { TenantConfig, TenantStatus } from '@/lib/types';
 
@@ -52,6 +52,16 @@ const MIGRATIONS = [
     created_at TEXT NOT NULL
   );
   CREATE INDEX audit_log_store ON audit_log (store_id, created_at);
+  `,
+  `
+  CREATE TABLE signup_codes (
+    email      TEXT PRIMARY KEY,
+    code_hash  TEXT NOT NULL,
+    attempts   INTEGER NOT NULL DEFAULT 0,
+    expires_at TEXT NOT NULL,
+    data       TEXT NOT NULL DEFAULT '{}' CHECK (json_valid(data)),
+    created_at TEXT NOT NULL
+  );
   `,
 ];
 
@@ -261,4 +271,49 @@ export function logLocalAudit(event: { storeId: string; action: string; actor: u
   getStoreDb()
     .prepare('INSERT INTO audit_log (store_id, action, actor, metadata, created_at) VALUES (?, ?, ?, ?, ?)')
     .run(event.storeId, event.action, JSON.stringify(event.actor ?? {}), JSON.stringify(event.metadata ?? {}), now());
+}
+
+// --- Registro con alta en el ERP: el código que se manda por correo para
+// verificarlo. Se guarda su hash, nunca el código ni la contraseña.
+
+const SIGNUP_CODE_TTL_MS = 15 * 60 * 1000;
+const SIGNUP_MAX_ATTEMPTS = 5;
+const codeHash = (email: string, code: string) => createHash('sha256').update(`${email}:${code}`).digest('hex');
+
+export function saveSignupCode(email: string, code: string, data: Record<string, unknown>): void {
+  const at = now();
+  getStoreDb()
+    .prepare(
+      `INSERT INTO signup_codes (email, code_hash, attempts, expires_at, data, created_at) VALUES (?, ?, 0, ?, ?, ?)
+       ON CONFLICT (email) DO UPDATE SET code_hash = excluded.code_hash, attempts = 0, expires_at = excluded.expires_at, data = excluded.data, created_at = excluded.created_at`
+    )
+    .run(email, codeHash(email, code), new Date(Date.now() + SIGNUP_CODE_TTL_MS).toISOString(), JSON.stringify(data), at);
+}
+
+export type SignupCodeCheck =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; reason: 'missing' | 'expired' | 'attempts' }
+  | { ok: false; reason: 'wrong'; remaining: number };
+
+/** Revisa el código del correo. Cada código equivocado cuenta un intento; el correcto no se borra hasta terminar el alta. */
+export function checkSignupCode(email: string, code: string): SignupCodeCheck {
+  const db = getStoreDb();
+  const row = db.prepare('SELECT code_hash, attempts, expires_at, data FROM signup_codes WHERE email = ?').get(email) as
+    | { code_hash: string; attempts: number; expires_at: string; data: string }
+    | undefined;
+  if (!row) return { ok: false, reason: 'missing' };
+  if (new Date(row.expires_at) < new Date()) {
+    deleteSignupCode(email);
+    return { ok: false, reason: 'expired' };
+  }
+  if (row.attempts >= SIGNUP_MAX_ATTEMPTS) return { ok: false, reason: 'attempts' };
+  if (row.code_hash !== codeHash(email, code)) {
+    db.prepare('UPDATE signup_codes SET attempts = attempts + 1 WHERE email = ?').run(email);
+    return { ok: false, reason: 'wrong', remaining: SIGNUP_MAX_ATTEMPTS - row.attempts - 1 };
+  }
+  return { ok: true, data: JSON.parse(row.data) as Record<string, unknown> };
+}
+
+export function deleteSignupCode(email: string): void {
+  getStoreDb().prepare('DELETE FROM signup_codes WHERE email = ?').run(email);
 }

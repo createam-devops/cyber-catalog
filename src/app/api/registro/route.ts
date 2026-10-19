@@ -7,8 +7,16 @@ import { sendNewTenantNotification, sendRegistrationConfirmation } from '@/lib/e
 import { checkRateLimit } from '@/lib/server/rate-limit';
 import { getTrialEndDate } from '@/lib/plans';
 import { uniqueSubdomain } from '@/lib/server/subdomain';
+import { createErpPartner, ERP_PASSWORD_RULE, erpLoginUrl, erpPasswordOk, erpSignupPlanCode } from '@/lib/server/erp/signup';
+import { checkSignupCode, deleteSignupCode } from '@/lib/server/store-db';
 
 export const runtime = 'nodejs';
+
+/** Cómo es el registro: con alta en el ERP (y su regla de contraseña) o el de siempre. */
+export async function GET() {
+  const erp = Boolean(erpSignupPlanCode());
+  return NextResponse.json({ erp, passwordRule: erp ? ERP_PASSWORD_RULE : null });
+}
 
 export async function POST(request: NextRequest) {
   const rateLimit = checkRateLimit(request, 'registro-verify', 10, 60 * 60 * 1000);
@@ -21,6 +29,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    // Registro con alta en el ERP (ERP_SIGNUP_PLAN_CODE): sin Firebase.
+    if (erpSignupPlanCode()) return await verifyErpSignup(body);
     const { email, code, password } = body;
 
     if (!email || !code || !password) {
@@ -134,3 +144,52 @@ export async function POST(request: NextRequest) {
   }
 }
 
+
+/**
+ * Paso 2 del registro con alta en el ERP: con el código correcto, el negocio y
+ * su dueño nacen en el ERP con el plan del catálogo. El dueño entra después a
+ * CyberPOS (loginUrl) y crea su tienda desde «Crea tu tienda online».
+ */
+async function verifyErpSignup(body: Record<string, unknown>) {
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const code = typeof body.code === 'string' ? body.code.trim() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  if (!email || !code || !password) {
+    return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 });
+  }
+
+  const check = checkSignupCode(email, code);
+  if (!check.ok) {
+    const error =
+      check.reason === 'wrong'
+        ? `Código incorrecto. ${check.remaining} intentos restantes.`
+        : check.reason === 'attempts'
+          ? 'Demasiados intentos fallidos. Solicita un nuevo código.'
+          : check.reason === 'expired'
+            ? 'El código expiró. Solicita uno nuevo.'
+            : 'Código no encontrado o expirado. Solicita uno nuevo.';
+    return NextResponse.json({ error }, { status: 400 });
+  }
+  if (!erpPasswordOk(password)) {
+    return NextResponse.json({ error: ERP_PASSWORD_RULE }, { status: 400 });
+  }
+
+  const data = check.data as { businessName?: string; ownerName?: string; phone?: string };
+  const result = await createErpPartner({
+    businessName: data.businessName ?? '',
+    ownerName: data.ownerName ?? data.businessName ?? '',
+    email,
+    password,
+    phone: data.phone,
+  });
+  const loginUrl = erpLoginUrl(email);
+
+  if (!result.ok) {
+    // Ya tiene cuenta: que entre con ella. El código ya no sirve para otra cosa.
+    if (result.code === 'EMAIL_ALREADY_REGISTERED') deleteSignupCode(email);
+    return NextResponse.json({ error: result.error, code: result.code, loginUrl: result.code === 'EMAIL_ALREADY_REGISTERED' ? loginUrl : null }, { status: result.status });
+  }
+
+  deleteSignupCode(email);
+  return NextResponse.json({ ok: true, provider: 'erp', partnerId: result.partnerId, loginUrl });
+}

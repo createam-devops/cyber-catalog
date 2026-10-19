@@ -102,19 +102,23 @@ export async function sendTenantApprovedEmail(tenant: {
 }
 
 // --- Email con código de verificación para activar cuenta ---
+const escapeHtml = (value: string) =>
+  value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!);
+
+/** El código del registro. Lanza si el correo no sale: así el formulario no dice «enviado» sin haberlo enviado. */
 export async function sendVerificationCode(tenant: {
   businessName: string;
   email: string;
   code: string;
 }) {
-  await getResend().emails.send({
+  const { error } = await getResend().emails.send({
     from: FROM_EMAIL,
     to: tenant.email,
     subject: `${tenant.code} — Tu código de verificación de Createam`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; background: #f9fafb; border-radius: 12px;">
         <h2 style="color: #111827; margin-bottom: 4px;">Verifica tu email</h2>
-        <p style="color: #6b7280; margin-top: 0;">Hola <strong style="color:#111827">${tenant.businessName}</strong>, usa este código para activar tu catálogo digital:</p>
+        <p style="color: #6b7280; margin-top: 0;">Hola <strong style="color:#111827">${escapeHtml(tenant.businessName)}</strong>, usa este código para activar tu catálogo digital:</p>
         <div style="background: #111827; border-radius: 12px; padding: 28px; text-align: center; margin: 28px 0;">
           <span style="font-size: 42px; font-weight: 900; letter-spacing: 12px; color: #ffffff; font-family: monospace;">${tenant.code}</span>
         </div>
@@ -124,6 +128,7 @@ export async function sendVerificationCode(tenant: {
       </div>
     `,
   });
+  if (error) throw new Error(`No se pudo enviar el código: ${error.message}`);
 }
 
 // --- Email al usuario cuando su cuenta es rechazada ---
