@@ -10,7 +10,8 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/registro');
+      // El registro ya no tiene ingreso: el panel suelto (tiendas viejas y superadmin) entra por /login.
+      router.push('/login');
     }
   }, [user, loading, router]);
 

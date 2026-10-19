@@ -586,9 +586,10 @@ export default function LandingPage() {
 
           <div id="ingresar" className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-t border-[#2A3D66] pt-7">
             <span className="font-bold">¿Ya eres cliente? Ingresa a:</span>
-            <Link href={LINKS.catalogLogin} className="flex min-h-[44px] items-center font-semibold text-[#9FC2F2] underline hover:text-white">
+            {/* /ingresar redirige al ingreso de CyberPOS: va con <a>, no con <Link>. */}
+            <a href={LINKS.catalogLogin} className="flex min-h-[44px] items-center font-semibold text-[#9FC2F2] underline hover:text-white">
               Catálogo Digital
-            </Link>
+            </a>
             <a href={LINKS.cyberposLogin} className="flex min-h-[44px] items-center font-semibold text-[#9FC2F2] underline hover:text-white">
               CyberPOS
             </a>

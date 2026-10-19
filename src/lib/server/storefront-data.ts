@@ -223,6 +223,15 @@ export function storeDomainFromRequest(request: Request): string | null {
   return param || host || null;
 }
 
+/**
+ * Dónde administra su tienda el dueño: las del ERP, en CyberPOS (Venta online ›
+ * Tienda); las viejas de Firebase, en el panel suelto.
+ */
+export function storeAdminUrl(tenant: TenantConfig): string {
+  const app = process.env.ERP_APP_URL?.trim().replace(/\/+$/, '');
+  return tenant.erp?.partnerId && app ? `${app}/app/admin/venta-online/tienda/catalog` : '/tenant-admin';
+}
+
 export type StorefrontAvailability = 'open' | 'paused' | 'missing';
 
 /**

@@ -35,7 +35,7 @@ export default function RecoverPasswordPage() {
               Si <strong>{email.trim()}</strong> tiene una cuenta, te enviamos un enlace para crear una contraseña nueva.
               Revisa también la carpeta de spam.
             </p>
-            <Link href="/registro" className="font-bold text-cyan-400 hover:text-cyan-300">
+            <Link href="/login" className="font-bold text-cyan-400 hover:text-cyan-300">
               Volver a iniciar sesión
             </Link>
           </>
@@ -61,7 +61,7 @@ export default function RecoverPasswordPage() {
               {state === "sending" ? "Enviando..." : "Enviar enlace"}
             </button>
             <p className="text-center text-sm text-gray-400">
-              <Link href="/registro" className="text-cyan-400 hover:text-cyan-300">
+              <Link href="/login" className="text-cyan-400 hover:text-cyan-300">
                 Volver
               </Link>
             </p>

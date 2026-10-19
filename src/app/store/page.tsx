@@ -4,7 +4,7 @@ import ModernStoreHome from "@/components/store/modern/ModernStoreHome";
 import CartProviderWrapper from "@/components/store/CartProviderWrapper";
 import StorefrontRoot from "@/components/store/StorefrontRoot";
 import StoreUnavailable from "@/components/store/StoreUnavailable";
-import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from "@/lib/server/storefront-data";
+import { findStoreByDomain, getStoreCatalog, storeAdminUrl, storefrontAvailability } from "@/lib/server/storefront-data";
 import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { FULL_CATALOG_THRESHOLD } from "@/lib/storefront/catalog";
 import { toPublicStore } from "@/lib/storefront/public-store";
@@ -44,7 +44,7 @@ export default async function StorePage({ searchParams }: StorePageProps) {
   const initialProducts = total <= FULL_CATALOG_THRESHOLD ? catalog.products : catalog.products.slice(0, 24);
 
   return (
-    <StorefrontRoot store={toPublicStore(tenant)} categories={catalog.categories}>
+    <StorefrontRoot store={{ ...toPublicStore(tenant), adminUrl: storeAdminUrl(tenant) }} categories={catalog.categories}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(storeJsonLd(tenant, `https://${domain}`)) }} />
       <CartProviderWrapper storeId={tenant.id}>
         <ModernStoreHome

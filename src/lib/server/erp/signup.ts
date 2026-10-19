@@ -22,10 +22,16 @@ export function erpPasswordOk(password: string): boolean {
   return password.length >= 8 && password.length <= 72 && /\p{Lu}/u.test(password) && /\p{Ll}/u.test(password) && /\p{N}/u.test(password);
 }
 
-/** Dónde entra el dueño a CyberPOS, con su correo ya escrito. */
-export function erpLoginUrl(email: string): string | null {
+/** Dónde entra el dueño a CyberPOS (el ingreso del ERP). */
+export function erpLoginBase(): string | null {
   const app = process.env.ERP_APP_URL?.trim().replace(/\/+$/, '');
-  return app ? `${app}/auth/login?email=${encodeURIComponent(email)}` : null;
+  return app ? `${app}/auth/login` : null;
+}
+
+/** El ingreso de CyberPOS con el correo ya escrito. */
+export function erpLoginUrl(email: string): string | null {
+  const base = erpLoginBase();
+  return base ? `${base}?email=${encodeURIComponent(email)}` : null;
 }
 
 export type ErpSignupResult =
