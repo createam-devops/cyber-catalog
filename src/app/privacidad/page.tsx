@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://createam.cloud/privacidad" },
 };
 
-const VERSION = "12 de octubre de 2026";
+const VERSION = "19 de octubre de 2026";
 
 export default function PrivacidadPage() {
   return (
@@ -38,8 +38,8 @@ export default function PrivacidadPage() {
             publicar tu catálogo.
           </li>
           <li>
-            <strong>Datos de pago</strong>: cuando contratas un plan, Mercado Pago procesa el pago. Guardamos el plan, el
-            periodo y el identificador de la operación; no recibimos los datos de tu tarjeta.
+            <strong>Datos de pago</strong>: cuando pagas tu plan, guardamos el plan, el periodo y el registro del pago;
+            no guardamos los datos de tu tarjeta.
           </li>
           <li>
             <strong>Estadísticas de cada tienda</strong>: contamos las visitas y los clics en el botón de WhatsApp para
@@ -67,8 +67,9 @@ export default function PrivacidadPage() {
         <p>
           No vendemos tus datos ni los usamos para publicidad de terceros. Solo acceden a ellos los proveedores que
           necesitamos para operar: Google (cuentas, base de datos e imágenes con Firebase, y Google Analytics), Resend
-          (envío de correos, como el código de verificación), Mercado Pago (pagos) y el proveedor de servidores donde
-          corre la plataforma. Algunos de ellos guardan la información en servidores fuera del Perú.
+          (envío de correos, como el código de verificación), las entidades de pago que uses y el proveedor de servidores
+          donde corre la plataforma. Algunos de ellos guardan la información en servidores fuera del Perú. Tu cuenta, tus
+          productos y los pagos de tu plan se gestionan en CyberPOS, que también es de Createam.
         </p>
       </section>
 
