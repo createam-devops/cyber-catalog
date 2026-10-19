@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, MessageCircle, Palette, Search, Smartphone, Store, Boxes, Globe } from "lucide-react";
+import { CheckCircle2, MessageCircle, Palette, Search, Smartphone, Store, Boxes, Globe, TrendingUp } from "lucide-react";
 import SignupForm from "@/components/registro/SignupForm";
 import { bodyFont, displayFont } from "@/components/landing/fonts";
-import { CONTACT, LINKS } from "@/components/landing/content";
+import { CATALOG_GROWTH, CONTACT, LINKS } from "@/components/landing/content";
 import { ERP_PASSWORD_RULE, erpLoginBase, erpSignupPlanCode } from "@/lib/server/erp/signup";
 
 // El registro depende de la configuración del servidor (alta en CyberPOS).
@@ -47,6 +47,16 @@ const FAQS = [
     answer: "Te escriben por WhatsApp con su pedido y coordinas el pago como ya lo haces: Yape, transferencia o contra entrega.",
   },
   {
+    question: "¿Mi tienda se conecta con un sistema de ventas?",
+    answer:
+      "Sí. Tu tienda vive dentro de CyberPOS, el sistema de ventas de Createam: productos, fotos, precios y stock se cargan una sola vez. Cuando tu negocio crece, activas en la misma cuenta punto de venta, facturación electrónica SUNAT, guías de remisión, compras, contabilidad y CRM con WhatsApp, sin cambiar de sistema ni migrar nada.",
+  },
+  {
+    question: "¿Puedo emitir boletas y facturas?",
+    answer:
+      "Sí, activando la facturación electrónica en tu plan de CyberPOS: boletas, facturas, notas y guías de remisión enviadas directo a SUNAT, con los mismos productos de tu tienda.",
+  },
+  {
     question: "¿Puedo usar mi propio dominio?",
     answer: "Sí, con el plan Pro. Mientras tanto tu tienda queda en una dirección como tunegocio.createam.cloud.",
   },
@@ -56,10 +66,30 @@ const FAQS = [
   },
 ];
 
-const faqJsonLd = {
+// Datos estructurados: qué es (una aplicación de la suite CyberPOS), qué hace y sus preguntas frecuentes.
+const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: FAQS.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })),
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://createam.cloud/catalogo-digital#app",
+      name: "Catálogo Digital de Createam",
+      applicationCategory: "BusinessApplication",
+      applicationSuite: "CyberPOS",
+      operatingSystem: "Web",
+      inLanguage: "es-PE",
+      url: "https://createam.cloud/catalogo-digital",
+      description:
+        "Tienda online para negocios peruanos que recibe pedidos por WhatsApp. Vive dentro de CyberPOS, así que puede crecer a punto de venta, facturación electrónica SUNAT, guías de remisión, compras, contabilidad y CRM con WhatsApp en la misma cuenta.",
+      featureList: [...BENEFITS.map((b) => b.title), ...CATALOG_GROWTH.map((m) => `Crece con CyberPOS: ${m.title}`)],
+      offers: { "@type": "Offer", price: "0", priceCurrency: "PEN", description: "Prueba gratis" },
+      publisher: { "@type": "Organization", "@id": "https://createam.cloud/#organization", name: "Createam", url: "https://createam.cloud" },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: FAQS.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })),
+    },
+  ],
 };
 
 export default function RegistroPage() {
@@ -68,7 +98,7 @@ export default function RegistroPage() {
 
   return (
     <div className={`${displayFont.variable} ${bodyFont.variable} bg-[#F6F8FC] font-landing-body text-[17px] leading-[1.55] text-[#0B1B3A]`}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
 
       <header className="border-b border-[#DDE4F0] bg-white">
         <div className={`${container} flex items-center justify-between gap-x-3 py-3`}>
@@ -99,7 +129,12 @@ export default function RegistroPage() {
                 Muestra tus productos con fotos y precios en tu propia dirección web. Tus clientes eligen, arman su pedido y te escriben por WhatsApp.
               </p>
               <ul className="flex flex-col gap-2.5 text-[16px] font-semibold text-[#E3EAF7]">
-                {["Lista en minutos, sin instalar nada", "Productos, precios y stock desde CyberPOS", "Prueba gratis y sin comisión por venta"].map((item) => (
+                {[
+                  "Lista en minutos, sin instalar nada",
+                  "Productos, precios y stock desde CyberPOS",
+                  "Crece a punto de venta, facturación SUNAT y contabilidad sin cambiar de sistema",
+                  "Prueba gratis y sin comisión por venta",
+                ].map((item) => (
                   <li key={item} className="flex items-center gap-2.5">
                     <CheckCircle2 className="h-5 w-5 flex-none text-[#F0ABFC]" aria-hidden />
                     {item}
@@ -176,10 +211,32 @@ export default function RegistroPage() {
 
         <section className="py-14 sm:py-20">
           <div className={`${container} flex flex-col gap-8`}>
+            <div className="flex max-w-[760px] flex-col gap-3">
+              <span className="self-start rounded-full bg-[#DDF3EA] px-3 py-1 text-[13px] font-bold text-[#065F46]">CyberPOS</span>
+              <h2 className={h2}>Empieza con tu tienda y crece con CyberPOS</h2>
+              <p className="text-[#3D4B66]">
+                Tu Catálogo Digital vive dentro de CyberPOS, el sistema de ventas de Createam. Cuando tu negocio lo necesite, activas más módulos
+                en la misma cuenta: con los mismos productos, el mismo stock y sin migrar nada.
+              </p>
+            </div>
+            <div className={autoGrid}>
+              {CATALOG_GROWTH.map((module) => (
+                <div key={module.title} className="flex flex-col gap-2 rounded-[18px] border border-[#A8DCC6] bg-white p-6">
+                  <TrendingUp className="h-6 w-6 text-[#047857]" aria-hidden />
+                  <h3 className="text-lg font-bold">{module.title}</h3>
+                  <p className="text-[#3D4B66]">{module.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-[#DDE4F0] bg-white py-14 sm:py-20">
+          <div className={`${container} flex flex-col gap-8`}>
             <h2 className={h2}>Preguntas frecuentes</h2>
             <div className="flex flex-col gap-3">
               {FAQS.map((faq) => (
-                <details key={faq.question} className="group rounded-[16px] border border-[#DDE4F0] bg-white p-5 open:shadow-sm">
+                <details key={faq.question} className="group rounded-[16px] border border-[#DDE4F0] bg-[#F6F8FC] p-5 open:shadow-sm">
                   <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 text-lg font-bold">
                     {faq.question}
                     <span className="text-2xl leading-none text-[#A21CAF] transition-transform group-open:rotate-45" aria-hidden>

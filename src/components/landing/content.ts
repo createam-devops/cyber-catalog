@@ -1,7 +1,6 @@
 // Enlaces, planes y preguntas de la landing de createam.cloud.
 // Los precios de Catálogo Digital salen de src/lib/plans.ts; los de CyberPOS y
 // OnTurn se cobran en sus propias plataformas, así que aquí solo se muestran.
-import { TRIAL_DAYS } from '@/lib/plans';
 
 export const LINKS = {
   catalogRegister: '/catalogo-digital',
@@ -99,6 +98,22 @@ export const RESTAURANT_PLANS: LandingPlan[] = [
   },
 ];
 
+/**
+ * Lo que un negocio que empezó con Catálogo Digital puede sumar después, en la
+ * misma cuenta de CyberPOS: su tienda vive dentro del ERP, así que crece sin
+ * cambiar de sistema ni migrar sus productos. Lo usan la landing, la página de
+ * Catálogo Digital y llms.txt.
+ */
+export const CATALOG_GROWTH: { title: string; text: string }[] = [
+  { title: 'Punto de venta y caja', text: 'Vende también en tu local, con Yape, tarjeta y efectivo, y cierra caja cada día.' },
+  { title: 'Facturación electrónica SUNAT', text: 'Boletas, facturas y notas de crédito y débito enviadas directo a SUNAT.' },
+  { title: 'Guías de remisión', text: 'Guías electrónicas para tus despachos, también directo a SUNAT.' },
+  { title: 'Inventario y almacenes', text: 'Un solo stock para tu tienda online y tu local, con varios almacenes y kárdex.' },
+  { title: 'Compras y proveedores', text: 'Órdenes de compra, proveedores y cuentas por pagar.' },
+  { title: 'Contabilidad', text: 'Asientos automáticos de cada venta y compra, libro diario, libro mayor y balance de comprobación.' },
+  { title: 'CRM con WhatsApp', text: 'Atiende los chats de tus clientes, síguelos en tu embudo de ventas y cotiza desde la conversación.' },
+];
+
 export const FAQS: { question: string; answer: string }[] = [
   {
     question: '¿Tengo que instalar algo?',
@@ -116,13 +131,18 @@ export const FAQS: { question: string; answer: string }[] = [
       'En Catálogo Digital y CyberPOS no: pagas una mensualidad fija. OnTurn es gratis hasta por un año; después tendrá una comisión por reserva y te avisaremos antes de activarla.',
   },
   {
+    question: '¿El Catálogo Digital se conecta con un sistema de ventas?',
+    answer:
+      'Sí. Tu tienda vive dentro de CyberPOS: los productos, fotos, precios y stock se cargan una sola vez y se administran desde Venta online. Cuando tu negocio crece, activas en la misma cuenta punto de venta, facturación electrónica SUNAT, guías de remisión, compras, contabilidad y CRM con WhatsApp, sin cambiar de sistema ni migrar nada.',
+  },
+  {
     question: '¿Puedo usar mi propio dominio?',
     answer:
       'Sí, en el plan Pro de Catálogo Digital. En el plan Starter tu tienda queda en una dirección como tunegocio.createam.cloud.',
   },
   {
     question: '¿Qué pasa cuando termina el periodo gratis?',
-    answer: `En Catálogo Digital la prueba dura ${TRIAL_DAYS} días y después eliges Starter o Pro. En CyberPOS el plan gratis dura hasta un año y después eliges un plan de pago. En OnTurn, pasado el año gratis, se cobra una comisión por reserva.`,
+    answer: `En Catálogo Digital la prueba es gratis y después eliges tu plan desde CyberPOS. En CyberPOS el plan gratis dura hasta un año y después eliges un plan de pago. En OnTurn, pasado el año gratis, se cobra una comisión por reserva.`,
   },
   {
     question: '¿Puedo tener un plan de CyberPOS a mi medida?',
@@ -132,7 +152,7 @@ export const FAQS: { question: string; answer: string }[] = [
   {
     question: '¿Cómo se paga?',
     answer:
-      'Catálogo Digital se paga en línea con Mercado Pago. Los planes de CyberPOS se pagan por transferencia, depósito o Yape.',
+      'Catálogo Digital y CyberPOS se pagan desde tu cuenta de CyberPOS, en Ajustes › Mi plan.',
   },
   {
     question: '¿Y si necesito algo que no está aquí?',
