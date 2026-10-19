@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PLANS, TRIAL_DAYS, getYearlyDiscount } from "@/lib/plans";
+import { PLANS, getYearlyDiscount } from "@/lib/plans";
 import { CONTACT, CYBERPOS_PLANS, FAQS, LINKS, RESTAURANT_PLANS, type LandingPlan } from "./content";
 import { bodyFont, displayFont } from "./fonts";
 import NeedSelector from "./NeedSelector";
@@ -23,6 +23,9 @@ const CYBERPOS_MODULES = [
   { title: "Producción", text: "Recetas, productos a medida y optimizador de corte de materiales." },
   { title: "Equipo y permisos", text: "Usuarios con roles y permisos por persona: cajero, vendedor, almacenero." },
   { title: "Reportes", text: "Ventas del día, stock actual y cierre de caja." },
+  { title: "Contabilidad", text: "Asientos automáticos de cada venta y compra, libro diario, libro mayor y balance de comprobación." },
+  { title: "CRM con WhatsApp", text: "Atiende los chats de tus clientes, síguelos en tu embudo de ventas y cotiza desde la conversación." },
+  { title: "Tienda online", text: "Tu Catálogo Digital con los mismos productos y stock: tus clientes piden por WhatsApp." },
 ];
 
 const perMonth = (yearlyPrice: number) => (yearlyPrice / 12).toFixed(2);
@@ -241,11 +244,12 @@ export default function LandingPage() {
                     "Carrito que arma el pedido y lo envía a tu WhatsApp con el total.",
                     "Tu logo, tus colores y tus banners de portada.",
                     "Dirección gratis en createam.cloud o tu propio dominio.",
+                    "Vive dentro de CyberPOS: cuando crezcas, suma punto de venta, facturación electrónica, contabilidad y CRM sin cambiar de sistema.",
                   ]}
                 />
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-[22px] gap-y-3.5">
                   <Link href={LINKS.catalogRegister} data-track="catalogo_registro" className={`${btn} bg-[#A21CAF]`}>
-                    Crear mi tienda gratis
+                    Pruébalo gratis
                   </Link>
                   <span className="font-bold">Desde S/ {perMonth(starter.yearlyPrice)} al mes pagando el año</span>
                 </div>
@@ -404,7 +408,7 @@ export default function LandingPage() {
             <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
               <h3 className="font-landing-display text-2xl font-bold">Catálogo Digital</h3>
               <span className="text-[15px] text-[#3D4B66]">
-                {TRIAL_DAYS} días gratis · Ahorra hasta {maxYearlyDiscount}% pagando el año
+                Prueba gratis · Ahorra hasta {maxYearlyDiscount}% pagando el año
               </span>
             </div>
             <SwipeRow label="Planes de Catálogo Digital" className="md:grid md:grid-cols-2 md:gap-4">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { PLANS, TRIAL_DAYS } from "@/lib/plans";
+import { PLANS } from "@/lib/plans";
 import { LINKS } from "./content";
 
 interface Need {
@@ -29,7 +29,7 @@ const NEEDS: Need[] = [
     title: "Una tienda propia que cierra la venta por WhatsApp",
     text: "Tu cliente llega desde Instagram, TikTok o Facebook, arma su pedido y te lo envía por WhatsApp listo para cobrar. Sin comisión por venta.",
     price: `Desde S/ ${starterYearlyPerMonth} al mes`,
-    priceNote: `Pagando el año · ${TRIAL_DAYS} días gratis para probar`,
+    priceNote: "Pagando el año · Pruébalo gratis",
     cta: { label: "Crear mi tienda", href: LINKS.catalogRegister, className: "bg-[#A21CAF]" },
     more: { label: "Ver cómo funciona", href: "#catalogo" },
   },
