@@ -17,9 +17,9 @@ export async function middleware(request: NextRequest) {
   }
   
   // El registro es una página de la plataforma: desde el dominio de una tienda
-  // se va a createam.cloud/registro (así Google no la ve repetida en cada tienda).
-  if (url.pathname === '/registro' && domain !== platformDomain && domain !== `www.${platformDomain}`) {
-    return NextResponse.redirect(`https://${platformDomain}/registro`, 301);
+  // se va a createam.cloud/catalogo-digital (así Google no la ve repetida en cada tienda).
+  if ((url.pathname === '/catalogo-digital' || url.pathname === '/registro') && domain !== platformDomain && domain !== `www.${platformDomain}`) {
+    return NextResponse.redirect(`https://${platformDomain}/catalogo-digital`, 301);
   }
 
   // ============================================================

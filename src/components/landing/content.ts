@@ -4,7 +4,7 @@
 import { TRIAL_DAYS } from '@/lib/plans';
 
 export const LINKS = {
-  catalogRegister: '/registro',
+  catalogRegister: '/catalogo-digital',
   // Las tiendas se administran en CyberPOS: /ingresar lleva a su ingreso.
   catalogLogin: '/ingresar',
   cyberposRegister: 'https://cyberposapp.createam.cloud/auth/register',

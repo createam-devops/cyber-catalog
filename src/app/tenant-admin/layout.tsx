@@ -57,7 +57,7 @@ function TenantAdminLayout({ children }: { children: React.ReactNode }) {
     try {
       await logout();
       toast.success('Sesión cerrada');
-      router.push('/registro');
+      router.push('/login');
     } catch {
       toast.error('Error al cerrar sesión');
     }

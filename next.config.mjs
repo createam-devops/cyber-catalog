@@ -35,6 +35,12 @@ const nextConfig = {
       },
     ],
   },
+  // El registro se mudó a /catalogo-digital (lo que la gente busca). La dirección
+  // vieja sigue funcionando: redirección permanente, que Google traspasa.
+  async redirects() {
+    return [{ source: '/registro', destination: '/catalogo-digital', permanent: true }];
+  },
+
   async headers() {
     // Dominios del ERP que pueden encuadrar la vista previa del editor
     // (cyberERP/PETICION_ERP_AL_CATALOGO_PANEL.md §6). En desarrollo, también localhost.
