@@ -152,7 +152,7 @@ export const FAQS: { question: string; answer: string }[] = [
   {
     question: '¿Cómo se paga?',
     answer:
-      'Catálogo Digital y CyberPOS se pagan desde CyberPOS (Ajustes › Mi plan), por transferencia, depósito o Yape.',
+      'Catálogo Digital y CyberPOS se pagan desde tu cuenta de CyberPOS, en Ajustes › Mi plan.',
   },
   {
     question: '¿Y si necesito algo que no está aquí?',
