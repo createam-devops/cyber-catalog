@@ -18,6 +18,8 @@ export interface PublicStore {
   socialMedia?: TenantConfig['socialMedia'];
   storefront?: StorefrontSettings | null;
   plan?: PlanId;
+  /** Dónde la administra su dueño (el pie de la tienda lo enlaza). */
+  adminUrl?: string;
 }
 
 export interface StoreCategory {

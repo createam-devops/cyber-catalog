@@ -58,12 +58,18 @@ export default function ModernFooter() {
         <div className={`flex flex-col md:flex-row justify-between items-start md:items-center gap-3 text-xs ${shell.soft}`}>
           <p>© {new Date().getFullYear()} {store.name}</p>
           <div className="flex items-center gap-6">
-            {!preview && (
-              // Sin precarga: el panel trae su propio código y no tiene por qué bajarlo cada visitante.
-              <Link href="/tenant-admin" prefetch={false} className="flex items-center gap-1 hover:opacity-100">
-                <Settings size={14} /> Administrar
-              </Link>
-            )}
+            {!preview &&
+              // Las tiendas del ERP se administran en CyberPOS; las viejas, en el panel suelto
+              // (sin precarga: trae su propio código y no tiene por qué bajarlo cada visitante).
+              (store.adminUrl?.startsWith('http') ? (
+                <a href={store.adminUrl} rel="nofollow" className="flex items-center gap-1 hover:opacity-100">
+                  <Settings size={14} /> Administrar
+                </a>
+              ) : (
+                <Link href={store.adminUrl || '/tenant-admin'} prefetch={false} rel="nofollow" className="flex items-center gap-1 hover:opacity-100">
+                  <Settings size={14} /> Administrar
+                </Link>
+              ))}
             <a href="https://createam.cloud" target="_blank" rel="noopener" className="hover:opacity-100">
               Catálogo hecho con <span className="font-bold">Createam</span>
             </a>

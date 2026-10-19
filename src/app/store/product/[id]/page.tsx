@@ -4,7 +4,7 @@ import ModernProductDetail from "@/components/store/modern/ModernProductDetail";
 import CartProviderWrapper from "@/components/store/CartProviderWrapper";
 import StorefrontRoot from "@/components/store/StorefrontRoot";
 import StoreUnavailable from "@/components/store/StoreUnavailable";
-import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from "@/lib/server/storefront-data";
+import { findStoreByDomain, getStoreCatalog, storeAdminUrl, storefrontAvailability } from "@/lib/server/storefront-data";
 import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
 import type { StoreCatalog, StoreProduct } from "@/lib/storefront/catalog";
@@ -58,7 +58,7 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
   const jsonLd = productJsonLd(product, tenant, `https://${searchParams._domain}`, categoryLabel);
 
   return (
-    <StorefrontRoot store={toPublicStore(tenant)} categories={catalog.categories}>
+    <StorefrontRoot store={{ ...toPublicStore(tenant), adminUrl: storeAdminUrl(tenant) }} categories={catalog.categories}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }} />
       <CartProviderWrapper storeId={tenant.id}>
         <ModernProductDetail product={product} relatedProducts={relatedTo(product, catalog)} />

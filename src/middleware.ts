@@ -16,6 +16,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
+  // El registro es una página de la plataforma: desde el dominio de una tienda
+  // se va a createam.cloud/registro (así Google no la ve repetida en cada tienda).
+  if (url.pathname === '/registro' && domain !== platformDomain && domain !== `www.${platformDomain}`) {
+    return NextResponse.redirect(`https://${platformDomain}/registro`, 301);
+  }
+
   // ============================================================
   // RUTAS GLOBALES: Siempre permitidas desde cualquier dominio
   // ============================================================

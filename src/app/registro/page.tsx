@@ -1,674 +1,224 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Store, 
-  LogIn, 
-  UserPlus, 
-  Zap, 
-  Menu, 
-  X, 
-  ExternalLink,
-  Cpu,
-  Send,
-  Lightbulb,
-  Cloud,
-  Mail,
-  ArrowLeft,
-  CheckCircle
-} from "lucide-react";
-import { toast } from "sonner";
-import { loginWithEmail, auth } from "@/lib/auth";
-import { trackEvent } from "@/lib/analytics";
+import Link from "next/link";
+import { CheckCircle2, MessageCircle, Palette, Search, Smartphone, Store, Boxes, Globe } from "lucide-react";
+import SignupForm from "@/components/registro/SignupForm";
+import { bodyFont, displayFont } from "@/components/landing/fonts";
+import { CONTACT, LINKS } from "@/components/landing/content";
+import { ERP_PASSWORD_RULE, erpLoginBase, erpSignupPlanCode } from "@/lib/server/erp/signup";
+
+// El registro depende de la configuración del servidor (alta en CyberPOS).
+export const dynamic = "force-dynamic";
+
+const container = "mx-auto w-full max-w-[1180px] px-5 sm:px-8 lg:px-10";
+const h2 = "font-landing-display text-[clamp(28px,3.4vw,42px)] font-extrabold leading-[1.1] tracking-[-0.015em]";
+const autoGrid = "grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(100%,17rem),1fr))]";
+
+const STEPS = [
+  { title: "Crea tu cuenta", text: "Escribe los datos de tu negocio y confirma tu correo con el código que te enviamos." },
+  { title: "Arma tu tienda en CyberPOS", text: "Entra a CyberPOS, elige tu rubro y tu tienda queda en línea con su propia dirección." },
+  { title: "Publica y comparte", text: "Publica tus productos desde Venta online y comparte el enlace por WhatsApp y redes." },
+];
+
+const BENEFITS = [
+  { icon: MessageCircle, title: "Pedidos por WhatsApp", text: "Tus clientes arman su carrito y te escriben con el pedido listo: productos, cantidades y total." },
+  { icon: Boxes, title: "Tus productos desde CyberPOS", text: "Fotos, precios y stock se cargan una vez en CyberPOS y la tienda se actualiza sola." },
+  { icon: Palette, title: "Diseño según tu rubro", text: "Regalos, moda, comida o ferretería: textos, colores y estilo pensados para lo que vendes." },
+  { icon: Globe, title: "Tu propia dirección", text: "Tu tienda en tunegocio.createam.cloud, con certificado seguro. Con el plan Pro, en tu propio dominio." },
+  { icon: Search, title: "Lista para Google", text: "Cada producto tiene su página con nombre, precio y foto, y la tienda trae su mapa del sitio." },
+  { icon: Smartphone, title: "Hecha para el celular", text: "Rápida y cómoda en el teléfono, que es donde compran tus clientes." },
+];
+
+const FAQS = [
+  {
+    question: "¿Cuánto cuesta?",
+    answer: "Empiezas con una prueba gratis. Al terminar eliges tu plan y lo pagas desde CyberPOS, en Ajustes › Mi plan.",
+  },
+  {
+    question: "¿Tengo que usar CyberPOS?",
+    answer:
+      "Al registrarte creamos tu cuenta de CyberPOS con el plan Catálogo Digital. Ahí cargas tus productos y administras tu tienda: no necesitas otro sistema.",
+  },
+  {
+    question: "¿Cobran comisión por mis ventas?",
+    answer: "No. Los pedidos te llegan directo por WhatsApp y no cobramos comisión por venta.",
+  },
+  {
+    question: "¿Cómo me pagan mis clientes?",
+    answer: "Te escriben por WhatsApp con su pedido y coordinas el pago como ya lo haces: Yape, transferencia o contra entrega.",
+  },
+  {
+    question: "¿Puedo usar mi propio dominio?",
+    answer: "Sí, con el plan Pro. Mientras tanto tu tienda queda en una dirección como tunegocio.createam.cloud.",
+  },
+  {
+    question: "Ya tengo CyberPOS, ¿cómo activo mi tienda?",
+    answer: "Entra a CyberPOS con tu usuario. Si tu plan incluye Catálogo Digital, la encuentras en Venta online › Tienda.",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQS.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })),
+};
 
 export default function RegistroPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [step, setStep] = useState<'form' | 'verify'>('form');
-  const [verifyCode, setVerifyCode] = useState('');
-  const [formData, setFormData] = useState({
-    businessName: "",
-    ownerName: "",
-    email: "",
-    phone: "",
-    password: "",
-    wantsDomain: false,
-    customDomain: "",
-  });
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: "",
-  });
-  // Ingreso con el usuario de CyberPOS (ERP): solo se ofrece si el servidor lo tiene configurado.
-  const [erpLoginAvailable, setErpLoginAvailable] = useState(false);
-  const [loginMode, setLoginMode] = useState<"catalog" | "erp">("catalog");
-
-  // Registro con alta en CyberPOS (ERP): pide el nombre del dueño y la regla de contraseña del ERP.
-  const [erpSignup, setErpSignup] = useState<{ passwordRule: string } | null>(null);
-  useEffect(() => {
-    fetch("/api/registro")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { erp?: boolean; passwordRule?: string } | null) => {
-        if (data?.erp) setErpSignup({ passwordRule: data.passwordRule || "" });
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/auth/erp/login")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { enabled?: boolean } | null) => setErpLoginAvailable(Boolean(data?.enabled)))
-      .catch(() => {});
-  }, []);
-
-  // Paso 1: enviar código al email
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const pw = formData.password;
-    if (erpSignup && !(pw.length >= 8 && /\p{Lu}/u.test(pw) && /\p{Ll}/u.test(pw) && /\p{N}/u.test(pw))) {
-      toast.error(erpSignup.passwordRule);
-      return;
-    }
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/registro/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Error al procesar solicitud");
-        return;
-      }
-
-      toast.success("Código enviado", {
-        description: `Revisá tu correo: ${formData.email}`,
-      });
-      setStep('verify');
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al enviar el código. Intenta nuevamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Paso 2: verificar código y crear cuenta
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verifyCode.length !== 6) {
-      toast.error("El código debe tener 6 dígitos");
-      return;
-    }
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/registro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email, code: verifyCode, password: formData.password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        // El correo ya tiene cuenta en CyberPOS: que entre con ella.
-        if (data.loginUrl) {
-          toast.error(data.error, { action: { label: "Entrar a CyberPOS", onClick: () => window.location.assign(data.loginUrl) } });
-        } else {
-          toast.error(data.error || "Código incorrecto");
-        }
-        return;
-      }
-
-      trackEvent("sign_up", { method: "email" });
-
-      // Alta en CyberPOS: el dueño entra al ERP y ahí crea su tienda.
-      if (data.provider === "erp") {
-        toast.success("¡Tu negocio ya está en CyberPOS!", {
-          description: "Entra con tu correo y tu contraseña para crear tu tienda.",
-        });
-        if (data.loginUrl) setTimeout(() => window.location.assign(data.loginUrl), 1500);
-        return;
-      }
-
-      // Login automático después de registrar
-      toast.success("¡Cuenta activada!", {
-        description: "Tu período de prueba gratuito ha comenzado.",
-      });
-
-      try {
-        await loginWithEmail(String(formData.email), String(formData.password));
-        setTimeout(() => router.push('/tenant-admin/bienvenida'), 1500);
-      } catch (loginErr) {
-        console.error("Auto-login fallido, redirigiendo a login:", loginErr);
-        // Si el auto-login falla, ir al tab de login con email pre-llenado
-        setLoginData({ email: formData.email, password: '' });
-        setTimeout(() => {
-          setIsLogin(true);
-          setStep('form');
-        }, 1500);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al verificar. Intenta nuevamente.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    if (loginMode === "erp") {
-      // Usuario de CyberPOS: el servidor valida con el ERP y abre la sesión en una cookie.
-      try {
-        const res = await fetch("/api/auth/erp/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email: loginData.email, password: loginData.password }),
-        });
-        const data = (await res.json().catch(() => ({}))) as { error?: string; mustChangePassword?: boolean };
-        if (!res.ok) {
-          toast.error(data.error || "No pudimos iniciar sesión con CyberPOS");
-          return;
-        }
-        if (data.mustChangePassword) {
-          toast.warning("Tu contraseña es temporal: cámbiala en CyberPOS cuando puedas.");
-        }
-        toast.success("¡Bienvenido!", { description: "Redirigiendo a tu panel..." });
-        // Recarga completa para que el panel lea la sesión nueva.
-        window.location.href = "/tenant-admin";
-      } catch {
-        toast.error("No pudimos comunicarnos con el servidor. Inténtalo de nuevo.");
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
-
-    try {
-      await loginWithEmail(loginData.email, loginData.password);
-      toast.success("¡Bienvenido de vuelta!", {
-        description: "Redirigiendo a tu panel...",
-      });
-      setTimeout(() => router.push("/tenant-admin"), 1500);
-    } catch (error: any) {
-      console.error("Error logging in:", error);
-      toast.error("Email o contraseña incorrectos");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const signupOpen = Boolean(erpSignupPlanCode());
+  const loginBase = erpLoginBase();
 
   return (
-    <div className="min-h-screen bg-[#020408] text-white selection:bg-cyan-500/30 overflow-x-hidden">
-      {/* Background Gradients */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] bg-blue-600/5 blur-[150px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/10 blur-[130px] rounded-full"></div>
-      </div>
+    <div className={`${displayFont.variable} ${bodyFont.variable} bg-[#F6F8FC] font-landing-body text-[17px] leading-[1.55] text-[#0B1B3A]`}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
 
-      {/* Navigation */}
-      <nav className="fixed w-full z-50 bg-[#020408]/80 backdrop-blur-2xl border-b border-white/5 py-4">
-        <div className="container mx-auto px-6 flex justify-between items-center">
-          <Link href="/" className="flex items-center space-x-3 group cursor-pointer">
-            <div className="relative">
-              <div className="w-14 h-14 flex items-center justify-center transform group-hover:scale-110 transition-all duration-500">
-                <Image 
-                  src="/images/createam-cloud-logo.svg" 
-                  alt="Createam Logo" 
-                  width={56} 
-                  height={56}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-3xl font-black tracking-tight leading-none" style={{ fontFamily: 'var(--font-days-one), "Days One", sans-serif' }}>
-                Createam
-              </span>
-            </div>
+      <header className="border-b border-[#DDE4F0] bg-white">
+        <div className={`${container} flex items-center justify-between gap-x-3 py-3`}>
+          <Link href="/" className="flex min-h-[44px] items-center gap-2 sm:gap-2.5">
+            <Image src="/images/createam-cloud-logo.svg" alt="" width={54} height={35} className="h-[30px] w-[46px] object-contain sm:h-[35px] sm:w-[54px]" />
+            <span className="font-heading text-xl sm:text-2xl">Createam</span>
           </Link>
-
-          <div className="hidden lg:flex items-center space-x-10 text-[11px] font-bold uppercase tracking-[0.2em]" style={{ fontFamily: 'var(--font-days-one), "Days One", sans-serif' }}>
-            <a href="/#on-turn" className="hover:text-cyan-400 transition-colors">Gestión de Turnos</a>
-            <a href="/#catalogo" className="hover:text-cyan-400 transition-colors">Catálogo Digital</a>
-            <a href="/#erp" className="hover:text-cyan-400 transition-colors">POS Integral</a>
-          </div>
-
-          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="lg:hidden p-2 text-white">
-            <Menu size={28} />
-          </button>
+          {loginBase && (
+            <a
+              href={loginBase}
+              className="inline-flex min-h-[44px] items-center rounded-xl border-[1.5px] border-[#C5D0E3] px-4 text-[15px] font-bold hover:border-[#0B1B3A]"
+            >
+              Entrar a CyberPOS
+            </a>
+          )}
         </div>
-      </nav>
+      </header>
 
-      {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-[60] bg-[#020408] flex flex-col items-center justify-center space-y-8 animate-fade-in lg:hidden" style={{ fontFamily: 'var(--font-days-one), "Days One", sans-serif' }}>
-          <button onClick={() => setIsMenuOpen(false)} className="absolute top-8 right-8 text-white">
-            <X size={32} />
-          </button>
-          <a href="/#on-turn" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black hover:text-cyan-400 transition-colors">Gestión de Turnos</a>
-          <a href="/#catalogo" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black hover:text-cyan-400 transition-colors">Catálogo Digital</a>
-          <a href="/#erp" onClick={() => setIsMenuOpen(false)} className="text-3xl font-black hover:text-cyan-400 transition-colors">POS Integral</a>
-        </div>
-      )}
+      <main>
+        <section className="bg-[#0B1B3A] text-white">
+          <div className={`${container} grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:py-20`}>
+            <div className="flex flex-col gap-5 lg:pt-6">
+              <span className="self-start rounded-full bg-[#F7E3F9] px-3 py-1 text-[13px] font-bold text-[#7A1485]">Catálogo Digital</span>
+              <h1 className="font-landing-display text-[clamp(36px,5vw,60px)] font-extrabold leading-[1.04] tracking-[-0.02em]">
+                Crea tu catálogo digital y recibe pedidos por WhatsApp
+              </h1>
+              <p className="max-w-[560px] text-[19px] text-[#C9D6EE]">
+                Muestra tus productos con fotos y precios en tu propia dirección web. Tus clientes eligen, arman su pedido y te escriben por WhatsApp.
+              </p>
+              <ul className="flex flex-col gap-2.5 text-[16px] font-semibold text-[#E3EAF7]">
+                {["Lista en minutos, sin instalar nada", "Productos, precios y stock desde CyberPOS", "Prueba gratis y sin comisión por venta"].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5">
+                    <CheckCircle2 className="h-5 w-5 flex-none text-[#F0ABFC]" aria-hidden />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-      {/* Main Content */}
-      <main className="relative pt-28 pb-10 px-2 md:px-4">
-        <div className="container mx-auto max-w-2xl relative z-10 px-0">
-          <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-            <div className="text-center p-6 border-b border-white/10">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                <div className="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
-                  <Store className="h-6 w-6 text-cyan-400" />
+            <div id="registro" className="scroll-mt-6 rounded-[20px] bg-white p-6 text-[#0B1B3A] shadow-[0_24px_60px_rgba(0,0,0,0.35)] sm:p-8">
+              <div className="mb-5 flex items-center gap-3">
+                <span className="flex h-11 w-11 flex-none items-center justify-center rounded-xl bg-[#F7E3F9] text-[#A21CAF]">
+                  <Store className="h-6 w-6" aria-hidden />
+                </span>
+                <div>
+                  <h2 className="font-landing-display text-xl font-extrabold leading-tight">Empieza gratis</h2>
+                  <p className="text-[15px] text-[#5A6885]">Tu cuenta de CyberPOS con el plan Catálogo Digital</p>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-black tracking-tight">
-                  {isLogin ? "Administrar Catálogo" : "Crear Catálogo Digital"}
-                </h1>
               </div>
-              <p className="text-gray-400 text-sm">
-                {isLogin 
-                  ? "Ingresa con tus credenciales para gestionar tu catálogo" 
-                  : step === 'form'
-                    ? "Completa el formulario y activa tu catálogo digital al instante"
-                    : "Ingresa el código que enviamos a tu correo"
-                }
+              {signupOpen ? (
+                <SignupForm passwordRule={ERP_PASSWORD_RULE} loginBase={loginBase} />
+              ) : (
+                <p className="rounded-xl bg-[#F6F8FC] px-4 py-3 text-[#3D4B66]">
+                  El registro no está disponible en este momento. Escríbenos por{" "}
+                  <a href={LINKS.whatsapp} className="font-bold text-[#7A1485] underline">
+                    WhatsApp al {CONTACT.phone}
+                  </a>{" "}
+                  y te ayudamos a crear tu tienda.
+                </p>
+              )}
+              <p className="mt-4 text-center text-xs text-[#5A6885]">
+                Al crear tu cuenta aceptas los{" "}
+                <Link href="/terminos" className="underline">
+                  Términos
+                </Link>{" "}
+                y la{" "}
+                <Link href="/privacidad" className="underline">
+                  Política de privacidad
+                </Link>
+                .
               </p>
             </div>
+          </div>
+        </section>
 
-            <div className="p-6">
-              {/* Tabs para alternar entre Registro y Login */}
-              <div className="flex gap-2 mb-6 p-1 bg-white/5 rounded-xl border border-white/5">
-                <button
-                  onClick={() => setIsLogin(false)}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                    !isLogin 
-                      ? "bg-cyan-500 text-black shadow-lg" 
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Crear Catálogo
-                </button>
-                <button
-                  onClick={() => setIsLogin(true)}
-                  className={`flex-1 py-3 px-4 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                    isLogin 
-                      ? "bg-cyan-500 text-black shadow-lg" 
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <LogIn className="h-4 w-4" />
-                  Administrar
-                </button>
-              </div>
+        <section className="py-14 sm:py-20">
+          <div className={`${container} flex flex-col gap-8`}>
+            <h2 className={h2}>Así de fácil empiezas</h2>
+            <ol className={autoGrid}>
+              {STEPS.map((step, index) => (
+                <li key={step.title} className="flex flex-col gap-2 rounded-[18px] border border-[#DDE4F0] bg-white p-6">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#A21CAF] font-landing-display text-lg font-extrabold text-white">{index + 1}</span>
+                  <h3 className="text-lg font-bold">{step.title}</h3>
+                  <p className="text-[#3D4B66]">{step.text}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-              {/* Formulario de Login */}
-              {isLogin ? (
-                <form onSubmit={handleLogin} className="space-y-4">
-                  {erpLoginAvailable && (
-                    <div className="grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1" role="radiogroup" aria-label="Con qué cuenta entras">
-                      {([
-                        ["catalog", "Cuenta del catálogo"],
-                        ["erp", "Usuario de CyberPOS"],
-                      ] as const).map(([mode, label]) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          role="radio"
-                          aria-checked={loginMode === mode}
-                          onClick={() => setLoginMode(mode)}
-                          className={`rounded-lg px-3 py-2 text-sm font-bold transition-colors ${
-                            loginMode === mode ? "bg-cyan-500 text-black" : "text-gray-300 hover:text-white"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {loginMode === "erp" && (
-                    <p className="text-xs text-gray-400">
-                      Usa el mismo correo y contraseña con los que entras a CyberPOS. Tu tienda muestra los productos que publicas allí.
-                    </p>
-                  )}
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-white">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      placeholder="tu@email.com"
-                      value={loginData.email}
-                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                      required
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white">Contraseña</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      required
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-end text-sm">
-                    {loginMode === "erp" ? (
-                      <span className="text-gray-400">¿Olvidaste tu contraseña? Pídela a quien administra tu CyberPOS.</span>
-                    ) : (
-                      <Link href="/recuperar-password" className="text-cyan-400 hover:text-cyan-300 transition-colors">
-                        ¿Olvidaste tu contraseña?
-                      </Link>
-                    )}
-                  </div>
-
-                  <div className="pt-2">
-                    <button 
-                      type="submit" 
-                      disabled={loading}
-                      className="w-full px-8 py-3 bg-cyan-500 text-black rounded-xl font-black hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? "Ingresando..." : "Iniciar Sesión"}
-                    </button>
-                  </div>
-
-                  <p className="text-center text-sm text-gray-400">
-                    ¿Aún no tienes catálogo?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setIsLogin(false)}
-                      className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
-                    >
-                      Créalo aquí
-                    </button>
-                  </p>
-                </form>
-              ) : (
-                /* Formulario de Registro */
-                step === 'verify' ? (
-                  /* Paso 2: Verificar código */
-                  <form onSubmit={handleVerify} className="space-y-6">
-                    <button
-                      type="button"
-                      onClick={() => { setStep('form'); setVerifyCode(''); }}
-                      className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                      <ArrowLeft size={16} />
-                      Volver
-                    </button>
-
-                    <div className="text-center py-2">
-                      <div className="w-14 h-14 bg-cyan-500/10 border border-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Mail className="h-7 w-7 text-cyan-400" />
-                      </div>
-                      <p className="text-white font-bold">Revisa tu correo</p>
-                      <p className="text-gray-400 text-sm mt-1">
-                        Enviamos un código de 6 dígitos a<br />
-                        <span className="text-cyan-400 font-semibold">{formData.email}</span>
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="code" className="text-white">Código de verificación</Label>
-                      <Input
-                        id="code"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="\d{6}"
-                        maxLength={6}
-                        placeholder="123456"
-                        value={verifyCode}
-                        onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        required
-                        autoFocus
-                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500 text-center text-2xl tracking-[0.5em] font-bold"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={loading || verifyCode.length !== 6}
-                      className="w-full px-8 py-3 bg-cyan-500 text-black rounded-xl font-black hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
-                      {loading ? (
-                        "Verificando..."
-                      ) : (
-                        <>
-                          <CheckCircle className="h-5 w-5" />
-                          Verificar y Activar Catálogo
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-center text-sm text-gray-500">
-                      ¿No llegó el correo?{" "}
-                      <button
-                        type="button"
-                        disabled={loading}
-                        onClick={() => { setStep('form'); setVerifyCode(''); }}
-                        className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors disabled:opacity-50"
-                      >
-                        Reenviar código
-                      </button>
-                    </p>
-                  </form>
-                ) : (
-                  /* Paso 1: Formulario */
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="businessName" className="text-white">Nombre del Negocio *</Label>
-                  <Input
-                    id="businessName"
-                    placeholder="Ej: Dulce Tentación, Mi Boutique"
-                    value={formData.businessName}
-                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    required
-                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                  />
+        <section className="border-y border-[#DDE4F0] bg-white py-14 sm:py-20">
+          <div className={`${container} flex flex-col gap-8`}>
+            <h2 className={h2}>Todo lo que trae tu tienda</h2>
+            <div className={autoGrid}>
+              {BENEFITS.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="flex flex-col gap-2 rounded-[18px] border border-[#DDE4F0] bg-[#F6F8FC] p-6">
+                  <Icon className="h-7 w-7 text-[#A21CAF]" aria-hidden />
+                  <h3 className="text-lg font-bold">{title}</h3>
+                  <p className="text-[#3D4B66]">{text}</p>
                 </div>
-
-                {erpSignup && (
-                  <div className="space-y-2">
-                    <Label htmlFor="ownerName" className="text-white">Tu nombre *</Label>
-                    <Input
-                      id="ownerName"
-                      placeholder="Ej: María Quispe"
-                      autoComplete="name"
-                      value={formData.ownerName}
-                      onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                      required
-                      className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">Email de Contacto *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="contacto@minegocio.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-white">WhatsApp (con código de país) *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+51999999999"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    required
-                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                  />
-                  <p className="text-xs text-gray-500">
-                    Incluye el código de país. Ej: +51 para Perú
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="regPassword" className="text-white">Contraseña *</Label>
-                  <Input
-                    id="regPassword"
-                    type="password"
-                    placeholder={erpSignup ? "Mínimo 8 caracteres" : "Mínimo 6 caracteres"}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required
-                    minLength={erpSignup ? 8 : 6}
-                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                  />
-                  <p className="text-xs text-gray-500">
-                    {erpSignup
-                      ? `${erpSignup.passwordRule} Con ella entrarás a CyberPOS.`
-                      : "Usarás esta contraseña para ingresar a tu panel"}
-                  </p>
-                </div>
-
-                {/* Con CyberPOS, el dominio propio se pide después, desde Ajustes de la tienda. */}
-                {!erpSignup && (
-                <div className="space-y-4 p-4 border border-white/10 rounded-xl bg-white/5">
-                  <Label className="text-base text-white">Tipo de Dominio</Label>
-                  
-                  <div className="space-y-3">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="domainType"
-                        checked={!formData.wantsDomain}
-                        onChange={() => setFormData({ ...formData, wantsDomain: false, customDomain: "" })}
-                        className="mt-1 accent-cyan-500"
-                      />
-                      <div>
-                        <div className="font-medium text-white">Subdominio gratuito</div>
-                        <div className="text-sm text-gray-400">
-                          Tu catálogo estará en: minegocio.createam.cloud
-                        </div>
-                      </div>
-                    </label>
-
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="domainType"
-                        checked={formData.wantsDomain}
-                        onChange={() => setFormData({ ...formData, wantsDomain: true })}
-                        className="mt-1 accent-cyan-500"
-                      />
-                      <div>
-                        <div className="font-medium text-white">Dominio personalizado</div>
-                        <div className="text-sm text-gray-400">
-                          Usa tu propio dominio (ej: minegocio.com)
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {formData.wantsDomain && (
-                    <div className="space-y-2 mt-4">
-                      <Label htmlFor="customDomain" className="text-white">Tu Dominio</Label>
-                      <Input
-                        id="customDomain"
-                        placeholder="minegocio.com"
-                        value={formData.customDomain}
-                        onChange={(e) => setFormData({ ...formData, customDomain: e.target.value })}
-                        className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500"
-                      />
-                      <p className="text-xs text-gray-500">
-                        Te ayudaremos con la configuración DNS
-                      </p>
-                    </div>
-                  )}
-                </div>
-                )}
-
-                <div className="pt-2">
-                  <button 
-                    type="submit" 
-                    disabled={loading}
-                    className="w-full px-8 py-3 bg-cyan-500 text-black rounded-xl font-black hover:bg-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base"
-                  >
-                    <Send className="h-5 w-5" />
-                    {loading ? "Enviando código..." : "Continuar →"}
-                  </button>
-                </div>
-
-                <p className="text-center text-sm text-gray-400">
-                  ¿Ya tienes tu catálogo?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsLogin(true)}
-                    className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
-                  >
-                    Administra aquí
-                  </button>
-                </p>
-
-                <p className="text-center text-xs text-gray-500">
-                  {erpSignup
-                    ? "Verificaremos tu email y crearemos tu cuenta de CyberPOS con tu prueba gratis"
-                    : "Verificaremos tu email para activar tu catálogo gratis por 30 días"}
-                </p>
-
-                <p className="text-center text-xs text-gray-500">
-                  Al crear tu cuenta aceptas los{" "}
-                  <Link href="/terminos" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">
-                    Términos
-                  </Link>{" "}
-                  y la{" "}
-                  <Link href="/privacidad" target="_blank" className="text-cyan-400 underline hover:text-cyan-300">
-                    Política de privacidad
-                  </Link>
-                  .
-                </p>
-              </form>
-                )
-              )}
+              ))}
             </div>
           </div>
-        </div>
+        </section>
+
+        <section className="py-14 sm:py-20">
+          <div className={`${container} flex flex-col gap-8`}>
+            <h2 className={h2}>Preguntas frecuentes</h2>
+            <div className="flex flex-col gap-3">
+              {FAQS.map((faq) => (
+                <details key={faq.question} className="group rounded-[16px] border border-[#DDE4F0] bg-white p-5 open:shadow-sm">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-4 text-lg font-bold">
+                    {faq.question}
+                    <span className="text-2xl leading-none text-[#A21CAF] transition-transform group-open:rotate-45" aria-hidden>
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-2 text-[#3D4B66]">{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-4 rounded-[20px] bg-[#0B1B3A] p-7 text-white sm:p-9">
+              <div className="min-w-0 flex-[1_1_320px]">
+                <h2 className="font-landing-display text-2xl font-extrabold sm:text-3xl">Tu tienda puede estar en línea hoy</h2>
+                <p className="mt-1.5 text-[#C9D6EE]">Créala gratis y comparte el enlace con tus clientes.</p>
+              </div>
+              <a href="#registro" className="inline-flex min-h-[52px] items-center justify-center rounded-[14px] bg-[#A21CAF] px-7 text-[17px] font-bold text-white transition-opacity hover:opacity-90">
+                Crear mi catálogo
+              </a>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {/* Footer */}
-      <footer className="pt-20 pb-16 relative">
-        <div className="container mx-auto px-6">
-          <div className="mt-12 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] gap-8">
-            <div className="flex items-center gap-3">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-              Sistemas Operativos en la Nube
-            </div>
-            <div>© {new Date().getFullYear()} CREATEAM.CLOUD // Ecosistema SaaS Modular</div>
-            <div className="flex gap-8">
-              <Link href="/terminos" className="hover:text-white transition-colors">Términos</Link>
-              <Link href="/privacidad" className="hover:text-white transition-colors">Privacidad</Link>
-            </div>
+      <footer className="bg-[#0B1B3A] text-sm text-[#C9D6EE]">
+        <div className={`${container} flex flex-wrap items-center justify-between gap-x-7 gap-y-2 py-6`}>
+          <span>© {new Date().getFullYear()} Createam · Lima, Perú</span>
+          <div className="flex flex-wrap gap-x-6">
+            <Link href="/" className="flex min-h-[44px] items-center underline hover:text-white">
+              Inicio
+            </Link>
+            <Link href="/terminos" className="flex min-h-[44px] items-center underline hover:text-white">
+              Términos
+            </Link>
+            <Link href="/privacidad" className="flex min-h-[44px] items-center underline hover:text-white">
+              Privacidad
+            </Link>
+            <a href={LINKS.whatsapp} className="flex min-h-[44px] items-center underline hover:text-white">
+              WhatsApp {CONTACT.phone}
+            </a>
           </div>
         </div>
       </footer>
