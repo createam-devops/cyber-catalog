@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/landing/LegalPage";
 import { CONTACT, LINKS } from "@/components/landing/content";
-import { TRIAL_DAYS } from "@/lib/plans";
 
 export const metadata: Metadata = {
   title: "Términos del servicio | Createam",
@@ -10,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://createam.cloud/terminos" },
 };
 
-const VERSION = "12 de octubre de 2026";
+const VERSION = "19 de octubre de 2026";
 
 export default function TerminosPage() {
   return (
@@ -41,14 +40,14 @@ export default function TerminosPage() {
         <h2>3. Prueba gratuita, planes y pagos</h2>
         <ul>
           <li>
-            Cada tienda empieza con <strong>{TRIAL_DAYS} días de prueba gratuita</strong>. Para seguir usándola después
-            eliges un plan.
+            Cada tienda empieza con una <strong>prueba gratuita</strong>. Para seguir usándola después eliges un
+            plan.
           </li>
           <li>
             Los planes, sus límites y sus precios en soles se publican en createam.cloud. Puedes pagar mes a mes o el año
             completo por adelantado.
           </li>
-          <li>Los pagos se procesan a través de Mercado Pago. Createam no recibe ni guarda los datos de tu tarjeta.</li>
+          <li>El plan se paga desde tu cuenta de CyberPOS, por los medios de pago disponibles en cada momento.</li>
           <li>
             No hay permanencia: puedes dejar de renovar cuando quieras. Si un periodo vence sin pago, podemos limitar
             funciones de la tienda o suspenderla hasta que se regularice.
@@ -96,7 +95,7 @@ export default function TerminosPage() {
         <h2>7. Disponibilidad y cambios del servicio</h2>
         <p>
           Trabajamos para que el servicio esté disponible y funcione bien, pero no garantizamos que sea ininterrumpido:
-          puede haber mantenimientos o fallas de terceros, como el alojamiento, WhatsApp o Mercado Pago. Podemos mejorar,
+          puede haber mantenimientos o fallas de terceros, como el alojamiento, WhatsApp o los medios de pago. Podemos mejorar,
           cambiar o retirar funciones; si un cambio te afecta de forma importante, te avisaremos.
         </p>
       </section>
