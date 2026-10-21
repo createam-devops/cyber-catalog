@@ -62,11 +62,23 @@ export function toStoreProduct(p: ErpProduct): StoreProduct | null {
   };
 }
 
-export function toStoreCategories(categories: ErpCategory[], products: StoreProduct[], icons: Record<string, string> = {}): StoreCategory[] {
+export function toStoreCategories(
+  categories: ErpCategory[],
+  products: StoreProduct[],
+  icons: Record<string, string> = {},
+  order: string[] = []
+): StoreCategory[] {
   const used = new Set(products.map((p) => p.category).filter(Boolean));
+  // Las que la tienda ordenó van primero, en su orden; el resto, como las da el ERP.
+  const rank = (id: string) => {
+    const at = order.indexOf(id);
+    return at === -1 ? order.length : at;
+  };
   return categories
     .filter((c) => used.has(String(c.id)))
-    .map((c) => ({ id: String(c.id), label: c.name, icon: icons[String(c.id)] ?? guessCategoryIcon(c.name) }));
+    .map((c, at) => ({ c, at }))
+    .sort((a, b) => rank(String(a.c.id)) - rank(String(b.c.id)) || a.at - b.at)
+    .map(({ c }) => ({ id: String(c.id), label: c.name, icon: icons[String(c.id)] ?? guessCategoryIcon(c.name) }));
 }
 
 export async function loadErpCatalog(store: TenantConfig): Promise<StoreCatalog> {
@@ -94,6 +106,11 @@ export async function loadErpCatalog(store: TenantConfig): Promise<StoreCatalog>
   ]);
 
   const products = rawProducts.map(toStoreProduct).filter((p): p is StoreProduct => p !== null);
-  const categories = toStoreCategories(rawCategories.categories ?? [], products, store.storefront?.categoryIcons);
+  const categories = toStoreCategories(
+    rawCategories.categories ?? [],
+    products,
+    store.storefront?.categoryIcons,
+    store.storefront?.categoryOrder
+  );
   return { products, categories };
 }

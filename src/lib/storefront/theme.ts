@@ -35,6 +35,11 @@ export interface StorefrontSettings {
    * STOREFRONT_ICONS). Sin elegir, se sugiere uno por el nombre.
    */
   categoryIcons?: Record<string, string>;
+  /**
+   * Orden de las categorías del ERP en la vitrina (ids). Las que no están van
+   * después, en el orden del ERP.
+   */
+  categoryOrder?: string[];
 }
 
 /** Lo mínimo de una tienda que hace falta para armar su tema. */
