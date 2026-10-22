@@ -54,7 +54,7 @@ La ficha y el reporte del migrador traen datos personales y la clave inicial del
    2. El migrador lo llena con `--negocio`, sin alta. Antes de escribir muestra el nombre, el plan y los límites del negocio; el ensayo en seco también los muestra.
       ```sh
       node scripts/migracion-firebase/migrar-tienda.mjs --ficha ficha.json \
-        --presentacion scripts/migracion-firebase/bellasorpresa-pe.json --negocio <id> --env .env.prod \
+        --presentacion scripts/migracion-firebase/bellasorpresa-pe.json --negocio <id> --env .env.prod.local \
         --correo-dueno <correo> --salida reporte.json
       ```
 
