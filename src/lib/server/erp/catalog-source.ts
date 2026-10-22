@@ -33,6 +33,8 @@ interface ErpProduct {
   published?: boolean;
   featured?: boolean;
   sort_order?: number;
+  slug?: string | null;
+  updated_at?: string | null;
 }
 
 interface ErpCategory {
@@ -59,6 +61,8 @@ export function toStoreProduct(p: ErpProduct): StoreProduct | null {
     imageUrls: images.map((img) => img.url),
     featured: p.featured === true,
     stock: p.track_stock && typeof p.stock_available === 'number' ? p.stock_available : null,
+    ...(p.slug ? { slug: p.slug } : {}),
+    ...(p.updated_at ? { updatedAt: p.updated_at } : {}),
   };
 }
 
