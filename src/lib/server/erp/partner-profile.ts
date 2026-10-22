@@ -26,10 +26,13 @@ const profiles = new Map<number, { at: number; value: PartnerProfile | null }>()
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null);
 
-/** Un teléfono sirve de WhatsApp solo si es un celular peruano (9 dígitos que empiezan con 9). */
+/**
+ * Un teléfono sirve de WhatsApp solo si es un celular peruano (9 dígitos que
+ * empiezan con 9). Un relleno como 999999999 no cuenta: así no tapa el de la tienda.
+ */
 function mobileFromPhone(phone: string | null): string | null {
   const digits = phone?.replace(/\D/g, '').replace(/^51(?=9\d{8}$)/, '') ?? '';
-  return /^9\d{8}$/.test(digits) ? `51${digits}` : null;
+  return /^9\d{8}$/.test(digits) ? normalizeWhatsapp(`51${digits}`) : null;
 }
 
 function toProfile(body: Record<string, unknown>): PartnerProfile | null {

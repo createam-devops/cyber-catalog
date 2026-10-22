@@ -8,11 +8,14 @@
  * no se duplica (el ERP compara su huella).
  *
  *   node scripts/migracion-firebase/migrar-tienda.mjs --ficha ficha.json --plan catalogo_digital \
- *     [--env .env.local] [--token app|dueno] [--correo-dueno x@y] [--nombre "…"] [--clave-archivo f] \
- *     [--telefono +51…] [--prefijo fb] [--dry-run] [--salida reporte.json]
+ *     [--presentacion tienda.json] [--env .env.local] [--token app|dueno] [--correo-dueno x@y] \
+ *     [--nombre-dueno "…"] [--nombre "…"] [--telefono +51…] [--clave-archivo f] [--prefijo fb] \
+ *     [--dry-run] [--salida reporte.json]
  *
- * - ficha.json: la tienda exportada del Firestore central (exportar-ficha.cjs): nombre, correo,
- *   WhatsApp, firebaseConfig y su dueño.
+ * - ficha.json: la tienda exportada del Firestore central (exportar-ficha.cjs): de ahí salen su
+ *   Firebase (firebaseConfig) y su id, que va en las external_ref.
+ * - --presentacion: los datos de la tienda real (p. ej. bellasorpresa-pe.json). Si está, el nombre
+ *   y el WhatsApp del negocio salen de ahí y no de la ficha.
  * - --token app: la credencial de la app (necesita catalog.products.manage y catalog.categories.manage).
  *   --token dueno: entra como el dueño recién creado (sirve para ensayar mientras la app no tiene esos permisos).
  * - La clave del dueño: la de --clave-archivo o una al azar. Va en el reporte (archivo local, no se imprime):
@@ -62,16 +65,18 @@ if (!DRY && (!ERP || !CLIENT_SECRET)) fail(`Faltan ERP_API_BASE_URL o ERP_APP_CL
 
 const fb = ficha.firebaseConfig || {};
 if (!fb.projectId || !fb.apiKey) fail('La ficha no trae firebaseConfig.projectId y apiKey: esta tienda no tiene Firebase propio.');
+const store = args.presentacion ? JSON.parse(fs.readFileSync(args.presentacion, 'utf8')) : ficha;
 const owner = (ficha._users || []).find((u) => u.role === 'owner') || {};
 const ownerEmail = String(args['correo-dueno'] || owner.email || ficha.email || '').trim().toLowerCase();
 if (!ownerEmail) fail('No hay correo del dueño (ni en la ficha ni en --correo-dueno).');
-const businessName = String(args.nombre || ficha.name || ficha.businessName || '').trim();
-const ownerName = String(owner.displayName || businessName).trim();
+const businessName = String(args.nombre || store.name || store.businessName || '').trim();
+// Con otro correo, el nombre del dueño de la ficha ya no es el suyo.
+const ownerName = String(args['nombre-dueno'] || (args['correo-dueno'] ? '' : owner.displayName) || businessName).trim();
 const ownerPassword = args['clave-archivo']
   ? fs.readFileSync(args['clave-archivo'], 'utf8').trim()
   : `Bs-${randomBytes(9).toString('base64url')}7a`;
 // 51999999999 y parecidos son el marcador del alta vieja, no un número real.
-const phoneDigits = String(args.telefono || ficha.whatsapp || ficha.phone || '').replace(/\D/g, '');
+const phoneDigits = String(args.telefono || store.whatsapp || store.phone || '').replace(/\D/g, '');
 const phone = phoneDigits && !/^(51)?9{9}$/.test(phoneDigits) ? `+${phoneDigits.length === 9 ? `51${phoneDigits}` : phoneDigits}` : undefined;
 
 const report = {
