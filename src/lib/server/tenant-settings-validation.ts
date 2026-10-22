@@ -78,6 +78,7 @@ export const storefrontSettingsSchema = z
       .record(z.string().regex(/^\d{1,10}$/), z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,40}$/))
       .refine((icons) => Object.keys(icons).length <= 200, 'Too many category icons')
       .optional(),
+    categoryOrder: z.array(z.string().regex(/^\d{1,10}$/)).max(200).optional(),
   })
   .strict();
 

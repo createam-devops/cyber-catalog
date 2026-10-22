@@ -1,0 +1,15 @@
+{
+  "_fuente": "Datos públicos de la tienda real (bellasorpresa.pe, repo tiktok-shop-link: src/lib/config.ts, index.html y SEO.tsx). La tienda de bellasorpresa.createam.cloud es de prueba.",
+  "name": "Bella Sorpresa",
+  "domain": "bellasorpresa.pe",
+  "subdomain": null,
+  "whatsapp": "51990126720",
+  "socialMedia": {
+    "tiktok": "https://www.tiktok.com/@bellasorpresa_",
+    "instagram": "https://www.instagram.com/bella_sorpresa/"
+  },
+  "primaryColor": "#df3c8e",
+  "colors": { "primary": "#df3c8e", "secondary": "#a62943", "accent": "#c32273" },
+  "seoDescription": "Regalos y detalles personalizados desde Chao, La Libertad, con envíos a todo el Perú.",
+  "storefront": { "rubro": "regalos" }
+}

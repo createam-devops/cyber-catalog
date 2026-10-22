@@ -114,6 +114,7 @@ export function diffDraft(original: Draft, draft: Draft): Record<string, unknown
         layout: compact(s.layout),
         content: compact(s.content),
         categoryIcons: compact(s.categoryIcons),
+        categoryOrder: s.categoryOrder?.length ? s.categoryOrder : undefined,
       }) ?? {};
   }
   if (!same(draft.heroSlides, original.heroSlides)) patch.heroSlides = draft.heroSlides.map((slide, order) => ({ ...slide, order }));
