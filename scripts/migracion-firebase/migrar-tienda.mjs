@@ -14,7 +14,7 @@
  *
  * - ficha.json: la tienda exportada del Firestore central (exportar-ficha.cjs): de ahí salen su
  *   Firebase (firebaseConfig) y su id, que va en las external_ref.
- * - --negocio: un negocio ya creado en el ERP (por el operador). No hace el alta ni pide --plan; antes de
+ * - --negocio (o --partner-id): un negocio ya creado en el ERP (por el operador). No hace el alta ni pide --plan; antes de
  *   escribir muestra su nombre, plan y límites (también con --dry-run).
  * - --presentacion: los datos de la tienda real (p. ej. bellasorpresa-pe.json). Si está, el nombre
  *   y el WhatsApp del negocio salen de ahí y no de la ficha.
@@ -44,7 +44,8 @@ const fail = (msg) => {
 };
 if (!args.ficha) fail('Falta --ficha (la tienda exportada del Firestore central).');
 // Con --negocio el negocio ya existe (lo creó el operador del ERP): no hay alta ni plan que elegir.
-const PARTNER_ID = args.negocio === undefined ? null : Number(args.negocio);
+const partnerArg = args.negocio ?? args['partner-id'];
+const PARTNER_ID = partnerArg === undefined ? null : Number(partnerArg);
 if (PARTNER_ID !== null && !(Number.isInteger(PARTNER_ID) && PARTNER_ID > 0)) fail('--negocio tiene que ser el número del negocio en el ERP.');
 if (!args.plan && PARTNER_ID === null) fail('Falta --plan (el plan_code del ERP: en dev catalogo_digital) o --negocio (un negocio ya creado).');
 
