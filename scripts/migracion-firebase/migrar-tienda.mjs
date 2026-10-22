@@ -8,12 +8,14 @@
  * no se duplica (el ERP compara su huella).
  *
  *   node scripts/migracion-firebase/migrar-tienda.mjs --ficha ficha.json --plan catalogo_digital \
- *     [--presentacion tienda.json] [--env .env.local] [--token app|dueno] [--correo-dueno x@y] \
+ *     [--negocio <id>] [--presentacion tienda.json] [--env .env.local] [--token app|dueno] [--correo-dueno x@y] \
  *     [--nombre-dueno "…"] [--nombre "…"] [--telefono +51…] [--clave-archivo f] [--prefijo fb] \
  *     [--dry-run] [--salida reporte.json]
  *
  * - ficha.json: la tienda exportada del Firestore central (exportar-ficha.cjs): de ahí salen su
  *   Firebase (firebaseConfig) y su id, que va en las external_ref.
+ * - --negocio: un negocio ya creado en el ERP (por el operador). No hace el alta ni pide --plan; antes de
+ *   escribir muestra su nombre, plan y límites (también con --dry-run).
  * - --presentacion: los datos de la tienda real (p. ej. bellasorpresa-pe.json). Si está, el nombre
  *   y el WhatsApp del negocio salen de ahí y no de la ficha.
  * - --token app: la credencial de la app (necesita catalog.products.manage y catalog.categories.manage).
@@ -41,10 +43,14 @@ const fail = (msg) => {
   process.exit(1);
 };
 if (!args.ficha) fail('Falta --ficha (la tienda exportada del Firestore central).');
-if (!args.plan) fail('Falta --plan (el plan_code del ERP: en dev catalogo_digital).');
+// Con --negocio el negocio ya existe (lo creó el operador del ERP): no hay alta ni plan que elegir.
+const PARTNER_ID = args.negocio === undefined ? null : Number(args.negocio);
+if (PARTNER_ID !== null && !(Number.isInteger(PARTNER_ID) && PARTNER_ID > 0)) fail('--negocio tiene que ser el número del negocio en el ERP.');
+if (!args.plan && PARTNER_ID === null) fail('Falta --plan (el plan_code del ERP: en dev catalogo_digital) o --negocio (un negocio ya creado).');
 
 const DRY = Boolean(args['dry-run']);
 const TOKEN_MODE = args.token === 'dueno' ? 'dueno' : 'app';
+if (PARTNER_ID !== null && TOKEN_MODE === 'dueno' && !args['clave-archivo']) fail('Con --negocio y --token dueno hace falta --clave-archivo con la clave del dueño.');
 const PREFIX = typeof args.prefijo === 'string' ? args.prefijo : 'fb';
 const ficha = JSON.parse(fs.readFileSync(args.ficha, 'utf8'));
 const envFile = typeof args.env === 'string' ? args.env : '.env.local';
@@ -61,14 +67,15 @@ const cfg = (k) => process.env[k] || env[k];
 const ERP = (cfg('ERP_API_BASE_URL') || '').replace(/\/+$/, '');
 const CLIENT_ID = cfg('ERP_APP_CLIENT_ID') || 'catalog';
 const CLIENT_SECRET = cfg('ERP_APP_CLIENT_SECRET');
-if (!DRY && (!ERP || !CLIENT_SECRET)) fail(`Faltan ERP_API_BASE_URL o ERP_APP_CLIENT_SECRET (en ${envFile} o en el entorno).`);
+if ((!DRY || PARTNER_ID !== null) && (!ERP || !CLIENT_SECRET)) fail(`Faltan ERP_API_BASE_URL o ERP_APP_CLIENT_SECRET (en ${envFile} o en el entorno).`);
 
 const fb = ficha.firebaseConfig || {};
 if (!fb.projectId || !fb.apiKey) fail('La ficha no trae firebaseConfig.projectId y apiKey: esta tienda no tiene Firebase propio.');
 const store = args.presentacion ? JSON.parse(fs.readFileSync(args.presentacion, 'utf8')) : ficha;
 const owner = (ficha._users || []).find((u) => u.role === 'owner') || {};
-const ownerEmail = String(args['correo-dueno'] || owner.email || ficha.email || '').trim().toLowerCase();
-if (!ownerEmail) fail('No hay correo del dueño (ni en la ficha ni en --correo-dueno).');
+// Con --negocio el dueño ya existe: su correo solo se anota (lo usa el importador).
+const ownerEmail = String(args['correo-dueno'] || (PARTNER_ID === null ? owner.email || ficha.email : '') || '').trim().toLowerCase();
+if (!ownerEmail && PARTNER_ID === null) fail('No hay correo del dueño (ni en la ficha ni en --correo-dueno).');
 const businessName = String(args.nombre || store.name || store.businessName || '').trim();
 // Con otro correo, el nombre del dueño de la ficha ya no es el suyo.
 const ownerName = String(args['nombre-dueno'] || (args['correo-dueno'] ? '' : owner.displayName) || businessName).trim();
@@ -175,6 +182,27 @@ const planLimit = (r, what) => {
   const photos = products.reduce((n, p) => n + (p.imageUrls || []).length, 0);
   console.log(`Firebase: ${categories.length} categorías, ${products.length} productos, ${photos} fotos.`);
 
+  // Negocio ya creado: antes de escribir nada, mostrar cuál es (también en el ensayo).
+  if (PARTNER_ID !== null) {
+    report.negocio = { partnerId: PARTNER_ID, creado: false, existente: true };
+    await refreshToken();
+    const [profile, status] = await Promise.all([erp('GET', '/integrations/partner'), erp('GET', '/integrations/app/partner-status')]);
+    report.negocio.nombre = profile.data?.name ?? null;
+    report.negocio.plan = status.data?.plan ?? null;
+    report.negocio.limites = status.data?.limits ?? null;
+    report.negocio.appHabilitada = status.data?.app_enabled ?? null;
+    save();
+    console.log(
+      `Negocio ${PARTNER_ID}: «${report.negocio.nombre ?? '?'}», plan ${report.negocio.plan?.name ?? report.negocio.plan?.code ?? '?'}, app ${report.negocio.appHabilitada ? 'habilitada' : 'NO habilitada'}.`
+    );
+    if (status.ok && status.data?.app_enabled === false) fail('El negocio no tiene la app del catálogo en su plan: no se puede escribir.');
+    const limits = status.data?.limits ?? {};
+    const maxPhotos = Math.max(0, ...products.map((p) => (p.imageUrls || []).length));
+    for (const [what, need, limit] of [['productos', products.length, limits.products], ['categorías', categories.length, limits.categories], ['fotos por producto', maxPhotos, limits.product_images]]) {
+      if (typeof limit === 'number' && need > limit) console.log(`  aviso: ${need} ${what} y el plan permite ${limit}.`);
+    }
+  }
+
   if (DRY) {
     report.categorias = categories.map((c) => ({ firebaseId: c.id, value: c.value, nombre: c.label, icono: c.icon ?? null }));
     report.productos = products.map((p, i) => ({ firebaseId: p.id, nombre: p.name, precio: p.price, categoria: p.category, slug: p.slug ?? null, orden: i, fotos: (p.imageUrls || []).length }));
@@ -183,7 +211,20 @@ const planLimit = (r, what) => {
     return;
   }
 
-  // 1) Alta del negocio (A.1). Repetirla con la misma external_ref devuelve el mismo negocio.
+  // 1) Alta del negocio (A.1), salvo que ya exista. Repetirla con la misma external_ref devuelve el mismo negocio.
+  if (PARTNER_ID === null) await createPartner();
+  else console.log(`Negocio ${PARTNER_ID} (ya creado en el ERP).`);
+
+  // 2) Token: el de la app, o el del dueño para ensayar.
+  await refreshToken();
+  await migrateCatalog(categories, products, photos);
+})().catch((error) => {
+  report.error = error.message;
+  save();
+  fail(`${error.message}. Reporte parcial en ${outFile}.`);
+});
+
+async function createPartner() {
   const alta = await erp('POST', '/integrations/partners', {
     auth: 'basic',
     body: {
@@ -205,10 +246,9 @@ const planLimit = (r, what) => {
   report.dueno.clave = alta.status === 201 ? ownerPassword : '(la del alta anterior)';
   save();
   console.log(`Negocio ${report.negocio.partnerId} (${report.negocio.creado ? 'creado' : 'ya existía'}).`);
+}
 
-  // 2) Token: el de la app, o el del dueño para ensayar.
-  await refreshToken();
-
+async function migrateCatalog(categories, products, photos) {
   // 3) Categorías, en su orden. La tabla value → id une cada producto con su categoría.
   const categoryIdByValue = {};
   for (const c of categories) {
@@ -328,8 +368,4 @@ const planLimit = (r, what) => {
   console.log(`Comprobación: ${report.verificacion.productosEnElErp}/${products.length} productos, ${report.verificacion.fotosSubidas}/${photos} fotos, ${differences.length} diferencias.`);
   if (report.limitesDelPlan.length) console.log(`Choques con el plan: ${report.limitesDelPlan.length} (ver el reporte).`);
   console.log(`Reporte: ${path.resolve(outFile)}`);
-})().catch((error) => {
-  report.error = error.message;
-  save();
-  fail(`${error.message}. Reporte parcial en ${outFile}.`);
-});
+}

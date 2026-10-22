@@ -32,9 +32,9 @@ La ficha y el reporte del migrador traen datos personales y la clave inicial del
 
 - El ERP de producción tiene A.1 y A.5 (E-6).
 - La credencial de la app trae `catalog.products.manage`, `catalog.categories.manage` y «Puede dar de alta negocios».
-- Está el código del plan Básico de producción (E-5).
-- El `.env` del catálogo apunta al ERP de producción (`ERP_API_BASE_URL`).
-- El dueño confirmó el correo con el que entrará a CyberPOS.
+- Están los planes de producción (E-5) y el negocio de Bella Sorpresa creado por el operador.
+- El `.env` del catálogo en el VPS apunta al ERP de producción: `ERP_API_BASE_URL`, `ERP_APP_URL`, el secreto de la app, el de avisos y `ERP_SIGNUP_PLAN_CODE` con el plan de producción.
+- El PR del orden de categorías está fusionado.
 
 ## Pasos
 
@@ -48,14 +48,21 @@ La ficha y el reporte del migrador traen datos personales y la clave inicial del
      --presentacion scripts/migracion-firebase/bellasorpresa-pe.json --plan <básico> --dry-run --salida seco.json
    ```
 3. **Migración**, con la credencial de la app. `--env` es un archivo con `ERP_API_BASE_URL` y `ERP_APP_CLIENT_SECRET` de producción.
-   ```sh
-   node scripts/migracion-firebase/migrar-tienda.mjs --ficha ficha.json \
-     --presentacion scripts/migracion-firebase/bellasorpresa-pe.json --plan <básico> --env .env.prod \
-     --correo-dueno <correo> --nombre-dueno "<nombre>" --salida reporte.json
-   ```
+
+   **Camino recomendado por el ERP** (`RUNBOOK_PROMOCION_CATALOGO.md` §4):
+   1. El operador crea el negocio en Plataforma › Negocios › Nuevo negocio, con su plan, «De cortesía» y el correo de la dueña.
+   2. El migrador lo llena con `--negocio`, sin alta. Antes de escribir muestra el nombre, el plan y los límites del negocio; el ensayo en seco también los muestra.
+      ```sh
+      node scripts/migracion-firebase/migrar-tienda.mjs --ficha ficha.json \
+        --presentacion scripts/migracion-firebase/bellasorpresa-pe.json --negocio <id> --env .env.prod \
+        --correo-dueno <correo> --salida reporte.json
+      ```
+
+   **Con alta por la app (A.1)**, si en prod ya hay plan de caída o días de prueba: cambiar `--negocio <id>` por `--plan <código> --nombre-dueno "<nombre>"`. Si el correo ya existe en el ERP, se detiene y lo resuelve el equipo del ERP.
+
+   En los dos casos:
    - Debe terminar con `Comprobación: 26/26 productos, 39/39 fotos, 0 diferencias`.
    - Si se corta, se vuelve a correr igual.
-   - Si el correo ya existe en el ERP, se detiene y lo resuelve el equipo del ERP.
 4. **Presentación**, en el contenedor. El logo es `tiktok-shop-link/public/brand-logo.webp`.
    ```sh
    docker exec createam-platform mkdir -p /tmp/migracion
