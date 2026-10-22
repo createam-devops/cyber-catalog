@@ -10,7 +10,7 @@
  *   node scripts/migracion-firebase/migrar-tienda.mjs --ficha ficha.json --plan catalogo_digital \
  *     [--negocio <id>] [--presentacion tienda.json] [--env .env.local] [--token app|dueno] [--correo-dueno x@y] \
  *     [--nombre-dueno "…"] [--nombre "…"] [--telefono +51…] [--clave-archivo f] [--prefijo fb] \
- *     [--dry-run] [--salida reporte.json]
+ *     [--reducir-fotos] [--dry-run] [--salida reporte.json]
  *
  * - ficha.json: la tienda exportada del Firestore central (exportar-ficha.cjs): de ahí salen su
  *   Firebase (firebaseConfig) y su id, que va en las external_ref.
@@ -50,6 +50,15 @@ if (PARTNER_ID !== null && !(Number.isInteger(PARTNER_ID) && PARTNER_ID > 0)) fa
 if (!args.plan && PARTNER_ID === null) fail('Falta --plan (el plan_code del ERP: en dev catalogo_digital) o --negocio (un negocio ya creado).');
 
 const DRY = Boolean(args['dry-run']);
+// --reducir-fotos: cada foto va como WebP de 1600 px como máximo, el mismo tamaño
+// que guarda el ERP. Sirve cuando el servidor del ERP rechaza archivos grandes (413).
+// Usar siempre igual para una misma tienda: una foto reducida no es la misma que la original.
+const SHRINK = args['reducir-fotos']
+  ? async (buffer) => {
+      const { default: sharp } = await import('sharp');
+      return sharp(buffer).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
+    }
+  : null;
 const TOKEN_MODE = args.token === 'dueno' ? 'dueno' : 'app';
 if (PARTNER_ID !== null && TOKEN_MODE === 'dueno' && !args['clave-archivo']) fail('Con --negocio y --token dueno hace falta --clave-archivo con la clave del dueño.');
 const PREFIX = typeof args.prefijo === 'string' ? args.prefijo : 'fb';
@@ -306,10 +315,15 @@ async function migrateCatalog(categories, products, photos) {
       try {
         const img = await fetch(url);
         if (!img.ok) throw new Error(`descarga HTTP ${img.status}`);
-        const type = img.headers.get('content-type') || 'image/webp';
+        let type = img.headers.get('content-type') || 'image/webp';
+        let data = Buffer.from(await img.arrayBuffer());
+        if (SHRINK) {
+          data = await SHRINK(data);
+          type = 'image/webp';
+        }
         const ext = type.includes('png') ? 'png' : type.includes('jpeg') || type.includes('jpg') ? 'jpg' : 'webp';
         const form = new FormData();
-        form.append('file', new Blob([await img.arrayBuffer()], { type }), `${p.id}-${i + 1}.${ext}`);
+        form.append('file', new Blob([data], { type }), `${p.id}-${i + 1}.${ext}`);
         form.append('alt', p.name);
         const up = await erp('POST', `/integrations/catalog/products/${entry.erpId}/images`, { form });
         if (up.ok) {

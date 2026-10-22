@@ -61,6 +61,7 @@ La ficha y el reporte del migrador traen datos personales y la clave inicial del
    **Con alta por la app (A.1)**, si en prod ya hay plan de caída o días de prueba: cambiar `--negocio <id>` por `--plan <código> --nombre-dueno "<nombre>"`. Si el correo ya existe en el ERP, se detiene y lo resuelve el equipo del ERP.
 
    En los dos casos:
+   - **Producción rechaza fotos de más de ~1 MB (413)** mientras el ERP no suba ese tope. Usar `--reducir-fotos`: cada foto va como WebP de 1600 px como máximo, el tamaño que guarda el ERP. Usarlo siempre igual para una misma tienda.
    - Debe terminar con `Comprobación: 26/26 productos, 39/39 fotos, 0 diferencias`.
    - Si se corta, se vuelve a correr igual.
 4. **Presentación**, en el contenedor. El logo es `tiktok-shop-link/public/brand-logo.webp`.
