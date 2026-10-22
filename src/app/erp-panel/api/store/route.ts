@@ -12,7 +12,7 @@ import { tenantSettingsPatchSchema } from '@/lib/server/tenant-settings-validati
 import { uniqueSubdomain } from '@/lib/server/subdomain';
 import { logTenantAdminEvent } from '@/lib/server/tenant-audit';
 import { checkRateLimit } from '@/lib/server/rate-limit';
-import { getPlan } from '@/lib/plans';
+import { getStoreEntitlements } from '@/lib/server/erp/plan-features';
 import { normalizeWhatsapp } from '@/lib/storefront/public-store';
 import { RUBRO_IDS, type RubroId } from '@/lib/storefront/rubros';
 import type { TenantConfig } from '@/lib/types';
@@ -31,6 +31,8 @@ export async function GET(request: NextRequest) {
   if (!stored) return STORE_NOT_CREATED();
   // Nombre, logo y WhatsApp del negocio en el ERP; `fromErp` dice cuáles el editor muestra sin editar.
   const { tenant, fromErp } = await withPartnerProfile(stored);
+  // Funciones y topes del plan del negocio en el ERP, preguntados al abrir el editor (C-5).
+  const entitlements = await getStoreEntitlements(stored, { fresh: true });
 
   // Las imágenes guardadas en el catálogo van con su URL absoluta: el editor vive en el dominio del ERP.
   const base = catalogPublicUrl(request);
@@ -58,8 +60,9 @@ export async function GET(request: NextRequest) {
     storeUrl: address ? `https://${address}` : null,
     previewUrl: `${base}/vista-previa`,
     platformDomain: platformDomain(),
-    features: getPlan(tenant.plan).features,
-    limits: getPlan(tenant.plan).limits,
+    planName: entitlements.planName,
+    features: entitlements.features,
+    limits: entitlements.limits,
   });
 }
 

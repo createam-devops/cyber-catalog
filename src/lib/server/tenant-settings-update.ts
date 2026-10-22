@@ -10,7 +10,7 @@ import { logTenantAdminEvent } from './tenant-audit';
 import { listDevStores } from './storefront-data';
 import { addressTakenByOther, RESERVED_SUBDOMAINS } from './subdomain';
 import type { TenantSettingsPatchPayload } from './tenant-settings-validation';
-import { getPlan } from '@/lib/plans';
+import { getStoreEntitlementsById } from './erp/plan-features';
 import { normalizeWhatsapp } from '@/lib/storefront/public-store';
 
 type TenantAuditActor = Parameters<typeof logTenantAdminEvent>[0]['actor'];
@@ -35,11 +35,13 @@ export async function applyTenantSettingsPatch(
     changedFields.push(field);
   };
 
-  const plan = getPlan((await getTenantPlanInfo(tenantId)).plan);
-  const planFeatures = plan.features;
+  // Tiendas del ERP: las funciones del plan de su negocio en CyberPOS. Las viejas: su plan del catálogo.
+  const entitlements = await getStoreEntitlementsById(tenantId, isLocalStore(tenantId) ? undefined : (await getTenantPlanInfo(tenantId)).plan);
+  const planFeatures = entitlements.features;
+  const maxSlides = entitlements.limits.heroSlides;
 
-  if (Array.isArray(payload.heroSlides) && payload.heroSlides.length > plan.limits.heroSlides) {
-    return fail(403, `Tu plan permite hasta ${plan.limits.heroSlides} ${plan.limits.heroSlides === 1 ? 'banner' : 'banners'} en la portada.`);
+  if (Array.isArray(payload.heroSlides) && payload.heroSlides.length > maxSlides) {
+    return fail(403, `Tu plan permite hasta ${maxSlides} ${maxSlides === 1 ? 'banner' : 'banners'} en la portada.`);
   }
 
   if (typeof payload.name === 'string') set('name', payload.name);
