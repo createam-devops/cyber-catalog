@@ -10,13 +10,13 @@ const hexColorSchema = z
   .trim()
   .regex(/^#(?:[0-9a-fA-F]{3}){1,2}$/, 'Invalid hex color');
 
+// Sin enviar = no se toca (el editor de CyberPOS manda solo lo que cambió); '' = quitar.
 const optionalUrlSchema = z
   .string()
   .trim()
   .max(2048, 'URL is too long')
-  .optional()
-  .transform((value) => value || '')
-  .refine((value) => !value || /^https?:\/\//i.test(value), 'Invalid URL');
+  .refine((value) => !value || /^https?:\/\//i.test(value), 'Invalid URL')
+  .optional();
 
 const optionalHandleOrUrlSchema = z
   .string()
@@ -29,9 +29,8 @@ const optionalPhoneSchema = z
   .string()
   .trim()
   .max(24, 'Phone number is too long')
-  .optional()
-  .transform((value) => value || '')
-  .refine((value) => !value || /^[+0-9\s()-]+$/.test(value), 'Invalid phone number');
+  .refine((value) => !value || /^[+0-9\s()-]+$/.test(value), 'Invalid phone number')
+  .optional();
 
 const heroSlideSchema = z.object({
   id: z.string().trim().min(1).max(80),

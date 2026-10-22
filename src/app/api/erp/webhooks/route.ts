@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getErpConfig } from '@/lib/server/erp/config';
 import { alreadyProcessed, tenantIdsForPartner, verifyErpSignature } from '@/lib/server/erp/webhooks';
 import { forgetPartnerProfile } from '@/lib/server/erp/partner-profile';
+import { forgetPartnerStatus } from '@/lib/server/erp/plan-features';
 import { invalidateStoreCatalog } from '@/lib/server/storefront-data';
 
 export const runtime = 'nodejs';
@@ -44,7 +45,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Cambió el nombre, el logo o el teléfono del negocio: su perfil se vuelve a leer.
-  if (event.event_type === 'partner.updated') forgetPartnerProfile(partnerId);
+  if (event.event_type === 'partner.updated') {
+    forgetPartnerProfile(partnerId);
+    forgetPartnerStatus(partnerId);
+  }
 
   try {
     const tenantIds = await tenantIdsForPartner(partnerId);
