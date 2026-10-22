@@ -248,6 +248,19 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
               Mostrar stock y «Agotado» {!data.features.stock && <Pill tone="pro">Pro</Pill>}
             </span>
           </label>
+          <label className="flex min-h-10 items-center gap-3">
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-[var(--cm-primary,#10b981)]"
+              checked={theme.layout.showNameWithLogo}
+              disabled={disabled}
+              onChange={(e) => setLayout({ showNameWithLogo: e.target.checked })}
+            />
+            <span className="text-cm-body font-semibold text-cm-ink">
+              Mostrar el nombre junto al logo
+              <span className="block text-cm-label font-normal text-cm-muted">Úsalo si tu logo es solo un ícono, sin el nombre escrito.</span>
+            </span>
+          </label>
         </FluidGrid>
       </Collapsible>
 
