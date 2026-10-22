@@ -16,6 +16,10 @@ export interface StoreProduct {
   featured: boolean;
   /** null = la tienda no controla stock de este producto. */
   stock: number | null;
+  /** Dirección del producto en el ERP (la usan las tiendas con web propia). */
+  slug?: string;
+  /** Última modificación (ISO), si la fuente la da. */
+  updatedAt?: string;
 }
 
 export interface StoreCatalog {
