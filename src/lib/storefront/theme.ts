@@ -28,6 +28,8 @@ export interface StorefrontSettings {
     cardStyle?: CardStyle;
     footer?: FooterStyle;
     showStock?: boolean;
+    /** Mostrar el nombre junto al logo (para logos que son solo un ícono). Sin logo, el nombre sale siempre. */
+    showNameWithLogo?: boolean;
   };
   content?: Partial<StorefrontContent>;
   /**
@@ -73,6 +75,7 @@ export interface ResolvedStorefront {
     cardStyle: CardStyle;
     footer: FooterStyle;
     showStock: boolean;
+    showNameWithLogo: boolean;
   };
   content: StorefrontContent;
 }
@@ -121,6 +124,7 @@ export function resolveStorefront(source: ThemeSource): ResolvedStorefront {
       cardStyle: settings.layout?.cardStyle ?? style.cardStyle,
       footer: settings.layout?.footer ?? style.footer,
       showStock: settings.layout?.showStock ?? false,
+      showNameWithLogo: settings.layout?.showNameWithLogo ?? false,
     },
     content,
   };

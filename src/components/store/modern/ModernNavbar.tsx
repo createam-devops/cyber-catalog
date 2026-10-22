@@ -78,6 +78,7 @@ export default function ModernNavbar({
   ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
   const showLogo = isImageUrl(store.logo) && !logoError;
+  const showName = !showLogo || theme.layout.showNameWithLogo;
 
   const submitSearch = () => {
     const value = query.trim();
@@ -108,11 +109,22 @@ export default function ModernNavbar({
         >
           {showLogo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img ref={logoRef} src={store.logo!.trim()} alt={store.name} className="h-8 md:h-10 w-auto max-w-[140px] object-contain" onError={() => setLogoError(true)} />
+            <img
+              ref={logoRef}
+              src={store.logo!.trim()}
+              alt={store.name}
+              // Solo, el logo usa el lugar del nombre.
+              className={`w-auto object-contain ${showName ? 'h-8 md:h-10 max-w-[140px]' : 'h-10 md:h-12 max-w-[200px]'}`}
+              onError={() => setLogoError(true)}
+            />
           )}
-          <span className={`brand-font text-lg md:text-2xl tracking-tight truncate ${showLogo ? 'hidden md:inline' : ''}`}>
-            {store.name}
-          </span>
+          {/* Con logo, el nombre sobra (el logo ya lo lleva y su texto alternativo lo dice),
+              salvo que la tienda pida mostrarlo porque su logo es solo un ícono. */}
+          {showName && (
+            <span className={`brand-font text-lg md:text-2xl tracking-tight truncate ${showLogo ? 'hidden md:inline' : ''}`}>
+              {store.name}
+            </span>
+          )}
         </a>
 
         {/* Buscador: en celular va en su propia fila, a todo el ancho */}

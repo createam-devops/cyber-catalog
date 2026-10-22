@@ -332,6 +332,18 @@ function DesignContent() {
                   {!planFeatures.stock && <span className="ml-2 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Pro</span>}
                 </span>
               </label>
+              <label className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={theme.layout.showNameWithLogo}
+                  onChange={(e) => setLayout({ showNameWithLogo: e.target.checked })}
+                  className="h-5 w-5 accent-gray-900"
+                />
+                <span className="text-sm font-bold text-gray-700">
+                  Mostrar el nombre junto al logo
+                  <span className="block text-xs font-normal text-gray-500">Úsalo si tu logo es solo un ícono, sin el nombre escrito.</span>
+                </span>
+              </label>
             </Card>
 
             <Card title="Textos" description={`Vienen del rubro ${rubro.label.toLowerCase()}. Cambia los que quieras; los vacíos que digan "vacío lo oculta" desaparecen de la tienda.`}>

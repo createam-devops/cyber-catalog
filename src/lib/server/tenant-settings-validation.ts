@@ -70,6 +70,7 @@ export const storefrontSettingsSchema = z
         cardStyle: z.enum(CARD_STYLES).optional(),
         footer: z.enum(FOOTER_STYLES).optional(),
         showStock: z.boolean().optional(),
+        showNameWithLogo: z.boolean().optional(),
       })
       .strict()
       .optional(),
