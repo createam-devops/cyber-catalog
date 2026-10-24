@@ -8,6 +8,7 @@ import { productPath, type StoreProduct } from './catalog';
 import { normalizeWhatsapp, socialUrl, type StoreCategory } from './public-store';
 import { RUBROS } from './rubros';
 import type { ResolvedStorefront, StoreFaq } from './theme';
+import type { PublicReview } from './reviews';
 
 /** URL absoluta: las imágenes guardadas en el catálogo son relativas (/media/...). */
 export function absoluteUrl(url: string | null | undefined, origin: string): string | undefined {
@@ -127,7 +128,8 @@ export function faqJsonLd(faq: StoreFaq[]) {
   };
 }
 
-export function productJsonLd(product: StoreProduct, tenant: TenantConfig, origin: string, categoryLabel?: string) {
+/** `reviews`: las opiniones aprobadas que se ven en la ficha (Google exige que estén a la vista). */
+export function productJsonLd(product: StoreProduct, tenant: TenantConfig, origin: string, categoryLabel?: string, reviews: PublicReview[] = []) {
   const url = `${origin}${productPath(product)}`;
   const images = product.imageUrls.map((image) => absoluteUrl(image, origin)).filter(Boolean);
   return {
@@ -140,6 +142,28 @@ export function productJsonLd(product: StoreProduct, tenant: TenantConfig, origi
     ...(product.description?.trim() ? { description: product.description.trim().slice(0, 5000) } : {}),
     ...(images.length ? { image: images } : {}),
     ...(categoryLabel ? { category: categoryLabel } : {}),
+    ...(product.rating && product.rating.count > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: product.rating.average,
+            reviewCount: product.rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
+    ...(reviews.length
+      ? {
+          review: reviews.slice(0, 5).map((review) => ({
+            '@type': 'Review',
+            author: { '@type': 'Person', name: review.name },
+            datePublished: review.date,
+            reviewBody: review.text,
+            reviewRating: { '@type': 'Rating', ratingValue: review.rating, bestRating: 5, worstRating: 1 },
+          })),
+        }
+      : {}),
     offers: {
       '@type': 'Offer',
       url,

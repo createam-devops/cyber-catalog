@@ -6,6 +6,7 @@ import { useHost, type Api } from '../host';
 import type { Draft, StatsResponse, StoreResponse } from '../store';
 import type { Section } from '../App';
 import { Button, FluidGrid, Pill } from '../ui';
+import Opiniones from './Opiniones';
 
 interface Props {
   data: StoreResponse;
@@ -18,7 +19,7 @@ interface Props {
 
 const formatNumber = (n: number | null) => (n === null ? '—' : new Intl.NumberFormat('es-PE').format(n));
 
-export default function Inicio({ data, draft, api, goTo }: Props) {
+export default function Inicio({ data, draft, api, goTo, canManage }: Props) {
   const host = useHost();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [copied, setCopied] = useState(false);
@@ -109,6 +110,8 @@ export default function Inicio({ data, draft, api, goTo }: Props) {
           </div>
         ))}
       </FluidGrid>
+
+      <Opiniones api={api} canManage={canManage} storeUrl={data.storeUrl} />
 
       {/* Lo que falta */}
       <section className="cs-card space-y-3">

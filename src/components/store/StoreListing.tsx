@@ -6,6 +6,7 @@ import StorefrontRoot from '@/components/store/StorefrontRoot';
 import StoreUnavailable from '@/components/store/StoreUnavailable';
 import { findStoreByDomain, getStoreCatalog, storeAdminUrl, storefrontAvailability } from '@/lib/server/storefront-data';
 import { isAppNotEnabled } from '@/lib/server/erp/client';
+import { withRatings } from '@/lib/server/reviews';
 import { FULL_CATALOG_THRESHOLD, categoryPath, type StoreCatalog } from '@/lib/storefront/catalog';
 import { toPublicStore } from '@/lib/storefront/public-store';
 import { resolveStorefront } from '@/lib/storefront/theme';
@@ -45,7 +46,8 @@ export default async function StoreListing({ domain, query = '', categorySlug }:
   const category = categorySlug ? catalog.categories.find((c) => c.slug === categorySlug) : undefined;
   if (categorySlug && !category) notFound();
 
-  const products = category ? catalog.products.filter((p) => p.category === category.id) : catalog.products;
+  // Con el promedio de sus opiniones aprobadas (estrellas en las tarjetas).
+  const products = withRatings(tenant.id, category ? catalog.products.filter((p) => p.category === category.id) : catalog.products);
   const total = products.length;
   const initialProducts = total <= FULL_CATALOG_THRESHOLD ? products : products.slice(0, 24);
   const theme = resolveStorefront(tenant);

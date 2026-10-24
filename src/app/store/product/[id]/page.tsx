@@ -9,6 +9,7 @@ import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
 import { categoryPath, productPath, type StoreCatalog, type StoreProduct } from "@/lib/storefront/catalog";
 import { absoluteUrl, breadcrumbJsonLd, jsonLdHtml, productJsonLd } from "@/lib/storefront/structured-data";
+import { publicReviews, withRatings } from "@/lib/server/reviews";
 
 export const dynamic = 'force-dynamic';
 
@@ -61,8 +62,10 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
 
   const origin = `https://${searchParams._domain}`;
   const category = catalog.categories.find((c) => c.id === product.category);
+  const [rated, ...related] = withRatings(tenant.id, [product, ...relatedTo(product, catalog)]);
+  const reviews = publicReviews(tenant.id, product.id);
   const jsonLd = [
-    productJsonLd(product, tenant, origin, category?.label),
+    productJsonLd(rated, tenant, origin, category?.label, reviews),
     breadcrumbJsonLd([
       { name: tenant.name, url: `${origin}/` },
       ...(category ? [{ name: category.label, url: `${origin}${categoryPath(category)}` }] : []),
@@ -76,7 +79,7 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
         <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />
       ))}
       <CartProviderWrapper storeId={tenant.id}>
-        <ModernProductDetail product={product} relatedProducts={relatedTo(product, catalog)} />
+        <ModernProductDetail product={rated} relatedProducts={related} reviews={reviews} />
       </CartProviderWrapper>
     </StorefrontRoot>
   );
