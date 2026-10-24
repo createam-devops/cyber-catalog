@@ -1,56 +1,48 @@
 "use client";
 
 import { useStorefront } from '../StorefrontRoot';
-import { getStorefrontIcon } from '@/lib/storefront/icons';
+import { WHATSAPP_GREEN, benefitIconName, getStorefrontIcon } from '@/lib/storefront/icons';
 import { CONTAINER } from './layout';
 
 /**
- * Franja de beneficios (delivery, pedidos por WhatsApp, garantía…). Los
+ * Beneficios de la tienda (delivery, pedidos por WhatsApp, garantía…). Los
  * escribe la tienda en Diseño; sin escribirlos, salen los que valen para toda
- * tienda. En la portada es una sola franja que reparte los beneficios (se ve
- * bien con dos o con cuatro); `compact` es la versión de la ficha del producto.
+ * tienda. En la portada es una línea corta con íconos de color, como en las
+ * tiendas grandes; `compact` es la lista de la ficha del producto, con detalle.
  */
 export default function StoreBenefits({ compact = false }: { compact?: boolean }) {
   const { theme } = useStorefront();
-  const items = theme.benefits;
+  const items = theme.benefits.map((item) => {
+    const icon = benefitIconName(item.icon, item.title);
+    return { ...item, Icon: getStorefrontIcon(icon), color: icon === 'WhatsApp' ? WHATSAPP_GREEN : undefined };
+  });
   if (!items.length) return null;
 
   if (compact) {
     return (
-      <ul className="grid gap-3 sm:grid-cols-2" aria-label="Beneficios">
-        {items.map((item) => {
-          const Icon = getStorefrontIcon(item.icon);
-          return (
-            <li key={item.title} className="flex items-start gap-3 rounded-sf-card border border-sf-border bg-sf-bg px-4 py-3">
-              <Icon size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-sf-primary" />
-              <span className="text-sm leading-snug">
-                <span className="block font-bold">{item.title}</span>
-                {item.text && <span className="block text-sf-muted">{item.text}</span>}
-              </span>
-            </li>
-          );
-        })}
+      <ul className="space-y-2.5 text-sm" aria-label="Beneficios">
+        {items.map(({ Icon, color, title, text }) => (
+          <li key={title} className="flex items-start gap-2.5">
+            <Icon size={18} aria-hidden="true" className="mt-px shrink-0 text-sf-primary" style={color ? { color } : undefined} />
+            <span className="leading-snug">
+              <span className="font-bold">{title}</span>
+              {text && <span className="text-sf-muted"> · {text}</span>}
+            </span>
+          </li>
+        ))}
       </ul>
     );
   }
 
   return (
-    <section aria-label="Beneficios" className={`${CONTAINER} pt-8`}>
-      <ul className="grid gap-4 rounded-sf-card border border-sf-border bg-sf-surface px-5 py-4 sm:grid-cols-2 md:auto-cols-fr md:grid-flow-col md:grid-cols-none md:gap-0 md:divide-x md:divide-sf-border md:px-0">
-        {items.map((item) => {
-          const Icon = getStorefrontIcon(item.icon);
-          return (
-            <li key={item.title} className="flex items-center gap-3 md:justify-center md:px-6">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sf-primary/10 text-sf-primary">
-                <Icon size={20} aria-hidden="true" />
-              </span>
-              <span className="min-w-0 text-sm leading-snug">
-                <span className="block font-bold">{item.title}</span>
-                {item.text && <span className="block text-sf-muted">{item.text}</span>}
-              </span>
-            </li>
-          );
-        })}
+    <section aria-label="Beneficios" className={`${CONTAINER} pt-5`}>
+      <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] font-semibold sm:gap-x-10 sm:text-sm">
+        {items.map(({ Icon, color, title }) => (
+          <li key={title} className="flex items-center gap-1.5">
+            <Icon size={17} aria-hidden="true" className="shrink-0 text-sf-primary" style={color ? { color } : undefined} />
+            {title}
+          </li>
+        ))}
       </ul>
     </section>
   );

@@ -7,7 +7,7 @@ import type { StoreBenefit } from './theme';
 
 /** Íconos que tienen sentido para un beneficio (todos están en STOREFRONT_ICONS). */
 export const BENEFIT_ICONS = [
-  'Truck', 'MessageCircle', 'ShieldCheck', 'BadgeCheck', 'Clock', 'CreditCard', 'MapPin', 'Award',
+  'Truck', 'WhatsApp', 'MessageCircle', 'ShieldCheck', 'BadgeCheck', 'Clock', 'CreditCard', 'MapPin', 'Award',
   'Gift', 'Palette', 'Leaf', 'Wrench', 'Star', 'Heart', 'Sparkles', 'Tag',
 ] as const;
 

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, MessageCircle, Palette, Search, Smartphone, Store, Boxes, Globe, TrendingUp } from "lucide-react";
+import { CheckCircle2, Palette, Search, Smartphone, Store, Boxes, Globe, TrendingUp } from "lucide-react";
+import { WhatsAppIcon } from "@/lib/storefront/whatsapp-icon";
 import SignupForm from "@/components/registro/SignupForm";
 import { bodyFont, displayFont } from "@/components/landing/fonts";
 import { CATALOG_GROWTH, CONTACT, LINKS } from "@/components/landing/content";
@@ -20,7 +21,7 @@ const STEPS = [
 ];
 
 const BENEFITS = [
-  { icon: MessageCircle, title: "Pedidos por WhatsApp", text: "Tus clientes arman su carrito y te escriben con el pedido listo: productos, cantidades y total." },
+  { icon: WhatsAppIcon, title: "Pedidos por WhatsApp", text: "Tus clientes arman su carrito y te escriben con el pedido listo: productos, cantidades y total." },
   { icon: Boxes, title: "Tus productos desde CyberPOS", text: "Fotos, precios y stock se cargan una vez en CyberPOS y la tienda se actualiza sola." },
   { icon: Palette, title: "Diseño según tu rubro", text: "Regalos, moda, comida o ferretería: textos, colores y estilo pensados para lo que vendes." },
   { icon: Globe, title: "Tu propia dirección", text: "Tu tienda en tunegocio.createam.cloud, con certificado seguro. Con el plan Pro, en tu propio dominio." },

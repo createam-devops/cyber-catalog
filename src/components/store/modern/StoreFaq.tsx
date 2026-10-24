@@ -15,7 +15,7 @@ export default function StoreFaq() {
   return (
     <section id="preguntas" aria-labelledby="preguntas-title" className={`${CONTAINER} scroll-mt-32 pt-14 md:scroll-mt-24`}>
       <SectionTitle id="preguntas-title" title="Preguntas frecuentes" />
-      <div className="max-w-3xl divide-y divide-sf-border rounded-sf-card border border-sf-border bg-sf-bg">
+      <div className="divide-y divide-sf-border rounded-sf-card border border-sf-border bg-sf-bg">
         {theme.faq.map((item) => (
           <details key={item.q} className="group px-5 py-4">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-bold [&::-webkit-details-marker]:hidden">

@@ -5,6 +5,7 @@ import { X, Trash2, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
 import { canOptimizeImage } from './StoreProductCard';
 import { formatPrice } from '@/lib/storefront/public-store';
+import { WhatsAppIcon } from '@/lib/storefront/icons';
 import type { CartItem } from '@/contexts/CartContext';
 
 interface ModernCartProps {
@@ -119,8 +120,9 @@ export default function ModernCart({ isOpen, onClose, cart, onRemoveItem, onUpda
               type="button"
               onClick={handleCheckout}
               disabled={!store.whatsapp}
-              className="block w-full bg-sf-primary text-sf-on-primary text-center py-4 rounded-sf-btn font-bold hover:opacity-90 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 bg-sf-primary text-sf-on-primary py-4 rounded-sf-btn font-bold hover:opacity-90 transition-all shadow-lg active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              <WhatsAppIcon size={20} aria-hidden="true" />
               {content.orderButton}
             </button>
             {!store.whatsapp && (

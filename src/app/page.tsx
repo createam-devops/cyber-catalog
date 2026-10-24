@@ -3,6 +3,11 @@ import Analytics from "@/components/Analytics";
 import LandingPage from "@/components/landing/LandingPage";
 import { CATALOG_GROWTH, CONTACT, FAQS, LINKS } from "@/components/landing/content";
 
+// La sección «Explora productos» lee la tienda de Createam en cada visita (de la
+// copia en memoria del catálogo). No puede ser estática con renovación: el cliente
+// del ERP usa fetch sin caché y Next lo rechaza al renovar una página estática.
+export const dynamic = "force-dynamic";
+
 const SITE_URL = "https://createam.cloud";
 const title = "Createam: tienda por WhatsApp, POS con SUNAT y reservas online";
 const description =

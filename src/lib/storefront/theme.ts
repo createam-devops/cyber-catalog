@@ -151,7 +151,7 @@ export interface ResolvedStorefront {
 /** Lo que vale para toda tienda de la plataforma: el pedido llega por WhatsApp. */
 function defaultBenefits(content: StorefrontContent): StoreBenefit[] {
   return [
-    { icon: 'MessageCircle', title: 'Pedidos por WhatsApp', text: 'Te atendemos directo y confirmamos tu pedido' },
+    { icon: 'WhatsApp', title: 'Pedidos por WhatsApp', text: 'Te atendemos directo y confirmamos tu pedido' },
     ...(content.deliveryNote.trim() ? [{ icon: 'Truck', title: content.deliveryNote.trim(), text: '' }] : []),
   ];
 }
