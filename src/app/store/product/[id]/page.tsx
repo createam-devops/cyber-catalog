@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import ModernProductDetail from "@/components/store/modern/ModernProductDetail";
 import CartProviderWrapper from "@/components/store/CartProviderWrapper";
 import StorefrontRoot from "@/components/store/StorefrontRoot";
@@ -7,8 +7,8 @@ import StoreUnavailable from "@/components/store/StoreUnavailable";
 import { findStoreByDomain, getStoreCatalog, storeAdminUrl, storefrontAvailability } from "@/lib/server/storefront-data";
 import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
-import type { StoreCatalog, StoreProduct } from "@/lib/storefront/catalog";
-import { absoluteUrl, jsonLdHtml, productJsonLd } from "@/lib/storefront/structured-data";
+import { categoryPath, productPath, type StoreCatalog, type StoreProduct } from "@/lib/storefront/catalog";
+import { absoluteUrl, breadcrumbJsonLd, jsonLdHtml, productJsonLd } from "@/lib/storefront/structured-data";
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +38,8 @@ async function load(domain: string | undefined, id: string) {
     if (isAppNotEnabled(error)) return { tenant, availability: 'paused' as const, catalog: null, product: null };
     throw error;
   }
-  const product = catalog.products.find((p) => p.id === id) ?? null;
+  // La ficha vive en /product/<slug>; por número (enlaces viejos) también se encuentra.
+  const product = catalog.products.find((p) => p.slug === id) ?? catalog.products.find((p) => p.id === id) ?? null;
   return { tenant, availability, catalog, product };
 }
 
@@ -53,13 +54,27 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
   if (!catalog || !product) {
     return notFound();
   }
+  // Entró por el número o por otra forma del slug: a su dirección única (301 para Google).
+  if (productPath(product) !== `/product/${encodeURIComponent(params.id)}`) {
+    permanentRedirect(productPath(product));
+  }
 
-  const categoryLabel = catalog.categories.find((category) => category.id === product.category)?.label;
-  const jsonLd = productJsonLd(product, tenant, `https://${searchParams._domain}`, categoryLabel);
+  const origin = `https://${searchParams._domain}`;
+  const category = catalog.categories.find((c) => c.id === product.category);
+  const jsonLd = [
+    productJsonLd(product, tenant, origin, category?.label),
+    breadcrumbJsonLd([
+      { name: tenant.name, url: `${origin}/` },
+      ...(category ? [{ name: category.label, url: `${origin}${categoryPath(category)}` }] : []),
+      { name: product.name, url: `${origin}${productPath(product)}` },
+    ]),
+  ];
 
   return (
     <StorefrontRoot store={{ ...toPublicStore(tenant), adminUrl: storeAdminUrl(tenant) }} categories={catalog.categories}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }} />
+      {jsonLd.map((data, index) => (
+        <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />
+      ))}
       <CartProviderWrapper storeId={tenant.id}>
         <ModernProductDetail product={product} relatedProducts={relatedTo(product, catalog)} />
       </CartProviderWrapper>
@@ -76,12 +91,13 @@ export async function generateMetadata({ params, searchParams }: StoreProductPag
   const { tenant, product } = data;
   const title = `${product.name} | ${tenant.name}`;
   const description = (product.description?.trim() || `${product.name} a ${formatPrice(product.price)} en ${tenant.name}. Pide por WhatsApp.`).slice(0, 200);
-  const url = `https://${searchParams._domain}/product/${product.id}`;
+  const url = `https://${searchParams._domain}${productPath(product)}`;
   const image = absoluteUrl(product.imageUrls[0], `https://${searchParams._domain}`);
 
   return {
     metadataBase: new URL(`https://${searchParams._domain}`),
-    title,
+    // Sin la plantilla del sitio: el título ya trae el nombre de la tienda.
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
     openGraph: {

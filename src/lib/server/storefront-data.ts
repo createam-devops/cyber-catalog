@@ -9,7 +9,7 @@
 import { cache } from 'react';
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import type { TenantConfig } from '@/lib/types';
-import type { StoreCatalog, StoreProduct } from '@/lib/storefront/catalog';
+import { withCategorySlugs, type StoreCatalog, type StoreProduct } from '@/lib/storefront/catalog';
 import { labelFromCategoryValue, type StoreCategory } from '@/lib/storefront/public-store';
 import { getTenantDbFromConfig } from './tenant-firestore';
 import { getTenantByDomain } from './tenants';
@@ -140,7 +140,9 @@ export async function getStoreCatalog(store: TenantConfig): Promise<StoreCatalog
 
   const pending = dataSourceFor(store)
     .loadCatalog(store)
-    .then((data) => {
+    .then((loaded) => {
+      // Cada categoría con su slug: su página es /categoria/<slug>.
+      const data = { ...loaded, categories: withCategorySlugs(loaded.categories) };
       catalogs.set(store.id, { at: Date.now(), data });
       return data;
     })

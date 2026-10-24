@@ -3,6 +3,7 @@ import { getErpConfig } from '@/lib/server/erp/config';
 import { alreadyProcessed, tenantIdsForPartner, verifyErpSignature } from '@/lib/server/erp/webhooks';
 import { forgetPartnerProfile } from '@/lib/server/erp/partner-profile';
 import { forgetPartnerStatus } from '@/lib/server/erp/plan-features';
+import { queueIndexNow } from '@/lib/server/indexnow';
 import { invalidateStoreCatalog } from '@/lib/server/storefront-data';
 
 export const runtime = 'nodejs';
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
-  let event: { event_id?: string; event_type?: string; data?: { partner_id?: number } };
+  let event: { event_id?: string; event_type?: string; data?: { partner_id?: number; product_id?: number } };
   try {
     event = JSON.parse(body);
   } catch {
@@ -53,6 +54,10 @@ export async function POST(request: NextRequest) {
   try {
     const tenantIds = await tenantIdsForPartner(partnerId);
     tenantIds.forEach(invalidateStoreCatalog);
+    // Cambió lo que se vende: que Bing (IndexNow) vuelva a leer esas páginas.
+    if (event.event_type?.startsWith('product.') || event.event_type === 'category.changed') {
+      tenantIds.forEach((id) => queueIndexNow(id, event.data?.product_id));
+    }
     return NextResponse.json({ ok: true, invalidated: tenantIds.length });
   } catch (error) {
     // Sin poder ubicar la tienda, que el ERP reintente.

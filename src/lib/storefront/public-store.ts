@@ -27,6 +27,8 @@ export interface StoreCategory {
   id: string;
   label: string;
   icon?: string;
+  /** Su página: /categoria/<slug>. Lo pone getStoreCatalog. */
+  slug?: string;
 }
 
 export function toPublicStore(tenant: TenantConfig): PublicStore {

@@ -11,6 +11,7 @@ import type { PreviewPayload } from '@shared/storefront/preview';
 import type { Draft, StoreResponse } from '../store';
 import { Collapsible, Field, FluidGrid, Notice, Pill, Section, Segmented } from '../ui';
 import { PreviewPanel, PreviewSheetButton } from '../Preview';
+import { BenefitsEditor, FaqEditor } from './Extras';
 
 interface Props {
   data: StoreResponse;
@@ -294,6 +295,9 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
           })}
         </FluidGrid>
       </Collapsible>
+
+      <BenefitsEditor settings={s} theme={theme} rubro={rubro.id} update={update} disabled={disabled} />
+      <FaqEditor settings={s} theme={theme} rubro={rubro.id} update={update} disabled={disabled} />
     </div>
   );
 

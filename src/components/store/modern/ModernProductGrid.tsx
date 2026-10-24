@@ -12,6 +12,8 @@ interface ModernProductGridProps {
   activeCategory?: string | null;
   searchQuery?: string;
   onAddToCart: (product: StoreProduct) => void;
+  /** Título fijo (la página de una categoría ya lleva su nombre en el H1). */
+  heading?: string;
 }
 
 export default function ModernProductGrid({
@@ -21,13 +23,14 @@ export default function ModernProductGrid({
   activeCategory = null,
   searchQuery = '',
   onAddToCart,
+  heading,
 }: ModernProductGridProps) {
   const { theme, categories } = useStorefront();
   const query = searchQuery.trim();
   const categoryLabel = activeCategory ? categories.find((c) => c.id === activeCategory)?.label ?? activeCategory : null;
 
-  const title = query ? `Resultados para “${query}”` : categoryLabel ?? theme.content.productsTitle;
-  const subtitle = query || categoryLabel ? null : theme.content.productsSubtitle;
+  const title = query ? `Resultados para “${query}”` : heading ?? categoryLabel ?? theme.content.productsTitle;
+  const subtitle = query || categoryLabel || heading ? null : theme.content.productsSubtitle;
   const columns = theme.layout.gridColumns === 4 ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3';
 
   return (
