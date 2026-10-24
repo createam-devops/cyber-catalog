@@ -1,10 +1,11 @@
 "use client";
 
-import { Settings, Instagram, Facebook, MessageCircle } from 'lucide-react';
+import { Settings, Instagram, Facebook } from 'lucide-react';
 import Link from 'next/link';
 import { useStorefront } from '../StorefrontRoot';
 import { formatPhone, socialUrl } from '@/lib/storefront/public-store';
 import { categoryPath } from '@/lib/storefront/catalog';
+import { WhatsAppIcon } from '@/lib/storefront/icons';
 import type { FooterStyle } from '@/lib/storefront/presets';
 import { CONTAINER } from './layout';
 
@@ -88,7 +89,7 @@ export default function ModernFooter() {
             {store.whatsapp && (
               <li>
                 <a href={`https://wa.me/${store.whatsapp}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:underline">
-                  <MessageCircle size={16} aria-hidden="true" />
+                  <WhatsAppIcon size={16} aria-hidden="true" />
                   {formatPhone(store.whatsapp)}
                 </a>
               </li>

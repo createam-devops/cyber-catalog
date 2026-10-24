@@ -15,6 +15,7 @@ interface Props {
 
 const ICON_LABELS: Record<(typeof BENEFIT_ICONS)[number], string> = {
   Truck: 'Envío',
+  WhatsApp: 'WhatsApp',
   MessageCircle: 'Mensaje',
   ShieldCheck: 'Garantía',
   BadgeCheck: 'Verificado',

@@ -26,6 +26,7 @@ Las tres herramientas funcionan en el navegador, sin instalar nada y sin contrat
 
 - [Catálogo Digital](${SITE_URL}/catalogo-digital): tienda online con catálogo, buscador y categorías; el carrito envía el pedido con el total al WhatsApp del negocio. Sin comisión por venta. Diseños por rubro (regalos, moda, comida, ferretería), dirección en createam.cloud o dominio propio, una página por producto y mapa del sitio para Google. Los productos, fotos, precios y stock se administran en CyberPOS (Venta online).
 - [CyberPOS](${SITE_URL}/#cyberpos): sistema de ventas modular para bodegas, tiendas, talleres, restaurantes y negocios que fabrican a medida. Ventas y caja (punto de venta), facturación electrónica y guías de remisión directo a SUNAT, inventario con varios almacenes, compras, contabilidad, CRM con WhatsApp, servicios, producción, tienda online y reportes.
+- [Tienda Createam](https://catalogo.createam.cloud/): equipos para el punto de venta, con precios en soles; se piden por WhatsApp. Está hecha con Catálogo Digital y tiene su propia guía para IAs en https://catalogo.createam.cloud/llms.txt.
 - [OnTurn](${SITE_URL}/#onturn): reservas online las 24 horas para barberías, salones, spas y consultorios dentales, con agenda, recordatorios, reseñas verificadas y seña por Yape o Plin. Incluye un CyberPOS básico.
 
 ## Catálogo Digital y CyberPOS: una sola plataforma

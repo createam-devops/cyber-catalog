@@ -5,6 +5,8 @@ import { CONTACT, CYBERPOS_PLANS, FAQS, LINKS, RESTAURANT_PLANS, type LandingPla
 import { bodyFont, displayFont } from "./fonts";
 import NeedSelector from "./NeedSelector";
 import OrderDemo from "./OrderDemo";
+import { SHOWCASE_URL, getShowcase, type Showcase } from "./showcase";
+import { formatPrice } from "@/lib/storefront/public-store";
 
 const container = "mx-auto w-full max-w-[1180px] px-5 sm:px-8 lg:px-10";
 const sectionY = "py-14 sm:py-20 lg:py-24";
@@ -86,7 +88,96 @@ function PlanCard({ plan, accentBorder, className }: { plan: LandingPlan; accent
   );
 }
 
-export default function LandingPage() {
+// «Explora productos»: los equipos de la tienda de Createam, con enlace a cada ficha.
+function ProductShowcase({ showcase }: { showcase: Showcase }) {
+  return (
+    <section id="explorar" aria-labelledby="explorar-title" className={`${container} ${sectionY} flex flex-col gap-8`}>
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+        <div className="flex min-w-0 max-w-[720px] flex-col gap-3">
+          <span className={`${tag} bg-[#DDF3EA] text-[#065F46]`}>Tienda Createam</span>
+          <h2 id="explorar-title" className={h2}>
+            Explora productos para tu punto de venta
+          </h2>
+          <p className="text-[#3D4B66]">
+            Equipos para vender con CyberPOS. Eliges en nuestra tienda y nos haces el pedido por WhatsApp.
+          </p>
+        </div>
+        <a href={SHOWCASE_URL} data-track="tienda_explorar" className={`${btn} bg-[#047857]`}>
+          Explorar todos los productos
+        </a>
+      </div>
+
+      {showcase.categories.length > 1 && (
+        <ul aria-label="Categorías de la tienda" className="flex flex-wrap gap-2.5">
+          {showcase.categories.map((category) => (
+            <li key={category.href}>
+              <a
+                href={category.href}
+                className="inline-flex min-h-[44px] items-center rounded-full border border-[#C5D0E3] bg-white px-4 text-[15px] font-semibold transition-colors hover:border-[#047857] hover:text-[#047857]"
+              >
+                {category.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex flex-col gap-2.5">
+        <SwipeHint />
+        <SwipeRow label="Productos de la tienda Createam" className="md:grid md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+          {showcase.products.map((product) => (
+            <a
+              key={product.id}
+              href={product.href}
+              className="group flex shrink-0 basis-[64%] snap-start flex-col overflow-hidden rounded-2xl border border-[#DDE4F0] bg-white transition-shadow hover:shadow-[0_12px_32px_rgba(11,27,58,0.10)] sm:basis-[42%]"
+            >
+              <div className="relative aspect-square bg-[#F1F4F9]">
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  sizes="(min-width: 1024px) 270px, (min-width: 768px) 30vw, 64vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                />
+                {product.compareAtPrice && (
+                  <span className="absolute left-3 top-3 rounded-full bg-[#047857] px-2.5 py-0.5 text-xs font-bold text-white">
+                    -{Math.round((1 - product.price / product.compareAtPrice) * 100)}%
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col gap-1 p-4">
+                {product.category && (
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#5A6885]">{product.category}</span>
+                )}
+                <h3 className="line-clamp-2 text-[15px] font-bold leading-snug">{product.name}</h3>
+                <p className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
+                  <span className="text-lg font-extrabold">{formatPrice(product.price)}</span>
+                  {product.compareAtPrice && (
+                    <span className="text-sm text-[#5A6885] line-through">
+                      <span className="sr-only">Antes </span>
+                      {formatPrice(product.compareAtPrice)}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </a>
+          ))}
+        </SwipeRow>
+      </div>
+
+      <p className="text-[15px] text-[#3D4B66]">
+        Esta tienda está hecha con{" "}
+        <Link href="/catalogo-digital" className="font-bold text-[#A21CAF] underline-offset-2 hover:underline">
+          Catálogo Digital
+        </Link>
+        : así puede verse la tuya.
+      </p>
+    </section>
+  );
+}
+
+export default async function LandingPage() {
+  const showcase = await getShowcase();
   const starter = PLANS.starter;
   const pro = PLANS.pro;
   const maxYearlyDiscount = Math.max(getYearlyDiscount("starter"), getYearlyDiscount("pro"));
@@ -109,6 +200,9 @@ export default function LandingPage() {
           </a>
           <nav aria-label="Principal" className="hidden items-center gap-7 text-[15px] font-semibold md:flex">
             <a href="#productos" className="flex min-h-[44px] items-center hover:text-[#1357AD]">Productos</a>
+            {showcase && (
+              <a href="#explorar" className="flex min-h-[44px] items-center hover:text-[#1357AD]">Tienda</a>
+            )}
             <a href="#precios" className="flex min-h-[44px] items-center hover:text-[#1357AD]">Precios</a>
             <a href="#preguntas" className="flex min-h-[44px] items-center hover:text-[#1357AD]">Preguntas</a>
             <a href="#contacto" className="flex min-h-[44px] items-center hover:text-[#1357AD]">Contacto</a>
@@ -395,6 +489,8 @@ export default function LandingPage() {
             </div>
           </section>
         </div>
+
+        {showcase && <ProductShowcase showcase={showcase} />}
 
         <section id="precios" className={`${container} ${sectionY} flex flex-col gap-10`}>
           <div className="flex max-w-[720px] flex-col gap-3">

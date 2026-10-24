@@ -14,6 +14,9 @@ import {
   // Beneficios de la tienda (franja de la portada y de la ficha).
   Award, BadgeCheck, Clock, CreditCard, MapPin, MessageCircle, ShieldCheck,
 } from 'lucide-react';
+import { WhatsAppIcon } from './whatsapp-icon';
+
+export { WhatsAppIcon, WHATSAPP_GREEN } from './whatsapp-icon';
 
 export const STOREFRONT_ICONS = {
   Baby, Beef, Bike, Book, Brush, Cake, Camera, Car, Coffee, Cookie, Cpu, Croissant,
@@ -24,9 +27,18 @@ export const STOREFRONT_ICONS = {
   Shield, Shirt, ShoppingBag, Smartphone, Sofa, Sparkles, SprayCan, Star, Sun, Tag,
   Truck, UtensilsCrossed, Watch, Wine, Wrench, Zap,
   Award, BadgeCheck, Clock, CreditCard, MapPin, MessageCircle, ShieldCheck,
+  WhatsApp: WhatsAppIcon,
 } satisfies Record<string, LucideIcon>;
 
 export type StorefrontIconName = keyof typeof STOREFRONT_ICONS;
+
+/**
+ * El nombre de ícono de un beneficio: los guardados con la burbuja genérica
+ * cuyo título habla de WhatsApp se dibujan con el logo real.
+ */
+export function benefitIconName(icon: string | undefined | null, title: string): string | undefined | null {
+  return icon === 'MessageCircle' && /whats\s*app/i.test(title) ? 'WhatsApp' : icon;
+}
 
 export function getStorefrontIcon(name: string | undefined | null): LucideIcon {
   if (name && name in STOREFRONT_ICONS) {

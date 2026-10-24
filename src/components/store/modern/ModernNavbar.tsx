@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, Search, Instagram, Facebook, MessageCircle, MoreVertical } from 'lucide-react';
+import { ShoppingBag, Search, Instagram, Facebook, MoreVertical } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
 import { socialUrl } from '@/lib/storefront/public-store';
+import { WhatsAppIcon } from '@/lib/storefront/icons';
 import type { HeroTone } from './ModernHero';
 
 const TikTokIcon = ({ size = 20, className = "" }: { size?: number; className?: string }) => (
@@ -74,7 +75,7 @@ export default function ModernNavbar({
     { key: 'tiktok', label: 'TikTok', href: socialUrl('tiktok', store.socialMedia?.tiktok), icon: <TikTokIcon size={22} /> },
     { key: 'instagram', label: 'Instagram', href: socialUrl('instagram', store.socialMedia?.instagram), icon: <Instagram size={22} strokeWidth={2.25} /> },
     { key: 'facebook', label: 'Facebook', href: socialUrl('facebook', store.socialMedia?.facebook), icon: <Facebook size={22} strokeWidth={2.25} /> },
-    { key: 'whatsapp', label: 'WhatsApp', href: store.whatsapp ? `https://wa.me/${store.whatsapp}` : null, icon: <MessageCircle size={22} strokeWidth={2.25} /> },
+    { key: 'whatsapp', label: 'WhatsApp', href: store.whatsapp ? `https://wa.me/${store.whatsapp}` : null, icon: <WhatsAppIcon size={21} /> },
   ].filter((s): s is typeof s & { href: string } => Boolean(s.href));
 
   const showLogo = isImageUrl(store.logo) && !logoError;

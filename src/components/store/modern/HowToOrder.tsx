@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageCircle, MousePointerClick, ShoppingBag } from 'lucide-react';
+import { MousePointerClick, ShoppingBag } from 'lucide-react';
+import { WhatsAppIcon } from '@/lib/storefront/icons';
 import { useStorefront } from '../StorefrontRoot';
 import { CONTAINER, SectionTitle } from './layout';
 
@@ -10,7 +11,7 @@ export default function HowToOrder() {
   const steps = [
     { Icon: MousePointerClick, title: 'Elige', text: 'Mira las fotos, el precio y los detalles.' },
     { Icon: ShoppingBag, title: theme.content.addToCart, text: 'Ajusta la cantidad en tu pedido.' },
-    { Icon: MessageCircle, title: theme.content.orderButton, text: 'Te llega a nuestro chat y coordinamos pago y entrega.' },
+    { Icon: WhatsAppIcon, title: theme.content.orderButton, text: 'Te llega a nuestro chat y coordinamos pago y entrega.' },
   ];
   return (
     <section aria-labelledby="como-pedir-title" className={`${CONTAINER} pt-12`}>
