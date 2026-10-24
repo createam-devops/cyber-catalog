@@ -3,7 +3,7 @@ import { CONTENT_FIELDS, CONTENT_KEYS } from '@/lib/storefront/content';
 import { FONT_IDS } from '@/lib/storefront/font-ids';
 import { CARD_STYLES, FOOTER_STYLES, STYLE_PRESET_IDS } from '@/lib/storefront/presets';
 import { RUBRO_IDS } from '@/lib/storefront/rubros';
-import { HERO_MODES, MAX_BENEFITS, MAX_FAQ } from '@/lib/storefront/theme';
+import { HERO_MODES, HOME_MODES, MAX_BENEFITS, MAX_FAQ } from '@/lib/storefront/theme';
 
 const hexColorSchema = z
   .string()
@@ -70,6 +70,8 @@ export const storefrontSettingsSchema = z
         footer: z.enum(FOOTER_STYLES).optional(),
         showStock: z.boolean().optional(),
         showNameWithLogo: z.boolean().optional(),
+        home: z.enum(HOME_MODES).optional(),
+        spotlightProductId: z.string().trim().max(64).optional(),
       })
       .strict()
       .optional(),
@@ -95,6 +97,18 @@ export const storefrontSettingsSchema = z
     faq: z
       .array(z.object({ q: z.string().trim().max(120), a: z.string().trim().max(500) }).strict())
       .max(MAX_FAQ)
+      .optional(),
+    promo: z
+      .object({
+        enabled: z.boolean().optional(),
+        text: z.string().trim().max(90),
+        endsAt: z
+          .string()
+          .trim()
+          .refine((value) => !value || Number.isFinite(Date.parse(value)), 'Invalid promo end date')
+          .optional(),
+      })
+      .strict()
       .optional(),
   })
   .strict();

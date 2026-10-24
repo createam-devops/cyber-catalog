@@ -35,6 +35,8 @@ interface ErpProduct {
   sort_order?: number;
   slug?: string | null;
   updated_at?: string | null;
+  /** Fin de la oferta (pedido E-9 al ERP). */
+  sale_ends_at?: string | null;
 }
 
 interface ErpCategory {
@@ -50,7 +52,10 @@ export function toStoreProduct(p: ErpProduct): StoreProduct | null {
     .filter((img): img is ErpImage & { url: string } => typeof img.url === 'string' && img.url.length > 0)
     .sort((a, b) => Number(b.is_primary ?? false) - Number(a.is_primary ?? false) || (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const price = Number(p.sale_price) || 0;
-  const compareAt = typeof p.compare_at_price === 'number' && p.compare_at_price > price ? p.compare_at_price : null;
+  // Una oferta con fecha vencida ya no es oferta: sin precio «antes» ni contador.
+  const saleEnds = typeof p.sale_ends_at === 'string' ? Date.parse(p.sale_ends_at) : NaN;
+  const saleOver = Number.isFinite(saleEnds) && saleEnds <= Date.now();
+  const compareAt = !saleOver && typeof p.compare_at_price === 'number' && p.compare_at_price > price ? p.compare_at_price : null;
   return {
     id: String(p.id),
     name: p.name,
@@ -63,6 +68,7 @@ export function toStoreProduct(p: ErpProduct): StoreProduct | null {
     stock: p.track_stock && typeof p.stock_available === 'number' ? p.stock_available : null,
     ...(p.slug ? { slug: p.slug } : {}),
     ...(p.updated_at ? { updatedAt: p.updated_at } : {}),
+    ...(compareAt && Number.isFinite(saleEnds) ? { saleEndsAt: new Date(saleEnds).toISOString() } : {}),
   };
 }
 

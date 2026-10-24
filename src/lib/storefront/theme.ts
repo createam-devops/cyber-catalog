@@ -30,7 +30,17 @@ export interface StorefrontSettings {
     showStock?: boolean;
     /** Mostrar el nombre junto al logo (para logos que son solo un ícono). Sin logo, el nombre sale siempre. */
     showNameWithLogo?: boolean;
+    /** Portada: el catálogo (por defecto) o un «producto estrella», para tiendas de 1 a 3 productos. */
+    home?: HomeMode;
+    /** El producto de la portada «producto estrella» (id). Sin elegir: el primero destacado, o el primero. */
+    spotlightProductId?: string;
   };
+  /**
+   * Aviso de oferta de toda la tienda («10% en ramos por el Día de la Madre»).
+   * Con fecha de fin muestra un contador y se apaga solo al llegar: nada de
+   * contadores que se reinician.
+   */
+  promo?: StorePromo;
   content?: Partial<StorefrontContent>;
   /**
    * Ícono elegido por la tienda para cada categoría del ERP (id → nombre de
@@ -71,6 +81,25 @@ export interface StoreFaq {
 export const MAX_BENEFITS = 4;
 export const MAX_FAQ = 8;
 
+export const HOME_MODES = ['catalog', 'spotlight'] as const;
+export type HomeMode = (typeof HOME_MODES)[number];
+
+export interface StorePromo {
+  /** false lo apaga sin borrar el texto. */
+  enabled?: boolean;
+  text: string;
+  /** Fin de la oferta (ISO). Sin fecha: aviso sin contador. */
+  endsAt?: string;
+}
+
+/** ¿El aviso sigue vigente? Sin fecha, sí; con fecha, hasta que llegue. */
+export function isPromoActive(promo: { endsAt?: string | null } | null | undefined, now = Date.now()): boolean {
+  if (!promo) return false;
+  if (!promo.endsAt) return true;
+  const end = Date.parse(promo.endsAt);
+  return Number.isFinite(end) && end > now;
+}
+
 /** Lo mínimo de una tienda que hace falta para armar su tema. */
 export interface ThemeSource {
   colors?: { primary?: string; secondary?: string; accent?: string } | null;
@@ -103,10 +132,14 @@ export interface ResolvedStorefront {
     footer: FooterStyle;
     showStock: boolean;
     showNameWithLogo: boolean;
+    home: HomeMode;
+    spotlightProductId: string | null;
   };
   content: StorefrontContent;
   benefits: StoreBenefit[];
   faq: StoreFaq[];
+  /** El aviso de oferta encendido y con texto (su vigencia se mira al mostrarlo: isPromoActive). */
+  promo: { text: string; endsAt: string | null } | null;
 }
 
 /** Lo que vale para toda tienda de la plataforma: el pedido llega por WhatsApp. */
@@ -171,8 +204,14 @@ export function resolveStorefront(source: ThemeSource): ResolvedStorefront {
       footer: settings.layout?.footer ?? style.footer,
       showStock: settings.layout?.showStock ?? false,
       showNameWithLogo: settings.layout?.showNameWithLogo ?? false,
+      home: settings.layout?.home ?? 'catalog',
+      spotlightProductId: settings.layout?.spotlightProductId || null,
     },
     content,
+    promo:
+      settings.promo && settings.promo.enabled !== false && settings.promo.text?.trim()
+        ? { text: settings.promo.text.trim(), endsAt: settings.promo.endsAt || null }
+        : null,
     benefits: (Array.isArray(settings.benefits) ? settings.benefits : defaultBenefits(content)).filter((b) => b.title?.trim()),
     faq: (Array.isArray(settings.faq) ? settings.faq : defaultFaq(content)).filter((f) => f.q?.trim() && f.a?.trim()),
   };

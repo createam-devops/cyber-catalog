@@ -145,6 +145,8 @@ export function productJsonLd(product: StoreProduct, tenant: TenantConfig, origi
       url,
       priceCurrency: 'PEN',
       price: product.price.toFixed(2),
+      // Oferta con fecha: Google muestra hasta cuándo vale el precio.
+      ...(product.saleEndsAt ? { priceValidUntil: product.saleEndsAt.slice(0, 10) } : {}),
       // Sin control de stock, la tienda lo vende: disponible. Con stock en cero, agotado.
       availability: product.stock !== null && product.stock <= 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
       itemCondition: 'https://schema.org/NewCondition',

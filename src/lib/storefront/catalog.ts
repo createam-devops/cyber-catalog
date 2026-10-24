@@ -20,6 +20,8 @@ export interface StoreProduct {
   slug?: string;
   /** Última modificación (ISO), si la fuente la da. */
   updatedAt?: string;
+  /** Fin de la oferta (ISO), si el precio «antes» tiene fecha. Pasada la fecha, ya no hay oferta. */
+  saleEndsAt?: string;
 }
 
 export interface StoreCatalog {

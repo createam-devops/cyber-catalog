@@ -9,6 +9,10 @@ import ModernCart from './ModernCart';
 import ModernFooter from './ModernFooter';
 import StoreBenefits from './StoreBenefits';
 import StoreFaq from './StoreFaq';
+import StorePromo from './StorePromo';
+import SpotlightHero from './SpotlightHero';
+import HowToOrder from './HowToOrder';
+import StickyOrderBar from './StickyOrderBar';
 import Link from 'next/link';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
@@ -133,14 +137,22 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
     setIsCartOpen(true);
   };
 
+  // Portada «producto estrella»: el elegido, o el primero destacado, o el primero.
+  const star =
+    theme.layout.home === 'spotlight' && !category && !searchQuery.trim()
+      ? initialProducts.find((p) => p.id === theme.layout.spotlightProductId) ?? initialProducts.find((p) => p.featured) ?? initialProducts[0]
+      : undefined;
+  const starSoldOut = Boolean(star && theme.layout.showStock && star.stock !== null && star.stock <= 0);
+  const plain = Boolean(category || star);
+
   return (
     <>
       <ModernNavbar
         cartCount={getCartCount()}
         onOpenCart={() => setIsCartOpen(true)}
-        // Sin banner (página de categoría) la barra va con fondo desde arriba, como en la ficha.
-        isScrolled={category ? true : isScrolled}
-        heroTone={category ? 'none' : heroToneFor(store, theme)}
+        // Sin banner (categoría o producto estrella) la barra va con fondo desde arriba, como en la ficha.
+        isScrolled={plain ? true : isScrolled}
+        heroTone={plain ? 'none' : heroToneFor(store, theme)}
         onGoHome={() => (category ? window.location.assign('/') : window.scrollTo({ top: 0, behavior: 'smooth' }))}
         searchQuery={searchQuery}
         onSearchChange={(value) => {
@@ -163,6 +175,8 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
             {`${total} ${total === 1 ? 'producto' : 'productos'} de ${category.label.toLowerCase()} en ${store.name}. Elige, agrégalos al carrito y haz tu pedido por WhatsApp.`}
           </p>
         </header>
+      ) : star ? (
+        <SpotlightHero product={star} onAddToCart={handleAddProduct} />
       ) : (
         <>
           {theme.layout.hero === 'none' && <div className="h-32 md:h-28" />}
@@ -170,26 +184,32 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
         </>
       )}
 
-      <StoreBenefits />
+      {!star && <StorePromo />}
+      {!star && <StoreBenefits />}
+      {star && <HowToOrder />}
 
-      <ModernCategories
-        activeCategory={activeCategory}
-        onCategoryChange={(category) => {
-          setActiveCategory(category);
-          setSearchQuery('');
-          scrollToProducts();
-        }}
-      />
+      {!star && (
+        <ModernCategories
+          activeCategory={activeCategory}
+          onCategoryChange={(category) => {
+            setActiveCategory(category);
+            setSearchQuery('');
+            scrollToProducts();
+          }}
+        />
+      )}
 
-      <ModernProductGrid
-        products={products}
-        loading={loading}
-        loadingMore={loadingMore}
-        activeCategory={activeCategory}
-        searchQuery={searchQuery}
-        onAddToCart={handleAddProduct}
-        heading={category ? 'Productos' : undefined}
-      />
+      {(!star || products.length > 1) && (
+        <ModernProductGrid
+          products={star ? products.filter((p) => p.id !== star.id) : products}
+          loading={loading}
+          loadingMore={loadingMore}
+          activeCategory={activeCategory}
+          searchQuery={searchQuery}
+          onAddToCart={handleAddProduct}
+          heading={category ? 'Productos' : star ? theme.content.relatedTitle : undefined}
+        />
+      )}
 
       {!complete && remote.nextOffset !== null && <div ref={loadMoreRef} className="h-20" />}
 
@@ -204,6 +224,16 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
       {!category && <StoreFaq />}
 
       <ModernFooter />
+
+      {star && !isCartOpen && (
+        <StickyOrderBar
+          name={star.name}
+          price={star.price}
+          label={starSoldOut ? 'Agotado' : theme.content.addToCart}
+          disabled={starSoldOut}
+          onClick={() => handleAddProduct(star)}
+        />
+      )}
     </>
   );
 }
