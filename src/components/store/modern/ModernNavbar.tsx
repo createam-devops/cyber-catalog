@@ -90,11 +90,12 @@ export default function ModernNavbar({
   };
 
   return (
-    <nav className={`fixed top-0 md:top-4 left-0 right-0 z-50 flex justify-center ${solid ? 'md:px-4' : ''}`} style={navStyle}>
+    <nav className={`fixed top-0 md:top-4 left-0 right-0 z-50 flex justify-center ${solid ? 'md:px-6 lg:px-8' : ''}`} style={navStyle}>
       <div
         className={`flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 py-2 md:py-3 md:rounded-full transition-all duration-300 w-full text-[color:var(--sf-nav-fg)] ${
           solid
-            ? 'bg-sf-bg/80 backdrop-blur-md shadow-lg border-b md:border border-sf-border max-w-5xl px-4 md:px-6'
+            ? // Con fondo, del mismo ancho que el contenido de la página.
+            'bg-sf-bg/80 backdrop-blur-md shadow-lg border-b md:border border-sf-border max-w-[76rem] px-4 md:px-6'
             : // Sobre la portada, con los mismos márgenes que el resto de la página (CONTAINER).
               'bg-transparent border-transparent max-w-7xl px-4 sm:px-6 lg:px-8'
         }`}

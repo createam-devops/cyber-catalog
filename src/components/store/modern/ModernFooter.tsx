@@ -103,26 +103,28 @@ export default function ModernFooter() {
         </div>
       </div>
 
-      <div className={`${CONTAINER} flex flex-col gap-3 border-t py-6 text-xs sm:flex-row sm:items-center sm:justify-between ${shell.line} ${shell.soft}`}>
-        <p>
-          © {new Date().getFullYear()} {store.name}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          {!preview &&
-            // Las tiendas del ERP se administran en CyberPOS; las viejas, en el panel suelto
-            // (sin precarga: trae su propio código y no tiene por qué bajarlo cada visitante).
-            (store.adminUrl?.startsWith('http') ? (
-              <a href={store.adminUrl} rel="nofollow" className="flex items-center gap-1 hover:underline">
-                <Settings size={14} aria-hidden="true" /> Administrar
-              </a>
-            ) : (
-              <Link href={store.adminUrl || '/tenant-admin'} prefetch={false} rel="nofollow" className="flex items-center gap-1 hover:underline">
-                <Settings size={14} aria-hidden="true" /> Administrar
-              </Link>
-            ))}
-          <a href="https://createam.cloud" target="_blank" rel="noopener" className="hover:underline">
-            Catálogo hecho con <span className="font-bold">Createam</span>
-          </a>
+      <div className={CONTAINER}>
+        <div className={`flex flex-col gap-3 border-t py-6 text-xs sm:flex-row sm:items-center sm:justify-between ${shell.line} ${shell.soft}`}>
+          <p>
+            © {new Date().getFullYear()} {store.name}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {!preview &&
+              // Las tiendas del ERP se administran en CyberPOS; las viejas, en el panel suelto
+              // (sin precarga: trae su propio código y no tiene por qué bajarlo cada visitante).
+              (store.adminUrl?.startsWith('http') ? (
+                <a href={store.adminUrl} rel="nofollow" className="flex items-center gap-1 hover:underline">
+                  <Settings size={14} aria-hidden="true" /> Administrar
+                </a>
+              ) : (
+                <Link href={store.adminUrl || '/tenant-admin'} prefetch={false} rel="nofollow" className="flex items-center gap-1 hover:underline">
+                  <Settings size={14} aria-hidden="true" /> Administrar
+                </Link>
+              ))}
+            <a href="https://createam.cloud" target="_blank" rel="noopener" className="hover:underline">
+              Catálogo hecho con <span className="font-bold">Createam</span>
+            </a>
+          </div>
         </div>
       </div>
     </footer>

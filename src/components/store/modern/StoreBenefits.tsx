@@ -36,11 +36,11 @@ export default function StoreBenefits({ compact = false }: { compact?: boolean }
 
   return (
     <section aria-label="Beneficios" className={`${CONTAINER} pt-8`}>
-      <ul className="flex flex-col gap-4 rounded-sf-card border border-sf-border bg-sf-surface px-5 py-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-around sm:gap-x-8">
+      <ul className="grid gap-4 rounded-sf-card border border-sf-border bg-sf-surface px-5 py-4 sm:grid-cols-2 md:auto-cols-fr md:grid-flow-col md:grid-cols-none md:gap-0 md:divide-x md:divide-sf-border md:px-0">
         {items.map((item) => {
           const Icon = getStorefrontIcon(item.icon);
           return (
-            <li key={item.title} className="flex items-center gap-3">
+            <li key={item.title} className="flex items-center gap-3 md:justify-center md:px-6">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sf-primary/10 text-sf-primary">
                 <Icon size={20} aria-hidden="true" />
               </span>
