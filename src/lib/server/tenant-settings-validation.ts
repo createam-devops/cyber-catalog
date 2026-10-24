@@ -110,6 +110,13 @@ export const storefrontSettingsSchema = z
       })
       .strict()
       .optional(),
+    verification: z
+      .object({
+        google: z.string().trim().regex(/^[A-Za-z0-9_=-]{0,120}$/, 'Invalid Google verification code').optional(),
+        bing: z.string().trim().regex(/^[A-Za-z0-9_=-]{0,120}$/, 'Invalid Bing verification code').optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

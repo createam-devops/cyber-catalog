@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
 import type { PublicStore } from '@/lib/storefront/public-store';
 import type { ResolvedStorefront } from '@/lib/storefront/theme';
+import { CONTAINER } from './layout';
 
 /** Lo que queda detrás de la barra superior: una foto, el color de la marca o nada. */
 export type HeroTone = 'image' | 'brand' | 'none';
@@ -45,14 +46,14 @@ export default function ModernHero() {
     const { content } = theme;
     return (
       <section className={`${shell} bg-sf-primary text-sf-on-primary`}>
-        <div className="absolute inset-0 flex flex-col justify-end pb-14 px-6 container mx-auto">
-          <div className="max-w-4xl">
+        <div className={`absolute inset-0 flex flex-col justify-end pb-14 ${CONTAINER}`}>
+          <div className="max-w-2xl">
             {content.heroEyebrow && (
               <span className="inline-block px-3 py-1 mb-3 rounded-sf-chip border border-current text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] opacity-80">
                 {content.heroEyebrow}
               </span>
             )}
-            <h1 className="text-3xl sm:text-4xl md:text-6xl leading-[1.05] mb-5">{content.heroTitle || store.name}</h1>
+            <h1 className="mb-5 text-3xl leading-[1.1] sm:text-4xl lg:text-5xl">{content.heroTitle || store.name}</h1>
             {content.heroButton && (
               <a
                 href="#productos"
@@ -83,18 +84,20 @@ export default function ModernHero() {
             className="w-full h-full object-cover"
             loading={index === 0 ? 'eager' : 'lazy'}
           />
-          <div className="absolute inset-0 bg-black" style={{ opacity: theme.heroOverlay }} />
+          <div className="absolute inset-0 bg-black" style={{ opacity: Math.min(theme.heroOverlay, 0.2) }} />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
       ))}
 
-      <div className="absolute inset-0 z-20 flex flex-col justify-end pb-14 px-6 container mx-auto pointer-events-none text-white">
-        <div className="max-w-4xl pointer-events-auto">
+      <div className={`absolute inset-0 z-20 flex flex-col justify-end pb-14 pointer-events-none text-white ${CONTAINER}`}>
+        <div className="max-w-xl pointer-events-auto">
           {slide.subtitle && (
             <span className="inline-block px-3 py-1 mb-2 rounded-sf-chip border border-white/30 bg-white/10 backdrop-blur-md text-[10px] md:text-xs font-bold uppercase tracking-[0.2em]">
               {slide.subtitle}
             </span>
           )}
-          {slide.title && <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl leading-[1] mb-3 drop-shadow-md">{slide.title}</h1>}
+          {slide.title && <h1 className="mb-4 text-2xl leading-[1.15] drop-shadow-md sm:text-3xl lg:text-[2.6rem]">{slide.title}</h1>}
           {slide.buttonText && (
             <a
               href="#productos"

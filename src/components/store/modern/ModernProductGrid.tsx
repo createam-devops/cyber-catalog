@@ -3,6 +3,7 @@
 import { useStorefront } from '../StorefrontRoot';
 import ProductSkeleton from './ProductSkeleton';
 import StoreProductCard from './StoreProductCard';
+import { CONTAINER, SectionTitle } from './layout';
 import type { StoreProduct } from '@/lib/storefront/catalog';
 
 interface ModernProductGridProps {
@@ -34,18 +35,15 @@ export default function ModernProductGrid({
   const columns = theme.layout.gridColumns === 4 ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3';
 
   return (
-    <section className="container mx-auto px-4 py-6 scroll-mt-32 md:scroll-mt-24" id="productos">
-      <div className="mb-8 px-2">
-        <h2 className="text-xl md:text-2xl">{title}</h2>
-        {subtitle && <p className="text-sm text-sf-muted mt-1">{subtitle}</p>}
-      </div>
+    <section className={`${CONTAINER} scroll-mt-32 pt-10 md:scroll-mt-24`} id="productos">
+      <SectionTitle title={title} subtitle={subtitle} />
 
       {!loading && products.length === 0 ? (
-        <p className="px-2 py-16 text-center text-sf-muted">
+        <p className="py-16 text-center text-sf-muted">
           {query ? `No encontramos productos para “${query}”.` : 'Pronto verás aquí nuestros productos.'}
         </p>
       ) : (
-        <div className={`grid ${columns} gap-x-6 gap-y-10 items-start`}>
+        <div className={`grid ${columns} gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10 items-start`}>
           {loading && products.length === 0
             ? Array.from({ length: 8 }).map((_, idx) => <ProductSkeleton key={`skeleton-${idx}`} />)
             : products.map((product, index) => (

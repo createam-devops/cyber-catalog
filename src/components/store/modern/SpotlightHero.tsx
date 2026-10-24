@@ -9,6 +9,7 @@ import { canOptimizeImage, ProductImage } from './StoreProductCard';
 import StoreBenefits from './StoreBenefits';
 import StorePromo from './StorePromo';
 import Countdown from './Countdown';
+import { CONTAINER } from './layout';
 import { formatPrice } from '@/lib/storefront/public-store';
 import { productPath, type StoreProduct } from '@/lib/storefront/catalog';
 
@@ -26,7 +27,7 @@ export default function SpotlightHero({ product, onAddToCart }: { product: Store
   const discount = product.compareAtPrice ? Math.round((1 - product.price / product.compareAtPrice) * 100) : 0;
 
   return (
-    <section className="container mx-auto max-w-7xl px-4 pt-32 md:pt-28 pb-6">
+    <section className={`${CONTAINER} pt-32 md:pt-28 pb-6`}>
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-12">
         <div className="space-y-3">
           <div className="relative aspect-square overflow-hidden rounded-sf-card border border-sf-border bg-sf-surface">

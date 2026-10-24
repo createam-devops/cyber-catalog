@@ -5,6 +5,7 @@ import { Sparkles } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
 import { getStorefrontIcon } from '@/lib/storefront/icons';
 import { categoryPath } from '@/lib/storefront/catalog';
+import { CONTAINER, SectionTitle } from './layout';
 
 interface ModernCategoriesProps {
   /** null = todas. */
@@ -30,11 +31,10 @@ export default function ModernCategories({ activeCategory, onCategoryChange }: M
   ];
 
   return (
-    <nav className="py-6 container mx-auto px-4" aria-labelledby="categorias-title">
-      <h2 id="categorias-title" className="text-xl font-bold mb-4">
-        {theme.content.categoriesTitle}
-      </h2>
-      <ul className="flex gap-3 overflow-x-auto py-3 px-4 -mx-4 scrollbar-hide snap-x">
+    <nav className={`${CONTAINER} pt-10`} aria-labelledby="categorias-title">
+      <SectionTitle id="categorias-title" title={theme.content.categoriesTitle} className="!mb-3" />
+      {/* En el celular la fila llega hasta el borde para invitar a deslizar. */}
+      <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 py-2 scrollbar-hide snap-x sm:mx-0 sm:flex-wrap sm:px-0">
         {items.map(({ id, label, Icon, href }) => {
           const isActive = activeCategory === id;
           const className = `flex items-center gap-2 px-5 py-2.5 rounded-sf-chip whitespace-nowrap snap-start border transition-all ${

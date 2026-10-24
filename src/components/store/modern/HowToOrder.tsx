@@ -2,6 +2,7 @@
 
 import { MessageCircle, MousePointerClick, ShoppingBag } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
+import { CONTAINER, SectionTitle } from './layout';
 
 /** Los tres pasos para pedir. Valen para toda tienda de la plataforma: el pedido sale por WhatsApp. */
 export default function HowToOrder() {
@@ -12,10 +13,8 @@ export default function HowToOrder() {
     { Icon: MessageCircle, title: theme.content.orderButton, text: 'Te llega a nuestro chat y coordinamos pago y entrega.' },
   ];
   return (
-    <section aria-labelledby="como-pedir-title" className="container mx-auto px-4 py-12">
-      <h2 id="como-pedir-title" className="mb-6 text-center text-xl md:text-2xl">
-        Así de fácil es pedir
-      </h2>
+    <section aria-labelledby="como-pedir-title" className={`${CONTAINER} pt-12`}>
+      <SectionTitle id="como-pedir-title" title="Así de fácil es pedir" />
       <ol className="grid gap-4 md:grid-cols-3">
         {steps.map(({ Icon, title, text }, index) => (
           <li key={title} className="flex items-start gap-4 rounded-sf-card border border-sf-border bg-sf-surface p-5">

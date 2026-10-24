@@ -116,8 +116,13 @@ export async function storeListingMetadata(domain: string | undefined, categoryS
     image = absoluteUrl(tenant.heroSlides?.find((s) => s.image)?.image || tenant.logo, origin);
   }
 
+  // Verificación de Search Console y Bing (solo en la portada, como piden ellos).
+  const codes = category ? undefined : tenant.storefront?.verification;
   return {
     metadataBase: new URL(origin),
+    ...(codes?.google || codes?.bing
+      ? { verification: { ...(codes.google ? { google: codes.google } : {}), ...(codes.bing ? { other: { 'msvalidate.01': codes.bing } } : {}) } }
+      : {}),
     // Sin la plantilla del sitio: el título ya trae el nombre de la tienda.
     title: { absolute: title },
     description,

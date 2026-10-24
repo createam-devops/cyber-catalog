@@ -84,6 +84,13 @@ export function labelFromCategoryValue(value: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+/** «S/ 2,350.00»: con separador de miles, como se escriben los precios en Perú. A mano, igual en el servidor y en el navegador. */
 export function formatPrice(price: number): string {
-  return `S/ ${Number(price || 0).toFixed(2)}`;
+  const [whole, cents] = Number(price || 0).toFixed(2).split('.');
+  return `S/ ${whole.replace(/\B(?=(\d{3})+$)/g, ',')}.${cents}`;
+}
+
+/** «+51 990 126 720» para mostrar un WhatsApp de Perú; otros números, con su + y tal cual. */
+export function formatPhone(digits: string): string {
+  return /^51\d{9}$/.test(digits) ? `+51 ${digits.slice(2, 5)} ${digits.slice(5, 8)} ${digits.slice(8)}` : `+${digits}`;
 }

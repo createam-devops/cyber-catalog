@@ -4,6 +4,7 @@ import { Tag } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
 import { isPromoActive } from '@/lib/storefront/theme';
 import Countdown, { useCountdown } from './Countdown';
+import { CONTAINER } from './layout';
 
 /**
  * Aviso de oferta de toda la tienda, con contador si tiene fecha de fin. Lo
@@ -31,7 +32,7 @@ export default function StorePromo({ variant = 'band' }: { variant?: 'band' | 'i
   }
 
   return (
-    <section aria-label="Oferta" className="container mx-auto px-4 pt-6">
+    <section aria-label="Oferta" className={`${CONTAINER} pt-6`}>
       <div className="flex flex-col gap-3 rounded-sf-card bg-sf-primary px-5 py-4 text-sf-on-primary shadow-md sm:flex-row sm:items-center sm:justify-between">
         <p className="flex items-center gap-2 text-base font-bold md:text-lg">
           <Tag size={20} aria-hidden="true" className="shrink-0" />

@@ -41,6 +41,12 @@ export interface StorefrontSettings {
    * contadores que se reinician.
    */
   promo?: StorePromo;
+  /**
+   * Códigos de verificación de Google Search Console y Bing Webmaster Tools
+   * (método «etiqueta HTML»): la portada los publica para que la tienda pueda
+   * registrar su dirección sin tocar el DNS.
+   */
+  verification?: { google?: string; bing?: string };
   content?: Partial<StorefrontContent>;
   /**
    * Ícono elegido por la tienda para cada categoría del ERP (id → nombre de
