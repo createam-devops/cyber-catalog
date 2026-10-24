@@ -118,6 +118,7 @@ export function diffDraft(original: Draft, draft: Draft): Record<string, unknown
         // Una lista vacía también se guarda: así la tienda oculta la franja o las preguntas.
         benefits: s.benefits,
         faq: s.faq,
+        promo: s.promo,
       }) ?? {};
   }
   if (!same(draft.heroSlides, original.heroSlides)) patch.heroSlides = draft.heroSlides.map((slide, order) => ({ ...slide, order }));

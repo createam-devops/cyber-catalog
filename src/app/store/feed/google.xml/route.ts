@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
         tag('availability', p.stock !== null && p.stock <= 0 ? 'out_of_stock' : 'in_stock'),
         tag('price', money(onSale ? p.compareAtPrice! : p.price)),
         onSale ? tag('sale_price', money(p.price)) : '',
+        onSale && p.saleEndsAt ? tag('sale_price_effective_date', `${new Date().toISOString().slice(0, 19)}Z/${p.saleEndsAt.slice(0, 19)}Z`) : '',
         tag('condition', 'new'),
         tag('brand', tenant.name),
         tag('identifier_exists', 'no'),

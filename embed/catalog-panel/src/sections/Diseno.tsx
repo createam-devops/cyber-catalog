@@ -6,12 +6,12 @@ import { FONT_IDS, FONT_LABELS, type FontId } from '@shared/storefront/font-ids'
 import { getStorefrontIcon } from '@shared/storefront/icons';
 import { STYLE_PRESETS, STYLE_PRESET_IDS, type CardStyle, type FooterStyle, type StylePresetId } from '@shared/storefront/presets';
 import { RUBROS, RUBRO_IDS, type RubroId } from '@shared/storefront/rubros';
-import { resolveStorefront, type HeroMode, type StorefrontSettings } from '@shared/storefront/theme';
+import { resolveStorefront, type HeroMode, type HomeMode, type StorefrontSettings } from '@shared/storefront/theme';
 import type { PreviewPayload } from '@shared/storefront/preview';
 import type { Draft, StoreResponse } from '../store';
 import { Collapsible, Field, FluidGrid, Notice, Pill, Section, Segmented } from '../ui';
 import { PreviewPanel, PreviewSheetButton } from '../Preview';
-import { BenefitsEditor, FaqEditor } from './Extras';
+import { BenefitsEditor, FaqEditor, PromoEditor } from './Extras';
 
 interface Props {
   data: StoreResponse;
@@ -195,6 +195,39 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
         </FluidGrid>
         <FluidGrid min="15rem">
           <div>
+            <p className="cs-label">Tipo de portada</p>
+            <Segmented<HomeMode>
+              label="Tipo de portada"
+              value={theme.layout.home}
+              onChange={(home) => setLayout({ home })}
+              options={[
+                { value: 'catalog', label: 'Catálogo' },
+                { value: 'spotlight', label: 'Producto estrella' },
+              ]}
+            />
+            <p className="cs-hint">Producto estrella: para tiendas de uno a tres productos. El producto ocupa la portada con su botón de pedir.</p>
+          </div>
+          {theme.layout.home === 'spotlight' && (
+            <Field label="Producto estrella" hint="Sin elegir: el primero destacado, o el primero.">
+              {(id) => (
+                <select
+                  id={id}
+                  className="cs-input"
+                  disabled={disabled}
+                  value={s.layout?.spotlightProductId ?? ''}
+                  onChange={(e) => setLayout({ spotlightProductId: e.target.value || undefined })}
+                >
+                  <option value="">Automático</option>
+                  {preview.products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Field>
+          )}
+          <div>
             <p className="cs-label">Portada</p>
             <Segmented<HeroMode>
               label="Portada"
@@ -296,6 +329,7 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
         </FluidGrid>
       </Collapsible>
 
+      <PromoEditor settings={s} update={update} disabled={disabled} />
       <BenefitsEditor settings={s} theme={theme} rubro={rubro.id} update={update} disabled={disabled} />
       <FaqEditor settings={s} theme={theme} rubro={rubro.id} update={update} disabled={disabled} />
     </div>

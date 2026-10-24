@@ -207,3 +207,58 @@ export function FaqEditor({ settings, theme, rubro, update, disabled }: Props) {
     </Collapsible>
   );
 }
+
+/** ISO → valor de <input type="datetime-local"> en la hora del navegador. */
+function toLocalInput(iso: string | undefined): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Aviso de oferta de toda la tienda, con contador si tiene fecha de fin. */
+export function PromoEditor({ settings, update, disabled }: Pick<Props, 'settings' | 'update' | 'disabled'>) {
+  const promo = settings.promo ?? { text: '', enabled: true };
+  const set = (patch: Partial<NonNullable<StorefrontSettings['promo']>>) => update({ promo: { ...promo, ...patch } });
+  const end = promo.endsAt ? Date.parse(promo.endsAt) : NaN;
+  const expired = Number.isFinite(end) && end <= Date.now();
+  const showing = promo.enabled !== false && Boolean(promo.text.trim()) && !expired;
+
+  return (
+    <Collapsible title="Aviso de oferta" description="Una oferta real, con fecha de fin: arriba de tus productos y con contador">
+      <div className="space-y-3">
+        <label className="flex min-h-10 items-center gap-3">
+          <input
+            type="checkbox"
+            className="h-5 w-5 accent-[var(--cm-primary,#10b981)]"
+            checked={promo.enabled !== false}
+            disabled={disabled}
+            onChange={(e) => set({ enabled: e.target.checked })}
+          />
+          <span className="text-cm-body font-semibold text-cm-ink">Mostrar el aviso</span>
+        </label>
+        <FluidGrid min="16rem">
+          <Field label="Texto del aviso" hint="Ej.: 10% en ramos por el Día de la Madre">
+            {(id) => <input id={id} className="cs-input" disabled={disabled} maxLength={90} value={promo.text} onChange={(e) => set({ text: e.target.value })} />}
+          </Field>
+          <Field label="Termina (opcional)" hint="Con fecha se ve un contador y el aviso se apaga solo al llegar.">
+            {(id) => (
+              <input
+                id={id}
+                type="datetime-local"
+                className="cs-input"
+                disabled={disabled}
+                value={toLocalInput(promo.endsAt)}
+                onChange={(e) => set({ endsAt: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+              />
+            )}
+          </Field>
+        </FluidGrid>
+        {expired && <p className="text-cm-label font-semibold text-cm-warn">La fecha ya pasó: el aviso no se muestra. Cambia la fecha o quítala.</p>}
+        {!expired && promo.text.trim() && <p className="text-cm-label text-cm-muted">{showing ? 'Se ve en tu tienda.' : 'Está apagado.'}</p>}
+        <p className="cs-hint !mt-0">Usa solo ofertas reales. Un contador que se reinicia engaña al cliente y es publicidad engañosa.</p>
+      </div>
+    </Collapsible>
+  );
+}

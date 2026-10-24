@@ -10,6 +10,9 @@ import ModernNavbar from './ModernNavbar';
 import ModernFooter from './ModernFooter';
 import ModernCart from './ModernCart';
 import StoreBenefits from './StoreBenefits';
+import StorePromo from './StorePromo';
+import StickyOrderBar from './StickyOrderBar';
+import Countdown from './Countdown';
 import StoreProductCard, { ProductImage, canOptimizeImage } from './StoreProductCard';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
@@ -169,10 +172,17 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
                 </span>
               )}
             </p>
+            {product.compareAtPrice && product.saleEndsAt && (
+              <p className="-mt-3 mb-6 text-sm font-bold text-sf-primary">
+                La oferta termina en <Countdown endsAt={product.saleEndsAt} />
+              </p>
+            )}
 
             {product.description && (
               <p className="text-sf-text/80 text-sm sm:text-base leading-relaxed mb-8 max-w-xl whitespace-pre-line">{product.description}</p>
             )}
+
+            <StorePromo variant="inline" />
 
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex items-center justify-between bg-sf-bg rounded-sf-btn px-4 py-3 sm:w-36 border border-sf-border">
@@ -243,23 +253,7 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
       <ModernFooter />
 
       {!isCartOpen && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-border bg-sf-bg/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
-          <div className="flex items-center gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs text-sf-muted">{product.name}</p>
-              <p className="text-lg font-black leading-tight">{formatPrice(product.price)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={soldOut}
-              className="flex items-center gap-2 rounded-sf-btn bg-sf-primary px-5 py-3 text-sm font-bold text-sf-on-primary shadow-md active:scale-[0.98] disabled:opacity-50"
-            >
-              <ShoppingBag size={18} strokeWidth={2.5} aria-hidden="true" />
-              {soldOut ? 'Agotado' : content.addToCart}
-            </button>
-          </div>
-        </div>
+        <StickyOrderBar name={product.name} price={product.price} label={soldOut ? 'Agotado' : content.addToCart} disabled={soldOut} onClick={handleAddToCart} />
       )}
     </>
   );

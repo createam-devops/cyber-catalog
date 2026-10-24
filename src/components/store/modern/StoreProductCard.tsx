@@ -97,6 +97,8 @@ export default function StoreProductCard({
   const categoryLabel = categories.find((c) => c.id === product.category)?.label;
   const soldOut = theme.layout.showStock && product.stock !== null && product.stock <= 0;
   const fewLeft = theme.layout.showStock && product.stock !== null && product.stock > 0 && product.stock <= 5;
+  // Descuento solo con un precio «antes» real (el ERP lo quita al vencer la oferta).
+  const discount = product.compareAtPrice ? Math.round((1 - product.price / product.compareAtPrice) * 100) : 0;
 
   const href = productPath(product);
 
@@ -106,8 +108,11 @@ export default function StoreProductCard({
         <ProductLink preview={preview} href={href} className="absolute inset-0" hidden>
           <ProductImage product={product} sizes={sizes} priority={priority} />
         </ProductLink>
-        {(product.featured || soldOut || fewLeft) && (
+        {(product.featured || soldOut || fewLeft || discount > 0) && (
           <div className="absolute top-3 left-3 flex flex-col items-start gap-1 pointer-events-none">
+            {discount > 0 && !soldOut && (
+              <span className="bg-sf-primary text-sf-on-primary px-2 py-0.5 rounded text-[11px] font-black">-{discount}%</span>
+            )}
             {product.featured && theme.content.featuredBadge && (
               <span className="bg-black/75 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
                 {theme.content.featuredBadge}
