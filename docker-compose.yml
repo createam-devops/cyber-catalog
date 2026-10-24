@@ -31,6 +31,7 @@ services:
       - ERP_APP_URL=${ERP_APP_URL:-}
       # Registro con alta en CyberPOS: plan del alta (en dev, catalogo_digital). Vacía = registro de siempre.
       - ERP_SIGNUP_PLAN_CODE=${ERP_SIGNUP_PLAN_CODE:-}
+      - INDEXNOW_KEY=${INDEXNOW_KEY:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://createam.cloud}
       # Base propia del catálogo (SQLite), sus copias diarias e imágenes de las tiendas.
       - DATA_DIR=/app/data

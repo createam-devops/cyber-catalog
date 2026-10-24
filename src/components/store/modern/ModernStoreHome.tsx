@@ -7,6 +7,9 @@ import ModernCategories from './ModernCategories';
 import ModernProductGrid from './ModernProductGrid';
 import ModernCart from './ModernCart';
 import ModernFooter from './ModernFooter';
+import StoreBenefits from './StoreBenefits';
+import StoreFaq from './StoreFaq';
+import Link from 'next/link';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
 import { filterProducts, type CatalogPage, type StoreProduct } from '@/lib/storefront/catalog';
@@ -19,16 +22,18 @@ interface ModernStoreHomeProps {
   /** Dominio de la tienda; la API lo necesita cuando se prueba en localhost. */
   domain: string;
   initialQuery?: string;
+  /** Página de una categoría (/categoria/<slug>): su título reemplaza la portada. */
+  category?: { id: string; label: string };
 }
 
 const PAGE_SIZE = 24;
 
-export default function ModernStoreHome({ initialProducts, total, domain, initialQuery = '' }: ModernStoreHomeProps) {
+export default function ModernStoreHome({ initialProducts, total, domain, initialQuery = '', category }: ModernStoreHomeProps) {
   const { store, theme, preview } = useStorefront();
   const { cart, addToCart, removeFromCart, updateQuantity, getCartCount } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(category?.id ?? null);
   const [searchQuery, setSearchQuery] = useState(initialQuery);
 
   // Catálogo completo en memoria: filtros instantáneos, sin pedir nada al servidor.
@@ -133,9 +138,10 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
       <ModernNavbar
         cartCount={getCartCount()}
         onOpenCart={() => setIsCartOpen(true)}
-        isScrolled={isScrolled}
-        heroTone={heroToneFor(store, theme)}
-        onGoHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        // Sin banner (página de categoría) la barra va con fondo desde arriba, como en la ficha.
+        isScrolled={category ? true : isScrolled}
+        heroTone={category ? 'none' : heroToneFor(store, theme)}
+        onGoHome={() => (category ? window.location.assign('/') : window.scrollTo({ top: 0, behavior: 'smooth' }))}
         searchQuery={searchQuery}
         onSearchChange={(value) => {
           setSearchQuery(value);
@@ -143,8 +149,28 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
         }}
       />
 
-      {theme.layout.hero === 'none' && <div className="h-32 md:h-28" />}
-      <ModernHero />
+      {category ? (
+        <header className="container mx-auto px-4 pt-36 md:pt-32 pb-2">
+          <nav aria-label="Ruta" className="mb-3 text-sm text-sf-muted">
+            <Link href="/" className="hover:text-sf-primary">
+              {store.name}
+            </Link>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">{category.label}</span>
+          </nav>
+          <h1 className="text-3xl md:text-5xl leading-tight">{category.label}</h1>
+          <p className="mt-3 max-w-2xl text-sf-muted">
+            {`${total} ${total === 1 ? 'producto' : 'productos'} de ${category.label.toLowerCase()} en ${store.name}. Elige, agrégalos al carrito y haz tu pedido por WhatsApp.`}
+          </p>
+        </header>
+      ) : (
+        <>
+          {theme.layout.hero === 'none' && <div className="h-32 md:h-28" />}
+          <ModernHero />
+        </>
+      )}
+
+      <StoreBenefits />
 
       <ModernCategories
         activeCategory={activeCategory}
@@ -162,6 +188,7 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
         activeCategory={activeCategory}
         searchQuery={searchQuery}
         onAddToCart={handleAddProduct}
+        heading={category ? 'Productos' : undefined}
       />
 
       {!complete && remote.nextOffset !== null && <div ref={loadMoreRef} className="h-20" />}
@@ -173,6 +200,8 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
         onRemoveItem={removeFromCart}
         onUpdateQuantity={updateQuantity}
       />
+
+      {!category && <StoreFaq />}
 
       <ModernFooter />
     </>

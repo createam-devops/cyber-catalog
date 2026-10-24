@@ -19,18 +19,6 @@ export const dynamic = 'force-dynamic';
  * pide desde el servidor, sin Origin.
  */
 
-/** Igual que la web de la tienda: minúsculas, sin tildes, espacios a guiones. */
-function categorySlug(label: string): string {
-  return label
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-');
-}
-
 function allowedOrigin(origin: string | null, storeDomain: string | undefined): string | null {
   if (!origin) return null;
   let url: URL;
@@ -81,13 +69,9 @@ export async function GET(request: NextRequest) {
     if (!tenant) return NextResponse.json({ error: 'Store not found' }, { status: 404, headers: cors });
 
     const catalog = await getStoreCatalog(tenant);
-    const slugById = new Map<string, string>();
-    const categories = catalog.categories.map((c) => {
-      let value = categorySlug(c.label) || `categoria-${c.id}`;
-      if ([...slugById.values()].includes(value)) value = `${value}-${c.id}`;
-      slugById.set(c.id, value);
-      return { id: c.id, value, label: c.label, icon: c.icon ?? null };
-    });
+    // El slug de cada categoría lo pone getStoreCatalog (la misma regla que la web de la tienda).
+    const slugById = new Map(catalog.categories.map((c) => [c.id, c.slug ?? c.id]));
+    const categories = catalog.categories.map((c) => ({ id: c.id, value: slugById.get(c.id)!, label: c.label, icon: c.icon ?? null }));
 
     return NextResponse.json(
       {

@@ -5,15 +5,16 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Minus, ShoppingBag, Share2, Check, Truck, ArrowLeft, XCircle } from 'lucide-react';
+import { Plus, Minus, ShoppingBag, Share2, Check, XCircle } from 'lucide-react';
 import ModernNavbar from './ModernNavbar';
 import ModernFooter from './ModernFooter';
 import ModernCart from './ModernCart';
+import StoreBenefits from './StoreBenefits';
 import StoreProductCard, { ProductImage, canOptimizeImage } from './StoreProductCard';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/storefront/public-store';
-import type { StoreProduct } from '@/lib/storefront/catalog';
+import { categoryPath, type StoreProduct } from '@/lib/storefront/catalog';
 
 interface ModernProductDetailProps {
   product: StoreProduct;
@@ -40,7 +41,8 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
   }, [product.id, store.id]);
 
   const images = product.imageUrls;
-  const categoryLabel = categories.find((c) => c.id === product.category)?.label;
+  const category = categories.find((c) => c.id === product.category);
+  const categoryLabel = category?.label;
   const tracksStock = layout.showStock && product.stock !== null;
   const soldOut = tracksStock && (product.stock ?? 0) <= 0;
 
@@ -71,11 +73,31 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
     <>
       <ModernNavbar cartCount={getCartCount()} onOpenCart={() => setIsCartOpen(true)} isScrolled heroTone="none" onGoHome={() => router.push('/')} />
 
-      <main className="pt-32 md:pt-28 pb-12 container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <Link href="/" className="inline-flex items-center gap-2 text-sf-muted hover:text-sf-primary mb-8 transition-colors group">
-          <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-bold">Volver a la tienda</span>
-        </Link>
+      {/* En el celular el botón de pedir va fijo abajo: espacio para que no tape el pie. */}
+      <main className="pt-32 md:pt-28 pb-28 md:pb-12 container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+        <nav aria-label="Ruta" className="mb-8 text-sm text-sf-muted">
+          <ol className="flex flex-wrap items-center gap-1">
+            <li>
+              <Link href="/" className="font-bold hover:text-sf-primary">
+                {store.name}
+              </Link>
+            </li>
+            {category && (
+              <li className="flex items-center gap-1">
+                <span aria-hidden="true">›</span>
+                <Link href={categoryPath(category)} className="font-bold hover:text-sf-primary">
+                  {category.label}
+                </Link>
+              </li>
+            )}
+            <li className="flex min-w-0 items-center gap-1">
+              <span aria-hidden="true">›</span>
+              <span aria-current="page" className="truncate">
+                {product.name}
+              </span>
+            </li>
+          </ol>
+        </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-14 items-start">
           {/* Galería */}
@@ -180,8 +202,8 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
               </button>
             </div>
 
-            {(tracksStock || content.deliveryNote) && (
-              <div className="flex flex-wrap gap-3 pt-6 border-t border-sf-border">
+            {tracksStock && (
+              <div className="flex flex-wrap gap-3 pt-6 border-t border-sf-border mb-6">
                 {tracksStock && (
                   <span
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold ${
@@ -192,14 +214,9 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
                     {soldOut ? 'Sin stock por ahora' : `${product.stock} disponibles`}
                   </span>
                 )}
-                {content.deliveryNote && (
-                  <span className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold bg-sf-surface">
-                    <Truck size={16} />
-                    {content.deliveryNote}
-                  </span>
-                )}
               </div>
             )}
+            <StoreBenefits compact />
           </div>
         </div>
 
@@ -224,6 +241,26 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
       />
 
       <ModernFooter />
+
+      {!isCartOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-sf-border bg-sf-bg/95 px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs text-sf-muted">{product.name}</p>
+              <p className="text-lg font-black leading-tight">{formatPrice(product.price)}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={soldOut}
+              className="flex items-center gap-2 rounded-sf-btn bg-sf-primary px-5 py-3 text-sm font-bold text-sf-on-primary shadow-md active:scale-[0.98] disabled:opacity-50"
+            >
+              <ShoppingBag size={18} strokeWidth={2.5} aria-hidden="true" />
+              {soldOut ? 'Agotado' : content.addToCart}
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

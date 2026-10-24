@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 import { useStorefront } from '../StorefrontRoot';
 import { getStorefrontIcon } from '@/lib/storefront/icons';
 import { formatPrice } from '@/lib/storefront/public-store';
-import type { StoreProduct } from '@/lib/storefront/catalog';
+import { productPath, type StoreProduct } from '@/lib/storefront/catalog';
 import type { CardStyle } from '@/lib/storefront/presets';
 
 // Debe coincidir con images.remotePatterns de next.config.mjs: una URL fuera de
@@ -98,7 +98,7 @@ export default function StoreProductCard({
   const soldOut = theme.layout.showStock && product.stock !== null && product.stock <= 0;
   const fewLeft = theme.layout.showStock && product.stock !== null && product.stock > 0 && product.stock <= 5;
 
-  const href = `/product/${product.id}`;
+  const href = productPath(product);
 
   return (
     <div className="group relative">

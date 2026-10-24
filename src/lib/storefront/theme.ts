@@ -42,7 +42,34 @@ export interface StorefrontSettings {
    * después, en el orden del ERP.
    */
   categoryOrder?: string[];
+  /**
+   * Franja de beneficios de la portada y la ficha (hasta 4). Sin definir:
+   * «Pedidos por WhatsApp» y el aviso de entrega. Una lista vacía la oculta.
+   * Son afirmaciones de la tienda: el panel solo sugiere, nunca las inventa.
+   */
+  benefits?: StoreBenefit[];
+  /**
+   * Preguntas frecuentes (hasta 8), visibles en la portada y marcadas para
+   * Google. Sin definir: «¿Cómo hago mi pedido?», que vale para toda tienda.
+   * Una lista vacía las oculta.
+   */
+  faq?: StoreFaq[];
 }
+
+export interface StoreBenefit {
+  /** Nombre de STOREFRONT_ICONS. */
+  icon: string;
+  title: string;
+  text?: string;
+}
+
+export interface StoreFaq {
+  q: string;
+  a: string;
+}
+
+export const MAX_BENEFITS = 4;
+export const MAX_FAQ = 8;
 
 /** Lo mínimo de una tienda que hace falta para armar su tema. */
 export interface ThemeSource {
@@ -78,6 +105,25 @@ export interface ResolvedStorefront {
     showNameWithLogo: boolean;
   };
   content: StorefrontContent;
+  benefits: StoreBenefit[];
+  faq: StoreFaq[];
+}
+
+/** Lo que vale para toda tienda de la plataforma: el pedido llega por WhatsApp. */
+function defaultBenefits(content: StorefrontContent): StoreBenefit[] {
+  return [
+    { icon: 'MessageCircle', title: 'Pedidos por WhatsApp', text: 'Te atendemos directo y confirmamos tu pedido' },
+    ...(content.deliveryNote.trim() ? [{ icon: 'Truck', title: content.deliveryNote.trim(), text: '' }] : []),
+  ];
+}
+
+function defaultFaq(content: StorefrontContent): StoreFaq[] {
+  return [
+    {
+      q: '¿Cómo hago mi pedido?',
+      a: `Agrega los productos al carrito y toca «${content.orderButton}». El pedido nos llega por WhatsApp y ahí confirmamos contigo la disponibilidad, el pago y la entrega.`,
+    },
+  ];
 }
 
 export function resolveStorefront(source: ThemeSource): ResolvedStorefront {
@@ -127,6 +173,8 @@ export function resolveStorefront(source: ThemeSource): ResolvedStorefront {
       showNameWithLogo: settings.layout?.showNameWithLogo ?? false,
     },
     content,
+    benefits: (Array.isArray(settings.benefits) ? settings.benefits : defaultBenefits(content)).filter((b) => b.title?.trim()),
+    faq: (Array.isArray(settings.faq) ? settings.faq : defaultFaq(content)).filter((f) => f.q?.trim() && f.a?.trim()),
   };
 }
 

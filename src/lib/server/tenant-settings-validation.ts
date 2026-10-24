@@ -3,7 +3,7 @@ import { CONTENT_FIELDS, CONTENT_KEYS } from '@/lib/storefront/content';
 import { FONT_IDS } from '@/lib/storefront/font-ids';
 import { CARD_STYLES, FOOTER_STYLES, STYLE_PRESET_IDS } from '@/lib/storefront/presets';
 import { RUBRO_IDS } from '@/lib/storefront/rubros';
-import { HERO_MODES } from '@/lib/storefront/theme';
+import { HERO_MODES, MAX_BENEFITS, MAX_FAQ } from '@/lib/storefront/theme';
 
 const hexColorSchema = z
   .string()
@@ -79,6 +79,23 @@ export const storefrontSettingsSchema = z
       .refine((icons) => Object.keys(icons).length <= 200, 'Too many category icons')
       .optional(),
     categoryOrder: z.array(z.string().regex(/^\d{1,10}$/)).max(200).optional(),
+    benefits: z
+      .array(
+        z
+          .object({
+            icon: z.string().regex(/^[A-Za-z][A-Za-z0-9]{0,40}$/),
+            // Una fila a medio escribir se guarda igual; la vitrina no muestra las vacías.
+            title: z.string().trim().max(40),
+            text: z.string().trim().max(80).optional(),
+          })
+          .strict()
+      )
+      .max(MAX_BENEFITS)
+      .optional(),
+    faq: z
+      .array(z.object({ q: z.string().trim().max(120), a: z.string().trim().max(500) }).strict())
+      .max(MAX_FAQ)
+      .optional(),
   })
   .strict();
 

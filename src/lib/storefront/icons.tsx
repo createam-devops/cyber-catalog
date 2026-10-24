@@ -11,6 +11,8 @@ import {
   Palette, Pizza, Plug, Ruler, Salad, Sandwich, Scissors, Shield, Shirt, ShoppingBag,
   Smartphone, Sofa, Sparkles, SprayCan, Star, Sun, Tag, Truck, UtensilsCrossed, Watch,
   Wine, Wrench, Zap,
+  // Beneficios de la tienda (franja de la portada y de la ficha).
+  Award, BadgeCheck, Clock, CreditCard, MapPin, MessageCircle, ShieldCheck,
 } from 'lucide-react';
 
 export const STOREFRONT_ICONS = {
@@ -21,6 +23,7 @@ export const STOREFRONT_ICONS = {
   PackageOpen, PaintBucket, Palette, Pizza, Plug, Ruler, Salad, Sandwich, Scissors,
   Shield, Shirt, ShoppingBag, Smartphone, Sofa, Sparkles, SprayCan, Star, Sun, Tag,
   Truck, UtensilsCrossed, Watch, Wine, Wrench, Zap,
+  Award, BadgeCheck, Clock, CreditCard, MapPin, MessageCircle, ShieldCheck,
 } satisfies Record<string, LucideIcon>;
 
 export type StorefrontIconName = keyof typeof STOREFRONT_ICONS;
