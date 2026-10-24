@@ -14,6 +14,7 @@ import StorePromo from './StorePromo';
 import StickyOrderBar from './StickyOrderBar';
 import Countdown from './Countdown';
 import { CONTAINER, SectionTitle } from './layout';
+import { useEdgeFade } from '@/lib/use-edge-fade';
 import ProductReviews from './ProductReviews';
 import Stars from './Stars';
 import { formatRating, type PublicReview } from '@/lib/storefront/reviews';
@@ -35,6 +36,7 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
   const { store, theme, categories } = useStorefront();
   const { cart, addToCart, removeFromCart, updateQuantity, getCartCount } = useCart();
   const [activeImage, setActiveImage] = useState(0);
+  const thumbsFade = useEdgeFade<HTMLDivElement>();
   const [quantity, setQuantity] = useState(1);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { content, layout } = theme;
@@ -112,7 +114,7 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
           {/* Galería */}
           <div className="flex flex-col-reverse lg:flex-row gap-4">
             {images.length > 1 && (
-              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto p-1 lg:w-24 shrink-0 scrollbar-hide">
+              <div ref={thumbsFade.ref} style={thumbsFade.style} className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto p-1 lg:w-24 shrink-0 scrollbar-hide">
                 {images.map((img, idx) => (
                   <button
                     key={img}

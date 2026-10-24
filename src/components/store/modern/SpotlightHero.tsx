@@ -10,6 +10,7 @@ import StoreBenefits from './StoreBenefits';
 import StorePromo from './StorePromo';
 import Countdown from './Countdown';
 import { CONTAINER } from './layout';
+import { useEdgeFade } from '@/lib/use-edge-fade';
 import { formatPrice } from '@/lib/storefront/public-store';
 import { productPath, type StoreProduct } from '@/lib/storefront/catalog';
 
@@ -22,6 +23,7 @@ export default function SpotlightHero({ product, onAddToCart }: { product: Store
   const { theme, preview } = useStorefront();
   const { content, layout } = theme;
   const [active, setActive] = useState(0);
+  const thumbsFade = useEdgeFade<HTMLDivElement>();
   const images = product.imageUrls;
   const soldOut = layout.showStock && product.stock !== null && product.stock <= 0;
   const discount = product.compareAtPrice ? Math.round((1 - product.price / product.compareAtPrice) * 100) : 0;
@@ -41,7 +43,7 @@ export default function SpotlightHero({ product, onAddToCart }: { product: Store
             )}
           </div>
           {images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto p-1 scrollbar-hide">
+            <div ref={thumbsFade.ref} style={thumbsFade.style} className="flex gap-3 overflow-x-auto p-1 scrollbar-hide">
               {images.map((img, idx) => (
                 <button
                   key={img}

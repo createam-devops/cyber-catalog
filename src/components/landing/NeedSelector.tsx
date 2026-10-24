@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { PLANS } from "@/lib/plans";
 import { LINKS } from "./content";
+import { useEdgeFade } from "@/lib/use-edge-fade";
 
 interface Need {
   id: string;
@@ -85,16 +86,19 @@ const NEEDS: Need[] = [
 
 export default function NeedSelector() {
   const [selected, setSelected] = useState(NEEDS[0].id);
+  const fade = useEdgeFade<HTMLDivElement>();
   const need = NEEDS.find((n) => n.id === selected) ?? NEEDS[0];
   const ctaClass = `inline-flex min-h-[50px] items-center justify-center rounded-xl px-6 font-bold text-white transition-opacity hover:opacity-90 ${need.cta.className}`;
 
   return (
     <div>
-      {/* En celular los botones van en una sola fila que se desliza de lado */}
+      {/* En celular los botones van en una sola fila que se desliza de lado, sin salirse del contenedor */}
       <div
+        ref={fade.ref}
+        style={fade.style}
         role="group"
         aria-label="Tipo de negocio"
-        className="-mx-5 mt-7 flex snap-x scroll-px-5 gap-2.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-8 sm:scroll-px-8 sm:px-8 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden"
+        className="mt-7 flex snap-x gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
       >
         {NEEDS.map((n) => (
           <button
