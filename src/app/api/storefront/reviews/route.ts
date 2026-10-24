@@ -8,12 +8,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const reviewSchema = z.object({
-  productId: z.string().trim().min(1).max(64),
-  rating: z.coerce.number().int().min(1).max(5),
-  name: z.string().trim().min(2, 'Escribe tu nombre.').max(40),
-  text: z.string().trim().min(10, 'Cuéntanos un poco más (al menos 10 letras).').max(600),
-  /** Campo trampa: una persona no lo ve ni lo llena; un robot sí. */
-  website: z.string().max(0).optional(),
+  productId: z.string().trim().min(1, 'Producto no encontrado.').max(64, 'Producto no encontrado.'),
+  rating: z.coerce.number({ invalid_type_error: 'Elige de 1 a 5 estrellas.' }).int('Elige de 1 a 5 estrellas.').min(1, 'Elige de 1 a 5 estrellas.').max(5, 'Elige de 1 a 5 estrellas.'),
+  name: z.string().trim().min(2, 'Escribe tu nombre.').max(40, 'El nombre es muy largo.'),
+  text: z.string().trim().min(10, 'Cuéntanos un poco más (al menos 10 letras).').max(600, 'Tu opinión es muy larga (hasta 600 letras).'),
+  /** Campo trampa: una persona no lo ve ni lo llena; un robot sí (y recibe un «gracias» sin que se guarde nada). */
+  website: z.string().max(500).optional(),
 });
 
 /**
@@ -35,12 +35,14 @@ export async function POST(request: NextRequest) {
   const domain = isDevHost || isPlatformHost ? request.nextUrl.searchParams.get('_domain') || '' : host;
 
   const body = await request.json().catch(() => null);
+  // El robot que llenó el campo trampa recibe un «gracias» y no se guarda nada: así no sabe que lo descubrimos.
+  if (body && typeof body === 'object' && typeof (body as { website?: unknown }).website === 'string' && (body as { website: string }).website.trim()) {
+    return NextResponse.json({ ok: true }, { status: 201 });
+  }
   const parsed = reviewSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Revisa tu opinión.' }, { status: 400 });
   }
-  // El robot que llenó el campo trampa recibe un «gracias» y no se guarda nada.
-  if (parsed.data.website) return NextResponse.json({ ok: true }, { status: 201 });
 
   const tenant = domain ? await findStoreByDomain(domain).catch(() => null) : null;
   if (!tenant || storefrontAvailability(tenant) !== 'open' || !isLocalStore(tenant.id)) {
