@@ -8,6 +8,8 @@ import { useStorefront } from '../StorefrontRoot';
 import { getStorefrontIcon } from '@/lib/storefront/icons';
 import { formatPrice } from '@/lib/storefront/public-store';
 import { productPath, type StoreProduct } from '@/lib/storefront/catalog';
+import { formatRating } from '@/lib/storefront/reviews';
+import Stars from './Stars';
 import type { CardStyle } from '@/lib/storefront/presets';
 
 // Debe coincidir con images.remotePatterns de next.config.mjs: una URL fuera de
@@ -148,6 +150,13 @@ export default function StoreProductCard({
             )}
           </span>
         </div>
+        {product.rating && product.rating.count > 0 && (
+          <p className="mt-1 flex items-center gap-1 text-[11px]">
+            <Stars value={product.rating.average} size={12} />
+            <span className="font-bold">{formatRating(product.rating.average)}</span>
+            <span className="text-sf-muted">({product.rating.count})</span>
+          </p>
+        )}
         {categoryLabel && <p className="text-[11px] text-sf-muted uppercase tracking-wider mt-1">{categoryLabel}</p>}
       </ProductLink>
     </div>

@@ -13,6 +13,9 @@ import StoreBenefits from './StoreBenefits';
 import StorePromo from './StorePromo';
 import StickyOrderBar from './StickyOrderBar';
 import Countdown from './Countdown';
+import ProductReviews from './ProductReviews';
+import Stars from './Stars';
+import { formatRating, type PublicReview } from '@/lib/storefront/reviews';
 import StoreProductCard, { ProductImage, canOptimizeImage } from './StoreProductCard';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
@@ -22,9 +25,11 @@ import { categoryPath, type StoreProduct } from '@/lib/storefront/catalog';
 interface ModernProductDetailProps {
   product: StoreProduct;
   relatedProducts: StoreProduct[];
+  /** Opiniones aprobadas por la tienda. */
+  reviews?: PublicReview[];
 }
 
-export default function ModernProductDetail({ product, relatedProducts }: ModernProductDetailProps) {
+export default function ModernProductDetail({ product, relatedProducts, reviews = [] }: ModernProductDetailProps) {
   const router = useRouter();
   const { store, theme, categories } = useStorefront();
   const { cart, addToCart, removeFromCart, updateQuantity, getCartCount } = useCart();
@@ -162,6 +167,15 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
             )}
 
             <h1 className="text-2xl sm:text-3xl lg:text-4xl leading-tight mb-4">{product.name}</h1>
+            {product.rating && product.rating.count > 0 && (
+              <a href="#opiniones" className="-mt-2 mb-4 flex items-center gap-2 self-start text-sm hover:text-sf-primary">
+                <Stars value={product.rating.average} size={16} />
+                <span className="font-bold">{formatRating(product.rating.average)}</span>
+                <span className="text-sf-muted">
+                  ({product.rating.count} {product.rating.count === 1 ? 'opinión' : 'opiniones'})
+                </span>
+              </a>
+            )}
 
             <p className="flex items-baseline gap-3 mb-6">
               <span className="text-3xl font-black">{formatPrice(product.price)}</span>
@@ -229,6 +243,8 @@ export default function ModernProductDetail({ product, relatedProducts }: Modern
             <StoreBenefits compact />
           </div>
         </div>
+
+        <ProductReviews product={product} reviews={reviews} />
 
         {relatedProducts.length > 0 && (
           <section className="bg-sf-surface rounded-sf-hero p-6 sm:p-10">

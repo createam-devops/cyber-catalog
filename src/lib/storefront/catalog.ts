@@ -22,6 +22,8 @@ export interface StoreProduct {
   updatedAt?: string;
   /** Fin de la oferta (ISO), si el precio «antes» tiene fecha. Pasada la fecha, ya no hay oferta. */
   saleEndsAt?: string;
+  /** Promedio de las opiniones aprobadas (lo agrega la página; no viene de la fuente). */
+  rating?: { average: number; count: number };
 }
 
 export interface StoreCatalog {

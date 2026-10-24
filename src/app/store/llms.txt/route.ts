@@ -4,6 +4,8 @@ import { categoryPath, productPath, type StoreCatalog } from '@/lib/storefront/c
 import { formatPrice, normalizeWhatsapp, socialUrl } from '@/lib/storefront/public-store';
 import { resolveStorefront } from '@/lib/storefront/theme';
 import { defaultStoreDescription } from '@/lib/storefront/structured-data';
+import { withRatings } from '@/lib/server/reviews';
+import { formatRating } from '@/lib/storefront/reviews';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,10 +58,11 @@ export async function GET(request: NextRequest) {
     '',
     '## Productos',
     '',
-    ...catalog.products.map((p) => {
+    ...withRatings(tenant.id, catalog.products).map((p) => {
       const category = categoryLabel.get(p.category);
       const about = p.description?.trim() ? `: ${oneLine(p.description, 160)}` : '';
-      return `- [${p.name}](${origin}${productPath(p)}) — ${formatPrice(p.price)}${category ? ` · ${category}` : ''}${about}`;
+      const stars = p.rating ? ` · ★ ${formatRating(p.rating.average)} (${p.rating.count} ${p.rating.count === 1 ? 'opinión' : 'opiniones'})` : '';
+      return `- [${p.name}](${origin}${productPath(p)}) — ${formatPrice(p.price)}${category ? ` · ${category}` : ''}${stars}${about}`;
     }),
     ...(theme.faq.length ? ['', '## Preguntas frecuentes', '', ...theme.faq.flatMap((f) => [`### ${f.q}`, '', f.a, ''])] : ['']),
   ];

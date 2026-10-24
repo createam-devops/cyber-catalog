@@ -63,6 +63,22 @@ const MIGRATIONS = [
     created_at TEXT NOT NULL
   );
   `,
+  // Opiniones de clientes por producto: entran pendientes y la tienda las aprueba.
+  `
+  CREATE TABLE reviews (
+    id          INTEGER PRIMARY KEY,
+    store_id    TEXT NOT NULL,
+    product_id  TEXT NOT NULL,
+    rating      INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    name        TEXT NOT NULL,
+    text        TEXT NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    created_at  TEXT NOT NULL,
+    reviewed_at TEXT
+  );
+  CREATE INDEX reviews_store_status ON reviews (store_id, status, created_at);
+  CREATE INDEX reviews_store_product ON reviews (store_id, product_id, status);
+  `,
 ];
 
 type Db = Database.Database;
@@ -316,4 +332,82 @@ export function checkSignupCode(email: string, code: string): SignupCodeCheck {
 
 export function deleteSignupCode(email: string): void {
   getStoreDb().prepare('DELETE FROM signup_codes WHERE email = ?').run(email);
+}
+
+// --- Opiniones de clientes (reseñas). Entran pendientes; la tienda las aprueba
+// o las rechaza desde su editor. Solo las aprobadas se muestran y van a Google.
+
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export interface StoreReview {
+  id: number;
+  productId: string;
+  rating: number;
+  name: string;
+  text: string;
+  status: ReviewStatus;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+interface ReviewRow {
+  id: number;
+  product_id: string;
+  rating: number;
+  name: string;
+  text: string;
+  status: ReviewStatus;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+const toReview = (row: ReviewRow): StoreReview => ({
+  id: row.id,
+  productId: row.product_id,
+  rating: row.rating,
+  name: row.name,
+  text: row.text,
+  status: row.status,
+  createdAt: row.created_at,
+  reviewedAt: row.reviewed_at,
+});
+
+export function addReview(input: { storeId: string; productId: string; rating: number; name: string; text: string }): number {
+  const result = getStoreDb()
+    .prepare('INSERT INTO reviews (store_id, product_id, rating, name, text, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(input.storeId, input.productId, input.rating, input.name, input.text, 'pending', now());
+  return Number(result.lastInsertRowid);
+}
+
+/** Las de una tienda (las más nuevas primero), de un estado o de todos. */
+export function listReviews(storeId: string, status?: ReviewStatus, limit = 200): StoreReview[] {
+  const rows = (
+    status
+      ? getStoreDb().prepare('SELECT * FROM reviews WHERE store_id = ? AND status = ? ORDER BY created_at DESC LIMIT ?').all(storeId, status, limit)
+      : getStoreDb().prepare('SELECT * FROM reviews WHERE store_id = ? ORDER BY created_at DESC LIMIT ?').all(storeId, limit)
+  ) as ReviewRow[];
+  return rows.map(toReview);
+}
+
+/** Las aprobadas de un producto, las más nuevas primero. */
+export function approvedReviews(storeId: string, productId: string, limit = 20): StoreReview[] {
+  const rows = getStoreDb()
+    .prepare("SELECT * FROM reviews WHERE store_id = ? AND product_id = ? AND status = 'approved' ORDER BY created_at DESC LIMIT ?")
+    .all(storeId, productId, limit) as ReviewRow[];
+  return rows.map(toReview);
+}
+
+/** Promedio y cantidad de opiniones aprobadas por producto. */
+export function reviewSummaries(storeId: string): Map<string, { average: number; count: number }> {
+  const rows = getStoreDb()
+    .prepare("SELECT product_id, AVG(rating) AS average, COUNT(*) AS count FROM reviews WHERE store_id = ? AND status = 'approved' GROUP BY product_id")
+    .all(storeId) as Array<{ product_id: string; average: number; count: number }>;
+  return new Map(rows.map((row) => [row.product_id, { average: Math.round(row.average * 10) / 10, count: row.count }]));
+}
+
+/** Aprueba o rechaza una opinión de la tienda. false si no es suya o no existe. */
+export function setReviewStatus(storeId: string, reviewId: number, status: Exclude<ReviewStatus, 'pending'>): boolean {
+  return (
+    getStoreDb().prepare('UPDATE reviews SET status = ?, reviewed_at = ? WHERE id = ? AND store_id = ?').run(status, now(), reviewId, storeId).changes > 0
+  );
 }
