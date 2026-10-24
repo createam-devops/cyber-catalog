@@ -5,6 +5,7 @@ import { CONTACT, CYBERPOS_PLANS, FAQS, LINKS, RESTAURANT_PLANS, type LandingPla
 import { bodyFont, displayFont } from "./fonts";
 import NeedSelector from "./NeedSelector";
 import OrderDemo from "./OrderDemo";
+import SwipeRow from "./SwipeRow";
 import { SHOWCASE_URL, getShowcase, type Showcase } from "./showcase";
 import { formatPrice } from "@/lib/storefront/public-store";
 
@@ -45,23 +46,10 @@ function Bullets({ items, dotClass }: { items: string[]; dotClass: string }) {
   );
 }
 
-// En celular es una fila que se desliza de lado, dejando asomar la tarjeta
-// siguiente; desde `md` se comporta como la grilla o fila que indique className.
-function SwipeRow({ label, className, children }: { label: string; className: string; children: React.ReactNode }) {
-  return (
-    <div
-      role="region"
-      aria-label={label}
-      tabIndex={0}
-      className={`-mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:-mx-8 sm:scroll-px-8 sm:px-8 md:mx-0 md:overflow-visible md:px-0 md:pb-0 [&::-webkit-scrollbar]:hidden ${className}`}
-    >
-      {children}
-    </div>
-  );
-}
-
 // Tamaño de cada tarjeta dentro de un SwipeRow en celular
 const swipeItem = "shrink-0 basis-[80%] snap-start";
+// Tarjetas de «Explora productos»: carrusel en todos los tamaños, dejando asomar la siguiente.
+const showcaseItem = "shrink-0 snap-start basis-[72%] sm:basis-[44%] md:basis-[31%] lg:basis-[23%]";
 
 function SwipeHint() {
   return <p className="text-sm text-[#5A6885] md:hidden">Desliza para ver más</p>;
@@ -108,39 +96,36 @@ function ProductShowcase({ showcase }: { showcase: Showcase }) {
       </div>
 
       {showcase.categories.length > 1 && (
-        // En celular, una fila que se desliza de lado (como los demás carruseles de la portada).
-        <ul
-          aria-label="Categorías de la tienda"
-          className="-mx-5 flex gap-2.5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-8 sm:px-8 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
-        >
+        // En celular, una fila que se desliza de lado; desde `md`, en filas.
+        <SwipeRow label="Categorías de la tienda" className="md:flex-wrap">
           {showcase.categories.map((category) => (
-            <li key={category.href} className="shrink-0">
-              <a
-                href={category.href}
-                className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-[#C5D0E3] bg-white px-4 text-[15px] font-semibold transition-colors hover:border-[#047857] hover:text-[#047857]"
-              >
-                {category.label}
-              </a>
-            </li>
+            <a
+              key={category.href}
+              href={category.href}
+              className="inline-flex min-h-[44px] shrink-0 snap-start items-center whitespace-nowrap rounded-full border border-[#C5D0E3] bg-white px-4 text-[15px] font-semibold transition-colors hover:border-[#047857] hover:text-[#047857]"
+            >
+              {category.label}
+            </a>
           ))}
-        </ul>
+        </SwipeRow>
       )}
 
+      {/* Una sola fila también en computadora: es una muestra; la tienda completa está en su web. */}
       <div className="flex flex-col gap-2.5">
         <SwipeHint />
-        <SwipeRow label="Productos de la tienda Createam" className="md:grid md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+        <SwipeRow label="Productos de la tienda Createam" desktopCarousel>
           {showcase.products.map((product) => (
             <a
               key={product.id}
               href={product.href}
-              className="group flex shrink-0 basis-[64%] snap-start flex-col overflow-hidden rounded-2xl border border-[#DDE4F0] bg-white transition-shadow hover:shadow-[0_12px_32px_rgba(11,27,58,0.10)] sm:basis-[42%]"
+              className={`group flex flex-col overflow-hidden rounded-2xl border border-[#DDE4F0] bg-white transition-shadow hover:shadow-[0_12px_32px_rgba(11,27,58,0.10)] ${showcaseItem}`}
             >
               <div className="relative aspect-square bg-[#F1F4F9]">
                 <Image
                   src={product.image}
                   alt={product.name}
                   fill
-                  sizes="(min-width: 1024px) 270px, (min-width: 768px) 30vw, 64vw"
+                  sizes="(min-width: 1024px) 260px, (min-width: 768px) 31vw, 72vw"
                   className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                 />
                 {product.compareAtPrice && (
@@ -166,6 +151,16 @@ function ProductShowcase({ showcase }: { showcase: Showcase }) {
               </div>
             </a>
           ))}
+          <a
+            href={SHOWCASE_URL}
+            data-track="tienda_explorar_tarjeta"
+            className={`flex flex-col items-center justify-center gap-3 rounded-2xl border border-[#A8DCC6] bg-[#DDF3EA] p-6 text-center font-bold text-[#065F46] transition-colors hover:bg-[#CDEEDF] ${showcaseItem}`}
+          >
+            <span aria-hidden="true" className="grid h-12 w-12 place-items-center rounded-full bg-white text-2xl">
+              →
+            </span>
+            Ver todos los productos
+          </a>
         </SwipeRow>
       </div>
 
