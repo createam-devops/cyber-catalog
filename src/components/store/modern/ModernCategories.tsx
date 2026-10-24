@@ -34,7 +34,7 @@ export default function ModernCategories({ activeCategory, onCategoryChange }: M
     <nav className={`${CONTAINER} pt-10`} aria-labelledby="categorias-title">
       <SectionTitle id="categorias-title" title={theme.content.categoriesTitle} className="!mb-3" />
       {/* En el celular la fila llega hasta el borde para invitar a deslizar. */}
-      <ul className="-mx-4 flex gap-3 overflow-x-auto px-4 py-2 scrollbar-hide snap-x sm:mx-0 sm:flex-wrap sm:px-0">
+      <ul className="-mx-4 flex gap-3 overflow-x-auto scroll-px-4 px-4 py-2 scrollbar-hide snap-x sm:mx-0 sm:flex-wrap sm:scroll-px-0 sm:px-0">
         {items.map(({ id, label, Icon, href }) => {
           const isActive = activeCategory === id;
           const className = `flex items-center gap-2 px-5 py-2.5 rounded-sf-chip whitespace-nowrap snap-start border transition-all ${

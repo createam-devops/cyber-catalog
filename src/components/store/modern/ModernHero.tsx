@@ -53,7 +53,7 @@ export default function ModernHero() {
                 {content.heroEyebrow}
               </span>
             )}
-            <h1 className="mb-5 text-3xl leading-[1.1] sm:text-4xl lg:text-5xl">{content.heroTitle || store.name}</h1>
+            <h1 className="mb-5 text-3xl/[1.1] sm:text-4xl/[1.1] lg:text-5xl/[1.1]">{content.heroTitle || store.name}</h1>
             {content.heroButton && (
               <a
                 href="#productos"
@@ -97,7 +97,7 @@ export default function ModernHero() {
               {slide.subtitle}
             </span>
           )}
-          {slide.title && <h1 className="mb-4 text-2xl leading-[1.15] drop-shadow-md sm:text-3xl lg:text-[2.6rem]">{slide.title}</h1>}
+          {slide.title && <h1 className="mb-4 text-2xl/[1.15] drop-shadow-md sm:text-3xl/[1.15] lg:text-[2.6rem]/[1.15]">{slide.title}</h1>}
           {slide.buttonText && (
             <a
               href="#productos"
