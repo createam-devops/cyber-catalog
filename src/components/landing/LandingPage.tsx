@@ -108,12 +108,16 @@ function ProductShowcase({ showcase }: { showcase: Showcase }) {
       </div>
 
       {showcase.categories.length > 1 && (
-        <ul aria-label="Categorías de la tienda" className="flex flex-wrap gap-2.5">
+        // En celular, una fila que se desliza de lado (como los demás carruseles de la portada).
+        <ul
+          aria-label="Categorías de la tienda"
+          className="-mx-5 flex gap-2.5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-8 sm:px-8 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&::-webkit-scrollbar]:hidden"
+        >
           {showcase.categories.map((category) => (
-            <li key={category.href}>
+            <li key={category.href} className="shrink-0">
               <a
                 href={category.href}
-                className="inline-flex min-h-[44px] items-center rounded-full border border-[#C5D0E3] bg-white px-4 text-[15px] font-semibold transition-colors hover:border-[#047857] hover:text-[#047857]"
+                className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-[#C5D0E3] bg-white px-4 text-[15px] font-semibold transition-colors hover:border-[#047857] hover:text-[#047857]"
               >
                 {category.label}
               </a>
