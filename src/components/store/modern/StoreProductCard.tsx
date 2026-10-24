@@ -135,21 +135,19 @@ export default function StoreProductCard({
           </button>
         )}
       </div>
+      {/* Categoría, nombre entero (dos líneas) y debajo el precio: en el celular el nombre no se corta. */}
       <ProductLink preview={preview} href={href} className="block">
-        <div className="flex justify-between items-start gap-2">
-          <h3 className="font-sf-body text-sm font-medium leading-snug line-clamp-2 flex-1 group-hover:text-sf-primary transition-colors">
-            {product.name}
-          </h3>
-          <span className="flex flex-col items-end">
-            <span className="font-bold text-sm whitespace-nowrap">{formatPrice(product.price)}</span>
-            {product.compareAtPrice && (
-              <span className="text-[11px] text-sf-muted line-through whitespace-nowrap">
-                <span className="sr-only">Antes </span>
-                {formatPrice(product.compareAtPrice)}
-              </span>
-            )}
-          </span>
-        </div>
+        {categoryLabel && <p className="mb-1 truncate text-[11px] uppercase tracking-wider text-sf-muted">{categoryLabel}</p>}
+        <h3 className="font-sf-body text-sm font-medium leading-snug line-clamp-2 group-hover:text-sf-primary transition-colors">{product.name}</h3>
+        <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
+          <span className="text-base font-bold">{formatPrice(product.price)}</span>
+          {product.compareAtPrice && (
+            <span className="text-xs text-sf-muted line-through">
+              <span className="sr-only">Antes </span>
+              {formatPrice(product.compareAtPrice)}
+            </span>
+          )}
+        </p>
         {product.rating && product.rating.count > 0 && (
           <p className="mt-1 flex items-center gap-1 text-[11px]">
             <Stars value={product.rating.average} size={12} />
@@ -157,7 +155,6 @@ export default function StoreProductCard({
             <span className="text-sf-muted">({product.rating.count})</span>
           </p>
         )}
-        {categoryLabel && <p className="text-[11px] text-sf-muted uppercase tracking-wider mt-1">{categoryLabel}</p>}
       </ProductLink>
     </div>
   );

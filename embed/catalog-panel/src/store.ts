@@ -119,6 +119,7 @@ export function diffDraft(original: Draft, draft: Draft): Record<string, unknown
         benefits: s.benefits,
         faq: s.faq,
         promo: s.promo,
+        verification: s.verification,
       }) ?? {};
   }
   if (!same(draft.heroSlides, original.heroSlides)) patch.heroSlides = draft.heroSlides.map((slide, order) => ({ ...slide, order }));

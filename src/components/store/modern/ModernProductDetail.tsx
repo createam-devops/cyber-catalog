@@ -13,6 +13,7 @@ import StoreBenefits from './StoreBenefits';
 import StorePromo from './StorePromo';
 import StickyOrderBar from './StickyOrderBar';
 import Countdown from './Countdown';
+import { CONTAINER, SectionTitle } from './layout';
 import ProductReviews from './ProductReviews';
 import Stars from './Stars';
 import { formatRating, type PublicReview } from '@/lib/storefront/reviews';
@@ -82,7 +83,7 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
       <ModernNavbar cartCount={getCartCount()} onOpenCart={() => setIsCartOpen(true)} isScrolled heroTone="none" onGoHome={() => router.push('/')} />
 
       {/* En el celular el botón de pedir va fijo abajo: espacio para que no tape el pie. */}
-      <main className="pt-32 md:pt-28 pb-28 md:pb-12 container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+      <main className={`${CONTAINER} pt-32 md:pt-28 pb-28 md:pb-12`}>
         <nav aria-label="Ruta" className="mb-8 text-sm text-sf-muted">
           <ol className="flex flex-wrap items-center gap-1">
             <li>
@@ -248,7 +249,7 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
 
         {relatedProducts.length > 0 && (
           <section className="bg-sf-surface rounded-sf-hero p-6 sm:p-10">
-            <h2 className="text-2xl md:text-3xl mb-8">{content.relatedTitle}</h2>
+            <SectionTitle title={content.relatedTitle} />
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {relatedProducts.map((p) => (
                 <StoreProductCard key={p.id} product={p} sizes="(max-width: 768px) 50vw, 25vw" />

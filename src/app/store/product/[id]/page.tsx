@@ -7,7 +7,7 @@ import StoreUnavailable from "@/components/store/StoreUnavailable";
 import { findStoreByDomain, getStoreCatalog, storeAdminUrl, storefrontAvailability } from "@/lib/server/storefront-data";
 import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
-import { categoryPath, productPath, type StoreCatalog, type StoreProduct } from "@/lib/storefront/catalog";
+import { categoryPath, findProductByParam, productPath, type StoreCatalog, type StoreProduct } from "@/lib/storefront/catalog";
 import { absoluteUrl, breadcrumbJsonLd, jsonLdHtml, productJsonLd } from "@/lib/storefront/structured-data";
 import { publicReviews, withRatings } from "@/lib/server/reviews";
 
@@ -39,8 +39,8 @@ async function load(domain: string | undefined, id: string) {
     if (isAppNotEnabled(error)) return { tenant, availability: 'paused' as const, catalog: null, product: null };
     throw error;
   }
-  // La ficha vive en /product/<slug>; por número (enlaces viejos) también se encuentra.
-  const product = catalog.products.find((p) => p.slug === id) ?? catalog.products.find((p) => p.id === id) ?? null;
+  // La ficha vive en /product/<slug>; por número o por una dirección vieja también se encuentra.
+  const product = findProductByParam(catalog.products, decodeURIComponent(id));
   return { tenant, availability, catalog, product };
 }
 

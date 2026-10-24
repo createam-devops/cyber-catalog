@@ -102,8 +102,35 @@ export function withCategorySlugs(categories: StoreCategory[]): StoreCategory[] 
   });
 }
 
-export function productPath(product: Pick<StoreProduct, 'id' | 'slug'>): string {
-  return `/product/${encodeURIComponent(product.slug || product.id)}`;
+/**
+ * La dirección de la ficha: el slug del ERP o, si no lo tiene, el nombre más su
+ * número («kit-completo-para-punto-de-venta-648»). El número al final hace que
+ * la dirección se siga encontrando aunque cambie el nombre o llegue el slug del ERP.
+ */
+export function productSlug(product: Pick<StoreProduct, 'id' | 'slug' | 'name'>): string {
+  if (product.slug) return product.slug;
+  const base = categorySlug(product.name || '').slice(0, 60).replace(/-+$/, '');
+  return base ? `${base}-${product.id}` : product.id;
+}
+
+export function productPath(product: Pick<StoreProduct, 'id' | 'slug' | 'name'>): string {
+  return `/product/${encodeURIComponent(productSlug(product))}`;
+}
+
+/**
+ * La ficha que corresponde a una dirección: su slug, su número o cualquier
+ * dirección vieja que termine en «-<número>». La página redirige (308) a la
+ * dirección vigente si no coincide.
+ */
+export function findProductByParam<T extends Pick<StoreProduct, 'id' | 'slug' | 'name'>>(products: T[], param: string): T | null {
+  const trailingId = param.match(/-([A-Za-z0-9]+)$/)?.[1];
+  return (
+    products.find((p) => productSlug(p) === param) ??
+    products.find((p) => p.id === param) ??
+    products.find((p) => p.slug === param) ??
+    (trailingId ? products.find((p) => p.id === trailingId) : undefined) ??
+    null
+  );
 }
 
 export function categoryPath(category: Pick<StoreCategory, 'id' | 'label' | 'slug'>): string {

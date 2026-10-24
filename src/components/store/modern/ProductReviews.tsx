@@ -55,7 +55,7 @@ export default function ProductReviews({ product, reviews }: { product: StorePro
     <section id="opiniones" aria-labelledby="opiniones-title" className="mb-14 scroll-mt-32 md:scroll-mt-24">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="opiniones-title" className="text-2xl md:text-3xl">
+          <h2 id="opiniones-title" className="text-xl font-bold leading-tight md:text-2xl">
             Opiniones de clientes
           </h2>
           {summary && summary.count > 0 ? (

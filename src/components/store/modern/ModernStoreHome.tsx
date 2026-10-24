@@ -13,6 +13,7 @@ import StorePromo from './StorePromo';
 import SpotlightHero from './SpotlightHero';
 import HowToOrder from './HowToOrder';
 import StickyOrderBar from './StickyOrderBar';
+import { CONTAINER } from './layout';
 import Link from 'next/link';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
@@ -162,7 +163,7 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
       />
 
       {category ? (
-        <header className="container mx-auto px-4 pt-36 md:pt-32 pb-2">
+        <header className={`${CONTAINER} pt-36 md:pt-32`}>
           <nav aria-label="Ruta" className="mb-3 text-sm text-sf-muted">
             <Link href="/" className="hover:text-sf-primary">
               {store.name}

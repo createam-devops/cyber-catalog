@@ -20,6 +20,9 @@ interface Props {
 
 const SUBDOMAIN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
+/** De la etiqueta pegada (<meta … content="CÓDIGO">) se queda solo el código. */
+const verificationCode = (raw: string) => (raw.match(/content=["']([^"']+)["']/)?.[1] ?? raw).replace(/[^A-Za-z0-9_=-]/g, '').slice(0, 120);
+
 
 export default function Ajustes({ data, draft, setDraft, canManage, api, preview, previewUrl }: Props) {
   const disabled = !canManage;
@@ -30,6 +33,8 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
 
   const fromErp = data.fromErp ?? { name: false, logo: false, whatsapp: false };
   const set = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
+  const setVerification = (patch: { google?: string; bing?: string }) =>
+    setDraft((d) => (d ? { ...d, storefront: { ...d.storefront, verification: { ...d.storefront.verification, ...patch } } } : d));
   const setSlides = (heroSlides: HeroSlide[]) => set({ heroSlides });
   const maxSlides = data.limits.heroSlides;
 
@@ -269,6 +274,43 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
                 value={draft.seoDescription}
                 maxLength={170}
                 onChange={(e) => set({ seoDescription: e.target.value })}
+              />
+            )}
+          </Field>
+        </FluidGrid>
+      </Section>
+
+      <Section title="Registra tu tienda en Google y Bing" description="Así aparece antes en las búsquedas y en los asistentes de IA.">
+        <ol className="cs-hint !mt-0 list-decimal space-y-1 pl-5">
+          <li>
+            En <b>Google Search Console</b> agrega tu dirección{data.storeUrl ? ` (${data.storeUrl})` : ''} como «Prefijo de la URL» y elige el método «Etiqueta HTML».
+          </li>
+          <li>Pega aquí la etiqueta o solo su código, guarda los cambios y vuelve a Search Console a pulsar «Verificar».</li>
+          <li>Ya verificada, en «Sitemaps» envía {data.storeUrl ? `${data.storeUrl}/sitemap.xml` : 'tu-dirección/sitemap.xml'}.</li>
+          <li>En <b>Bing Webmaster Tools</b> puedes importar la tienda desde Search Console, o pegar su código aquí.</li>
+        </ol>
+        <FluidGrid min="18rem">
+          <Field label="Código de Google Search Console">
+            {(id) => (
+              <input
+                id={id}
+                className="cs-input font-mono"
+                disabled={disabled}
+                value={draft.storefront.verification?.google ?? ''}
+                placeholder='<meta name="google-site-verification" content="…">'
+                onChange={(e) => setVerification({ google: verificationCode(e.target.value) })}
+              />
+            )}
+          </Field>
+          <Field label="Código de Bing Webmaster Tools (opcional)">
+            {(id) => (
+              <input
+                id={id}
+                className="cs-input font-mono"
+                disabled={disabled}
+                value={draft.storefront.verification?.bing ?? ''}
+                placeholder='<meta name="msvalidate.01" content="…">'
+                onChange={(e) => setVerification({ bing: verificationCode(e.target.value) })}
               />
             )}
           </Field>
