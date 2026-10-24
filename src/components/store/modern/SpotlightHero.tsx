@@ -18,7 +18,7 @@ import { productPath, type StoreProduct } from '@/lib/storefront/catalog';
  * como las páginas de un solo producto que convierten bien.
  */
 export default function SpotlightHero({ product, onAddToCart }: { product: StoreProduct; onAddToCart: (product: StoreProduct) => void }) {
-  const { theme } = useStorefront();
+  const { theme, preview } = useStorefront();
   const { content, layout } = theme;
   const [active, setActive] = useState(0);
   const images = product.imageUrls;
@@ -85,9 +85,14 @@ export default function SpotlightHero({ product, onAddToCart }: { product: Store
               <ShoppingBag size={20} strokeWidth={2.5} aria-hidden="true" />
               {soldOut ? 'Agotado' : content.addToCart}
             </button>
-            <Link href={productPath(product)} className="flex items-center justify-center rounded-sf-btn border border-sf-border px-6 py-4 text-sm font-bold hover:border-sf-primary hover:text-sf-primary">
-              Ver detalles
-            </Link>
+            {/* En la vista previa del editor la ficha no existe: no se enlaza ni se precarga. */}
+            {preview ? (
+              <span className="flex items-center justify-center rounded-sf-btn border border-sf-border px-6 py-4 text-sm font-bold">Ver detalles</span>
+            ) : (
+              <Link href={productPath(product)} className="flex items-center justify-center rounded-sf-btn border border-sf-border px-6 py-4 text-sm font-bold hover:border-sf-primary hover:text-sf-primary">
+                Ver detalles
+              </Link>
+            )}
           </div>
           <StoreBenefits compact />
         </div>
