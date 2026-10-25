@@ -94,5 +94,5 @@ La ficha y el reporte del migrador traen datos personales y la clave inicial del
   `RESPALDO_LLAVE=llave.json node respaldar-firebase.cjs <carpeta>`
 
 Hecho el 25-oct-2026:
-- **`cyber-catalog`:** 51 documentos, sin Storage (el bucket no existe). Copias en `/root/respaldos/firebase-central-2026-10-25.tar.gz` (VPS) y en `D:\PROJECTSellasorpresaespaldos\`.
-- **`createam-5a670` (Bella Sorpresa):** falta su llave para el respaldo completo. Ya están guardadas las 39 fotos originales de Storage en `respaldosellasorpresa-fotos-originales-2026-10-25\`.
+- **`cyber-catalog`:** 51 documentos, sin Storage (el bucket no existe). Copias en `/root/respaldos/firebase-central-2026-10-25.tar.gz` (VPS) y en `D:/PROJECTS/bellasorpresa/respaldos/`.
+- **`createam-5a670` (Bella Sorpresa):** falta su llave para el respaldo completo. Ya están guardadas las 39 fotos originales de Storage en `D:/PROJECTS/bellasorpresa/respaldos/bellasorpresa-fotos-originales-2026-10-25/`.
