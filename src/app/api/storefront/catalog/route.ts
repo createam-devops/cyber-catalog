@@ -3,6 +3,9 @@ import { checkRateLimit } from '@/lib/server/rate-limit';
 import { findStoreByDomain, getStoreCatalog, storefrontAvailability } from '@/lib/server/storefront-data';
 import { isAppNotEnabled } from '@/lib/server/erp/client';
 import { normalizeWhatsapp } from '@/lib/storefront/public-store';
+import { productSlug } from '@/lib/storefront/catalog';
+import { withRatings } from '@/lib/server/reviews';
+import { allowedStoreOrigin as allowedOrigin, requestedStoreDomain, storeCorsHeaders as corsHeaders } from '@/lib/server/storefront-cors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,30 +22,9 @@ export const dynamic = 'force-dynamic';
  * pide desde el servidor, sin Origin.
  */
 
-function allowedOrigin(origin: string | null, storeDomain: string | undefined): string | null {
-  if (!origin) return null;
-  let url: URL;
-  try {
-    url = new URL(origin);
-  } catch {
-    return null;
-  }
-  const host = url.hostname.toLowerCase();
-  if ((host === 'localhost' || host === '127.0.0.1') && (url.protocol === 'http:' || url.protocol === 'https:')) return origin;
-  const domain = storeDomain?.toLowerCase().replace(/^www\./, '');
-  if (domain && url.protocol === 'https:' && (host === domain || host === `www.${domain}`)) return origin;
-  return null;
-}
-
-function corsHeaders(origin: string | null): Record<string, string> {
-  return origin
-    ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Max-Age': '86400', Vary: 'Origin' }
-    : { Vary: 'Origin' };
-}
-
 async function storeFor(request: NextRequest) {
-  const domain = (request.nextUrl.searchParams.get('domain') || '').trim().toLowerCase();
-  if (!/^[a-z0-9.-]{3,253}$/.test(domain)) return null;
+  const domain = requestedStoreDomain(request.nextUrl.searchParams);
+  if (!domain) return null;
   const tenant = await findStoreByDomain(domain);
   return tenant && storefrontAvailability(tenant) === 'open' ? tenant : null;
 }
@@ -78,9 +60,10 @@ export async function GET(request: NextRequest) {
         store: { name: tenant.name, domain: tenant.domain ?? null, whatsapp: normalizeWhatsapp(tenant.whatsapp) },
         generatedAt: new Date().toISOString(),
         categories,
-        products: catalog.products.map((p) => ({
+        // Sin slug del ERP, el mismo que usan las tiendas de la plataforma (nombre-número).
+        products: withRatings(tenant.id, catalog.products).map((p) => ({
           id: p.id,
-          slug: p.slug ?? null,
+          slug: productSlug(p),
           name: p.name,
           description: p.description ?? '',
           price: p.price,
@@ -90,6 +73,8 @@ export async function GET(request: NextRequest) {
           featured: p.featured,
           stock: p.stock,
           updatedAt: p.updatedAt ?? null,
+          // Promedio de las opiniones aprobadas; null si aún no tiene.
+          rating: p.rating ?? null,
         })),
       },
       { headers: { ...cors, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' } }
