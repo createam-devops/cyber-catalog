@@ -82,3 +82,17 @@ La ficha y el reporte del migrador traen datos personales y la clave inicial del
 - `importar-presentacion.mjs --deshacer <id>` borra la fila y su logo.
 - Lo subido al ERP queda allí, y repetir la migración no lo duplica.
 - `tiktok-shop-link` sigue leyendo Firebase hasta C-8, así que la tienda real no se entera.
+
+## Respaldo antes de apagar Firebase (C-7)
+
+`respaldar-firebase.cjs` guarda, **solo leyendo**, todas las colecciones de Firestore (con subcolecciones) y todos los archivos de Storage de un proyecto. Deja `firestore.json`, `storage.json` y `storage/`.
+
+- **Proyecto central (`cyber-catalog`)**, con la credencial del contenedor:
+  `ssh root@72.62.138.112 "docker exec -i createam-platform node - /tmp/respaldo" < respaldar-firebase.cjs`
+  Luego `docker cp` a `/root/respaldos/`.
+- **Otro proyecto**, con su llave de cuenta de servicio:
+  `RESPALDO_LLAVE=llave.json node respaldar-firebase.cjs <carpeta>`
+
+Hecho el 25-oct-2026:
+- **`cyber-catalog`:** 51 documentos, sin Storage (el bucket no existe). Copias en `/root/respaldos/firebase-central-2026-10-25.tar.gz` (VPS) y en `D:/PROJECTS/bellasorpresa/respaldos/`.
+- **`createam-5a670` (Bella Sorpresa):** falta su llave para el respaldo completo. Ya están guardadas las 39 fotos originales de Storage en `D:/PROJECTS/bellasorpresa/respaldos/bellasorpresa-fotos-originales-2026-10-25/`.
