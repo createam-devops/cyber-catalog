@@ -10,6 +10,22 @@ export async function middleware(request: NextRequest) {
   
   // Dominio de la plataforma principal
   const platformDomain = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN || 'createam.cloud';
+
+  // Direcciones estables y públicas para buscadores y accesos directos. También
+  // pasan por aquí los .ico/.png/.webmanifest, normalmente excluidos abajo.
+  // El handler resuelve la marca por Host: una tienda nunca hereda la de otra.
+  const brandingAsset = {
+    '/favicon.ico': 'favicon',
+    '/icon.png': 'icon',
+    '/apple-touch-icon.png': 'apple',
+    '/site.webmanifest': 'manifest',
+  }[url.pathname];
+  if (brandingAsset) {
+    const brandingUrl = new URL('/api/storefront/branding', request.url);
+    brandingUrl.searchParams.set('asset', brandingAsset);
+    if (url.searchParams.has('size')) brandingUrl.searchParams.set('size', url.searchParams.get('size')!);
+    return NextResponse.rewrite(brandingUrl);
+  }
   
   // Si es localhost o IP, permitir todo para desarrollo/testing
   if (domain === 'localhost' || domain.startsWith('127.0.0.1') || /^\d+\.\d+\.\d+\.\d+$/.test(domain)) {
@@ -115,6 +131,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/favicon.ico',
+    '/icon.png',
+    '/apple-touch-icon.png',
+    '/site.webmanifest',
     /*
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
