@@ -1,9 +1,39 @@
+import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 
-const FROM_EMAIL = 'Createam <noreply@createam.cloud>';
+const RESEND_FROM = 'Createam <noreply@createam.cloud>';
 
-function getResend() {
-  return new Resend(process.env.RESEND_API_KEY);
+interface MailMessage {
+  to: string;
+  subject: string;
+  html: string;
+}
+
+/**
+ * Envía un correo por el SMTP del sistema, el mismo que usan el ERP y OnTurn
+ * (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM, SMTP_FROM_NAME).
+ * Si ese SMTP no está configurado, usa Resend como antes. Lanza un error si el
+ * envío falla, para que quien llama decida qué responder.
+ */
+async function sendMail(message: MailMessage): Promise<void> {
+  const host = process.env.SMTP_HOST?.trim();
+  const fromAddress = process.env.SMTP_FROM?.trim();
+  if (host && fromAddress) {
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = process.env.SMTP_USER?.trim();
+    const transport = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: user ? { user, pass: process.env.SMTP_PASS } : undefined,
+    });
+    const fromName = process.env.SMTP_FROM_NAME?.trim() || 'Createam';
+    await transport.sendMail({ from: { name: fromName, address: fromAddress }, ...message });
+    return;
+  }
+
+  const { error } = await new Resend(process.env.RESEND_API_KEY).emails.send({ from: RESEND_FROM, ...message });
+  if (error) throw new Error(error.message);
 }
 
 function getAdminEmail() {
@@ -22,8 +52,7 @@ export async function sendNewTenantNotification(tenant: {
     ? `Dominio personalizado: ${tenant.domain}`
     : `Subdominio: ${tenant.subdomain || 'pendiente'}.createam.cloud`;
 
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendMail({
     to: getAdminEmail(),
     subject: `🚀 Nueva solicitud: ${tenant.businessName}`,
     html: `
@@ -49,8 +78,7 @@ export async function sendRegistrationConfirmation(tenant: {
   businessName: string;
   email: string;
 }) {
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendMail({
     to: tenant.email,
     subject: `¡Recibimos tu solicitud, ${tenant.businessName}!`,
     html: `
@@ -80,8 +108,7 @@ export async function sendTenantApprovedEmail(tenant: {
     ? `https://${tenant.domain}`
     : `https://${tenant.subdomain}.createam.cloud`;
 
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendMail({
     to: tenant.email,
     subject: `¡Tu catálogo está activo! 🚀`,
     html: `
@@ -111,8 +138,7 @@ export async function sendVerificationCode(tenant: {
   email: string;
   code: string;
 }) {
-  const { error } = await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendMail({
     to: tenant.email,
     subject: `${tenant.code} — Tu código de verificación de Createam`,
     html: `
@@ -128,7 +154,6 @@ export async function sendVerificationCode(tenant: {
       </div>
     `,
   });
-  if (error) throw new Error(`No se pudo enviar el código: ${error.message}`);
 }
 
 // --- Email al usuario cuando su cuenta es rechazada ---
@@ -136,8 +161,7 @@ export async function sendTenantRejectedEmail(tenant: {
   businessName: string;
   email: string;
 }) {
-  await getResend().emails.send({
-    from: FROM_EMAIL,
+  await sendMail({
     to: tenant.email,
     subject: `Actualización sobre tu solicitud en Createam`,
     html: `

@@ -19,6 +19,14 @@ services:
       - FIREBASE_ADMIN_PRIVATE_KEY=${FIREBASE_ADMIN_PRIVATE_KEY}
       - PLATFORM_ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS}
       - RESEND_API_KEY=${RESEND_API_KEY}
+      # Correo por el SMTP del sistema, el mismo que usan el ERP y OnTurn.
+      # Con SMTP_HOST y SMTP_FROM vacías se usa Resend (RESEND_API_KEY).
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_FROM_NAME=${SMTP_FROM_NAME:-Createam}
       - MP_ACCESS_TOKEN=${MP_ACCESS_TOKEN}
       # Integración con el ERP. Vacías = apagada (las tiendas siguen en Firebase).
       - ERP_API_BASE_URL=${ERP_API_BASE_URL:-}
