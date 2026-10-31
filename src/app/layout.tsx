@@ -21,18 +21,14 @@ export const metadata: Metadata = {
   description: "Plataformas SaaS diseñadas para convertir la tecnología en rentabilidad. Gestión de Turnos, Catálogo Digital y POS Integral.",
   icons: {
     icon: [
-      { url: '/images/favicon/favicon.ico' },
-      { url: '/images/favicon/favicon.svg', type: 'image/svg+xml' },
-      { url: '/images/favicon/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon.ico', type: 'image/x-icon', sizes: '32x32' },
+      { url: '/icon.png', sizes: '96x96', type: 'image/png' },
     ],
     apple: [
-      { url: '/images/favicon/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
-    ],
-    other: [
-      { rel: 'manifest', url: '/images/favicon/site.webmanifest' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
   },
-  manifest: '/images/favicon/site.webmanifest',
+  manifest: '/site.webmanifest',
 };
 
 export default function RootLayout({
@@ -42,12 +38,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={daysOne.variable}>
-      <head>
-        <link rel="icon" href="/images/favicon/favicon.ico" sizes="any" />
-        <link rel="icon" href="/images/favicon/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/images/favicon/apple-touch-icon.png" />
-        <link rel="manifest" href="/images/favicon/site.webmanifest" />
-      </head>
       <body className={`${outfit.variable} font-body`}>
         {children}
         <Toaster />
