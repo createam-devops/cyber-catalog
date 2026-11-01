@@ -75,6 +75,10 @@ export async function GET(request: NextRequest) {
           updatedAt: p.updatedAt ?? null,
           // Promedio de las opiniones aprobadas; null si aún no tiene.
           rating: p.rating ?? null,
+          // Con variantes (talla, color…): `price` es el más bajo y se pide una variante (su id va al pedido).
+          ...(p.options?.length && p.variants?.length
+            ? { priceMax: p.priceMax ?? p.price, options: p.options, variants: p.variants }
+            : {}),
         })),
       },
       { headers: { ...cors, 'Cache-Control': 'public, max-age=60, stale-while-revalidate=300' } }

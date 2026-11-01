@@ -6,6 +6,7 @@ import { resolveStorefront } from '@/lib/storefront/theme';
 import { defaultStoreDescription } from '@/lib/storefront/structured-data';
 import { withRatings } from '@/lib/server/reviews';
 import { formatRating } from '@/lib/storefront/reviews';
+import { usedValues } from '@/lib/storefront/variants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,7 +63,13 @@ export async function GET(request: NextRequest) {
       const category = categoryLabel.get(p.category);
       const about = p.description?.trim() ? `: ${oneLine(p.description, 160)}` : '';
       const stars = p.rating ? ` · ★ ${formatRating(p.rating.average)} (${p.rating.count} ${p.rating.count === 1 ? 'opinión' : 'opiniones'})` : '';
-      return `- [${p.name}](${origin}${productPath(p)}) — ${formatPrice(p.price)}${category ? ` · ${category}` : ''}${stars}${about}`;
+      const price = p.priceMax !== undefined && p.priceMax > p.price ? `desde ${formatPrice(p.price)}` : formatPrice(p.price);
+      // «Color: Rojo, Azul · Talla: S, M»: lo que se puede elegir.
+      const choices = (p.options ?? [])
+        .map((option) => `${option.name}: ${usedValues(p, option).map((v) => v.label).join(', ')}`)
+        .map((text) => ` · ${text}`)
+        .join('');
+      return `- [${p.name}](${origin}${productPath(p)}) — ${price}${category ? ` · ${category}` : ''}${choices}${stars}${about}`;
     }),
     ...(theme.faq.length ? ['', '## Preguntas frecuentes', '', ...theme.faq.flatMap((f) => [`### ${f.q}`, '', f.a, ''])] : ['']),
   ];

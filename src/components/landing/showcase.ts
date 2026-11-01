@@ -15,6 +15,8 @@ export interface ShowcaseProduct {
   href: string;
   image: string;
   price: number;
+  /** Con variantes de distinto precio, `price` es el más bajo: «Desde». */
+  fromPrice?: boolean;
   compareAtPrice: number | null;
   category?: string;
 }
@@ -54,6 +56,7 @@ async function loadShowcase(limit: number): Promise<Showcase | null> {
           href: `${SHOWCASE_URL}${productPath(p)}`,
           image: p.imageUrls[0],
           price: p.price,
+          ...(p.priceMax !== undefined && p.priceMax > p.price ? { fromPrice: true } : {}),
           compareAtPrice: onSale ? p.compareAtPrice! : null,
           category: labels.get(p.category),
         };

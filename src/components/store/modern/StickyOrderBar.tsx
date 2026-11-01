@@ -7,12 +7,15 @@ import { formatPrice } from '@/lib/storefront/public-store';
 export default function StickyOrderBar({
   name,
   price,
+  fromPrice = false,
   label,
   disabled = false,
   onClick,
 }: {
   name: string;
   price: number;
+  /** Aún falta elegir la variante y los precios difieren. */
+  fromPrice?: boolean;
   label: string;
   disabled?: boolean;
   onClick: () => void;
@@ -22,7 +25,10 @@ export default function StickyOrderBar({
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs text-sf-muted">{name}</p>
-          <p className="text-lg font-black leading-tight">{formatPrice(price)}</p>
+          <p className="text-lg font-black leading-tight">
+            {fromPrice && <span className="mr-1 text-xs font-bold text-sf-muted">Desde</span>}
+            {formatPrice(price)}
+          </p>
         </div>
         <button
           type="button"

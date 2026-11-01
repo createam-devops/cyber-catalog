@@ -140,6 +140,7 @@ function ProductShowcase({ showcase }: { showcase: Showcase }) {
                 )}
                 <h3 className="line-clamp-2 text-[15px] font-bold leading-snug">{product.name}</h3>
                 <p className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
+                  {product.fromPrice && <span className="text-sm text-[#5A6885]">Desde</span>}
                   <span className="text-lg font-extrabold">{formatPrice(product.price)}</span>
                   {product.compareAtPrice && (
                     <span className="text-sm text-[#5A6885] line-through">

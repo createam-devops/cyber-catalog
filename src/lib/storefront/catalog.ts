@@ -24,6 +24,46 @@ export interface StoreProduct {
   saleEndsAt?: string;
   /** Promedio de las opiniones aprobadas (lo agrega la página; no viene de la fuente). */
   rating?: { average: number; count: number };
+  /**
+   * Producto con variantes (talla, color…): su `id` es el de la ficha del ERP
+   * («f45») y se pide una de sus variantes. `price` es el más bajo y `priceMax`
+   * el más alto (solo si difieren); `stock` es la suma.
+   */
+  options?: StoreOption[];
+  variants?: StoreVariant[];
+  priceMax?: number;
+}
+
+/** Un eje de la ficha: Talla, Color, Sabor… */
+export interface StoreOption {
+  id: string;
+  name: string;
+  values: StoreOptionValue[];
+}
+
+export interface StoreOptionValue {
+  id: string;
+  label: string;
+  /** Muestra de color (#rrggbb). */
+  color?: string;
+  /** Foto del valor (estampado, material). */
+  imageUrl?: string;
+}
+
+/** Lo que se pide: un producto del ERP con un valor en cada eje. */
+export interface StoreVariant {
+  id: string;
+  /** Eje → valor elegido (ids de `options`). */
+  values: Record<string, string>;
+  /** «Rojo / M». */
+  label: string;
+  price: number;
+  compareAtPrice?: number | null;
+  saleEndsAt?: string;
+  stock: number | null;
+  /** Sus fotos; vacío si no tiene propias (se usan las de la ficha). */
+  imageUrls: string[];
+  sku?: string;
 }
 
 export interface StoreCatalog {
@@ -58,7 +98,9 @@ export function filterProducts(products: StoreProduct[], category?: string | nul
   return products.filter((product) => {
     if (category && product.category !== category) return false;
     if (!needle) return true;
-    return normalizeSearch(`${product.name} ${product.description ?? ''} ${product.category}`).includes(needle);
+    // Buscar «rojo» encuentra el polo que viene en rojo.
+    const values = product.options?.flatMap((option) => option.values.map((value) => value.label)).join(' ') ?? '';
+    return normalizeSearch(`${product.name} ${product.description ?? ''} ${product.category} ${values}`).includes(needle);
   });
 }
 
@@ -122,15 +164,23 @@ export function productPath(product: Pick<StoreProduct, 'id' | 'slug' | 'name'>)
  * dirección vieja que termine en «-<número>». La página redirige (308) a la
  * dirección vigente si no coincide.
  */
-export function findProductByParam<T extends Pick<StoreProduct, 'id' | 'slug' | 'name'>>(products: T[], param: string): T | null {
+export function findProductByParam<T extends Pick<StoreProduct, 'id' | 'slug' | 'name' | 'variants'>>(products: T[], param: string): T | null {
   const trailingId = param.match(/-([A-Za-z0-9]+)$/)?.[1];
   return (
     products.find((p) => productSlug(p) === param) ??
     products.find((p) => p.id === param) ??
     products.find((p) => p.slug === param) ??
     (trailingId ? products.find((p) => p.id === trailingId) : undefined) ??
+    // Dirección de cuando cada variante era un producto suelto («polo-rojo-m-123»).
+    products.find((p) => p.variants?.some((v) => v.id === (trailingId ?? param))) ??
     null
   );
+}
+
+/** La variante que nombra una dirección vieja de variante suelta, si la hay. */
+export function variantIdFromParam(product: Pick<StoreProduct, 'variants'>, param: string): string | null {
+  const trailingId = param.match(/-([A-Za-z0-9]+)$/)?.[1] ?? param;
+  return product.variants?.find((v) => v.id === trailingId)?.id ?? null;
 }
 
 export function categoryPath(category: Pick<StoreCategory, 'id' | 'label' | 'slug'>): string {

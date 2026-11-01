@@ -88,17 +88,33 @@ export async function getAppToken(partnerId: number): Promise<string> {
 }
 
 /**
+ * La API v2 vive junto a la v1 (…/api/v1 → …/api/v2). Si la URL configurada no
+ * termina en /v1 no se puede deducir y se responde como si no existiera.
+ */
+function versionedBase(baseUrl: string, version: 1 | 2): string | null {
+  if (version === 1) return baseUrl;
+  return /\/v1$/.test(baseUrl) ? baseUrl.replace(/\/v1$/, '/v2') : null;
+}
+
+/**
  * GET a la API del ERP en nombre de un negocio. Si el token fue rechazado
  * (vencido, o la app se quitó del plan) se pide uno nuevo una sola vez.
  */
-export async function erpGet<T>(partnerId: number, path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
+export async function erpGet<T>(
+  partnerId: number,
+  path: string,
+  params: Record<string, string | number | undefined> = {},
+  version: 1 | 2 = 1
+): Promise<T> {
   const config = requireConfig();
+  const base = versionedBase(config.baseUrl, version);
+  if (!base) throw new ErpError(`La API v${version} del ERP no está disponible.`, 404, 'API_VERSION_UNAVAILABLE');
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== '') query.set(key, String(value));
   }
   const search = query.toString();
-  const url = `${config.baseUrl}${path}${search ? `?${search}` : ''}`;
+  const url = `${base}${path}${search ? `?${search}` : ''}`;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     const token = await getAppToken(partnerId);

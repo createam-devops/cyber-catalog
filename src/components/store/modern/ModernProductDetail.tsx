@@ -19,19 +19,23 @@ import ProductReviews from './ProductReviews';
 import Stars from './Stars';
 import { formatRating, type PublicReview } from '@/lib/storefront/reviews';
 import StoreProductCard, { ProductImage, canOptimizeImage } from './StoreProductCard';
+import VariantPicker, { focusMissingOption, useVariantChoice } from './VariantPicker';
 import { useStorefront } from '../StorefrontRoot';
 import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/storefront/public-store';
 import { categoryPath, type StoreProduct } from '@/lib/storefront/catalog';
+import { variantLineName } from '@/lib/storefront/variants';
 
 interface ModernProductDetailProps {
   product: StoreProduct;
   relatedProducts: StoreProduct[];
   /** Opiniones aprobadas por la tienda. */
   reviews?: PublicReview[];
+  /** Variante que trae la dirección (?variant= o una dirección vieja de variante suelta). */
+  initialVariantId?: string | null;
 }
 
-export default function ModernProductDetail({ product, relatedProducts, reviews = [] }: ModernProductDetailProps) {
+export default function ModernProductDetail({ product, relatedProducts, reviews = [], initialVariantId = null }: ModernProductDetailProps) {
   const router = useRouter();
   const { store, theme, categories } = useStorefront();
   const { cart, addToCart, removeFromCart, updateQuantity, getCartCount } = useCart();
@@ -40,6 +44,7 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
   const [quantity, setQuantity] = useState(1);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { content, layout } = theme;
+  const choice = useVariantChoice(product, layout.showStock, initialVariantId, true);
 
   useEffect(() => {
     setActiveImage(0);
@@ -51,14 +56,25 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
     }).catch(() => {});
   }, [product.id, store.id]);
 
-  const images = product.imageUrls;
+  // Elegido el color, sus fotos: la galería vuelve a la primera.
+  const images = choice.images;
+  const imagesKey = images.join('|');
+  useEffect(() => setActiveImage(0), [imagesKey]);
   const category = categories.find((c) => c.id === product.category);
   const categoryLabel = category?.label;
-  const tracksStock = layout.showStock && product.stock !== null;
-  const soldOut = tracksStock && (product.stock ?? 0) <= 0;
+  const tracksStock = layout.showStock && choice.stock !== null;
+  const soldOut = choice.soldOut;
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
+    if (!choice.cartLine) {
+      // Falta elegir talla, color…: se marca lo que falta en vez de pedir algo a medias.
+      if (choice.missing) {
+        choice.setPrompted(true);
+        focusMissingOption(choice.missing);
+      }
+      return;
+    }
+    addToCart(choice.cartLine, quantity);
     setIsCartOpen(true);
   };
 
@@ -134,11 +150,11 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
             <div className="relative aspect-square flex-1 rounded-sf-card overflow-hidden bg-sf-surface border border-sf-border">
               {images.length > 0 ? (
                 <Image
-                  src={images[activeImage]}
-                  alt={product.name}
+                  src={images[activeImage] ?? images[0]}
+                  alt={choice.variant ? variantLineName(product, choice.variant) : product.name}
                   fill
                   sizes="(max-width: 1024px) 100vw, 45vw"
-                  unoptimized={!canOptimizeImage(images[activeImage])}
+                  unoptimized={!canOptimizeImage(images[activeImage] ?? images[0])}
                   className="object-cover"
                   priority
                 />
@@ -180,18 +196,19 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
               </a>
             )}
 
-            <p className="flex items-baseline gap-3 mb-6">
-              <span className="text-3xl font-black">{formatPrice(product.price)}</span>
-              {product.compareAtPrice && (
+            <p className="flex items-baseline gap-3 mb-6" aria-live="polite">
+              {choice.fromPrice && <span className="text-base font-bold text-sf-muted">Desde</span>}
+              <span className="text-3xl font-black">{formatPrice(choice.price)}</span>
+              {choice.compareAtPrice && (
                 <span className="text-lg text-sf-muted line-through">
                   <span className="sr-only">Antes </span>
-                  {formatPrice(product.compareAtPrice)}
+                  {formatPrice(choice.compareAtPrice)}
                 </span>
               )}
             </p>
-            {product.compareAtPrice && product.saleEndsAt && (
+            {choice.compareAtPrice && choice.saleEndsAt && (
               <p className="-mt-3 mb-6 text-sm font-bold text-sf-primary">
-                La oferta termina en <Countdown endsAt={product.saleEndsAt} />
+                La oferta termina en <Countdown endsAt={choice.saleEndsAt} />
               </p>
             )}
 
@@ -200,6 +217,8 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
             )}
 
             <StorePromo variant="inline" />
+
+            <VariantPicker product={product} choice={choice} showStock={layout.showStock} />
 
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex items-center justify-between bg-sf-bg rounded-sf-btn px-4 py-3 sm:w-36 border border-sf-border">
@@ -238,7 +257,8 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
                     }`}
                   >
                     {soldOut ? <XCircle size={16} /> : <Check size={16} strokeWidth={3} />}
-                    {soldOut ? 'Sin stock por ahora' : `${product.stock} disponibles`}
+                    {/* Sin elegir la variante, la suma de todas confundiría: solo «Disponible». */}
+                    {soldOut ? 'Sin stock por ahora' : choice.withVariants && !choice.variant ? 'Disponible' : `${choice.stock} disponibles`}
                   </span>
                 )}
               </div>
@@ -272,7 +292,14 @@ export default function ModernProductDetail({ product, relatedProducts, reviews 
       <ModernFooter />
 
       {!isCartOpen && (
-        <StickyOrderBar name={product.name} price={product.price} label={soldOut ? 'Agotado' : content.addToCart} disabled={soldOut} onClick={handleAddToCart} />
+        <StickyOrderBar
+          name={choice.variant ? variantLineName(product, choice.variant) : product.name}
+          price={choice.price}
+          fromPrice={choice.fromPrice}
+          label={soldOut ? 'Agotado' : content.addToCart}
+          disabled={soldOut}
+          onClick={handleAddToCart}
+        />
       )}
     </>
   );
