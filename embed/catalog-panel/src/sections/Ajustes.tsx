@@ -7,6 +7,7 @@ import type { Api } from '../host';
 import type { Draft, HeroSlide, StoreResponse } from '../store';
 import { Button, Field, FluidGrid, Notice, Pill, Section } from '../ui';
 import { PreviewPanel, PreviewSheetButton } from '../Preview';
+import { CustomSiteNotice, Locked, LockedPill, siteHost } from './CustomSite';
 
 interface Props {
   data: StoreResponse;
@@ -37,6 +38,9 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
     setDraft((d) => (d ? { ...d, storefront: { ...d.storefront, verification: { ...d.storefront.verification, ...patch } } } : d));
   const setSlides = (heroSlides: HeroSlide[]) => set({ heroSlides });
   const maxSlides = data.limits.heroSlides;
+  // Web propia (p. ej. bellasorpresa.pe): muestra banners, WhatsApp y redes; el logo, la dirección y el SEO son de su diseño.
+  const customSite = data.customSite?.url ?? null;
+  const host = customSite ? siteHost(customSite) : '';
 
   const upload = async (file: File, kind: 'logo' | 'banner'): Promise<string | null> => {
     setUploadError('');
@@ -61,9 +65,22 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
 
   const editor = (
     <div className="min-w-0 space-y-3">
+      {customSite && (
+        <CustomSiteNotice url={customSite}>
+          Tus banners, tu WhatsApp y tus redes se ven en {host}. El logo, la dirección y cómo aparece en Google son parte de su diseño.
+        </CustomSiteNotice>
+      )}
       <Section title="Logo y portada" description="Lo primero que ve tu cliente.">
         {uploadError && <Notice tone="danger">{uploadError}</Notice>}
 
+        {customSite ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="cs-label !mb-0">Logo</p>
+            <LockedPill />
+            <p className="cs-hint !mt-0 w-full">En {host} se ve el logo de su diseño. Si quieres cambiarlo, escríbenos.</p>
+          </div>
+        ) : (
+        <>
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-cm-md border border-cm-line bg-white">
             {draft.logo ? <img src={draft.logo} alt="Logo" className="max-h-full max-w-full object-contain" /> : <span className="text-cm-caption text-cm-faint">Sin logo</span>}
@@ -99,6 +116,8 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
             ? 'Es el logo de tu negocio en CyberPOS. Se cambia en Ajustes › Negocio.'
             : 'PNG con fondo transparente se ve mejor. La reducimos antes de subirla.'}
         </p>
+        </>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
@@ -109,7 +128,11 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
               </span>
             </p>
           </div>
-          {draft.heroSlides.length === 0 && <p className="text-cm-label text-cm-muted">Sin banners, la portada usa el color de tu marca con los textos de tu rubro.</p>}
+          {draft.heroSlides.length === 0 && (
+            <p className="text-cm-label text-cm-muted">
+              {customSite ? `Sin banners, ${host} muestra los de su diseño.` : 'Sin banners, la portada usa el color de tu marca con los textos de tu rubro.'}
+            </p>
+          )}
           <FluidGrid min="18rem">
             {draft.heroSlides.map((slide, index) => (
               <div key={slide.id} className="space-y-2 rounded-cm-md border border-cm-line bg-cm-field p-3">
@@ -166,7 +189,10 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
               Llegaste al máximo de tu plan. {maxSlides === 1 && <Pill tone="pro">Pro: hasta 10</Pill>}
             </p>
           )}
-          <p className="cs-hint !mt-0">Mejor horizontal, 1600 px de ancho o más, con lo importante al centro.</p>
+          <p className="cs-hint !mt-0">
+            Mejor horizontal, 1600 px de ancho o más, con lo importante al centro.
+            {customSite && ` Se ven en el carrusel de la portada de ${host}; el botón lleva a tus productos.`}
+          </p>
         </div>
       </Section>
 
@@ -217,6 +243,7 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
         </FluidGrid>
       </Section>
 
+      <Locked locked={Boolean(customSite)}>
       <Section title="Nombre y dirección" description="Cómo se llama tu tienda y dónde la encuentran.">
         <FluidGrid min="18rem">
           <Field
@@ -316,8 +343,12 @@ export default function Ajustes({ data, draft, setDraft, canManage, api, preview
           </Field>
         </FluidGrid>
       </Section>
+      </Locked>
     </div>
   );
+
+  // Sin vista previa para una web propia: mostraría la plantilla de la plataforma, no su web.
+  if (customSite) return editor;
 
   // Con espacio, la vista previa al lado: mide lo que el teléfono y el editor toma el resto. Si no, va en un botón.
   return (

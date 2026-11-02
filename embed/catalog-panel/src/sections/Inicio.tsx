@@ -7,6 +7,7 @@ import type { Draft, StatsResponse, StoreResponse } from '../store';
 import type { Section } from '../App';
 import { Button, FluidGrid, Pill } from '../ui';
 import Opiniones from './Opiniones';
+import { CustomSiteNotice, siteHost } from './CustomSite';
 
 interface Props {
   data: StoreResponse;
@@ -43,12 +44,14 @@ export default function Inicio({ data, draft, api, goTo, canManage }: Props) {
     }
   };
 
+  // Web propia (p. ej. bellasorpresa.pe): el rubro, el estilo y el logo ya son parte de su diseño.
+  const customSite = data.customSite?.url ?? null;
   const steps = [
-    { done: Boolean(draft.storefront.rubro), title: 'Elige tu rubro y tu estilo', detail: draft.storefront.rubro ? RUBROS[draft.storefront.rubro].label : 'Define los textos y la forma de tu tienda', action: () => goTo('diseno') },
+    { done: Boolean(draft.storefront.rubro), title: 'Elige tu rubro y tu estilo', detail: draft.storefront.rubro ? RUBROS[draft.storefront.rubro].label : 'Define los textos y la forma de tu tienda', action: () => goTo('diseno'), design: true },
     { done: Boolean(normalizeWhatsapp(draft.whatsapp)), title: 'Agrega tu WhatsApp', detail: 'Ahí te llegan los pedidos', action: () => goTo('ajustes') },
-    { done: Boolean(draft.logo || draft.heroSlides.length), title: 'Sube tu logo o una portada', detail: 'Tu marca en la parte de arriba', action: () => goTo('ajustes') },
+    { done: Boolean(draft.logo || draft.heroSlides.length), title: 'Sube tu logo o una portada', detail: 'Tu marca en la parte de arriba', action: () => goTo('ajustes'), design: true },
     { done: (stats?.products ?? 0) > 0, title: 'Publica tus productos', detail: 'En Venta online eliges qué se ve en la tienda', action: toSalesOnline },
-  ];
+  ].filter((step) => !(customSite && step.design));
   const doneCount = steps.filter((s) => s.done).length;
 
   return (
@@ -88,6 +91,13 @@ export default function Inicio({ data, draft, api, goTo, canManage }: Props) {
           </>
         )}
       </section>
+
+      {customSite && (
+        <CustomSiteNotice url={customSite}>
+          {siteHost(customSite)} se hizo a medida. Desde aquí cambias tus banners, tu WhatsApp, tus redes, el aviso de oferta y las opiniones; tus productos,
+          precios, ofertas y variantes, en Venta online. El logo, los colores y los textos son parte de su diseño: si quieres cambiarlos, escríbenos.
+        </CustomSiteNotice>
+      )}
 
       {/* Números */}
       <FluidGrid min="12rem">

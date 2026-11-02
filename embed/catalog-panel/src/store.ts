@@ -34,6 +34,12 @@ export interface StoreResponse {
   fromErp?: { name: boolean; logo: boolean; whatsapp: boolean };
   store: StoreSnapshot;
   storeUrl: string | null;
+  /**
+   * Tienda con web propia hecha a medida (p. ej. bellasorpresa.pe): esa web
+   * muestra sus banners, WhatsApp, redes y aviso de oferta; lo demás es parte
+   * de su diseño y el editor lo muestra bloqueado.
+   */
+  customSite?: { url: string } | null;
   /** /vista-previa en el dominio del catálogo (va en un iframe, no por el proxy del ERP). */
   previewUrl: string;
   platformDomain: string;

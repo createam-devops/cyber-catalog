@@ -58,6 +58,12 @@ export interface TenantConfig {
   // Diseño de la vitrina: rubro, estilo y lo que la tienda personalizó (ver lib/storefront)
   storefront?: StorefrontSettings | null;
 
+  // Tienda con una web propia hecha a medida (p. ej. bellasorpresa.pe, que se publica
+  // aparte). Esa web toma de /api/storefront/catalog sus productos, banners, redes,
+  // WhatsApp y el aviso de oferta; el editor bloquea lo demás. Lo marca Createam
+  // (scripts/web-propia.cjs), nunca el editor.
+  customSite?: { url: string } | null;
+
   // Negocio del ERP del que salen sus productos. Sin esto, la tienda lee su Firebase.
   // `api`: servidor del ERP en el que se enlazó (ver linkedToCurrentErp).
   erp?: { partnerId: number; api?: string | null } | null;

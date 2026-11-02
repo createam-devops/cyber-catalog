@@ -4,7 +4,7 @@
 
 import { FieldValue } from 'firebase-admin/firestore';
 import { getCentralAdminDb } from './central-admin';
-import { isLocalStore, isUniqueViolation, updateLocalStore } from './store-db';
+import { findLocalStore, isLocalStore, isUniqueViolation, updateLocalStore } from './store-db';
 import { getTenantPlanInfo } from './tenant-plan';
 import { logTenantAdminEvent } from './tenant-audit';
 import { listDevStores } from './storefront-data';
@@ -69,6 +69,11 @@ export async function applyTenantSettingsPatch(
       storefront.layout = { ...storefront.layout, showStock: false };
     }
     set('storefront', storefront);
+  }
+
+  // Una web propia lee su catálogo por su dominio: cambiarlo la dejaría sin productos.
+  if ((payload.subdomain !== undefined || payload.domain !== undefined) && isLocalStore(tenantId) && findLocalStore(tenantId)?.customSite?.url) {
+    return fail(409, 'Tu tienda tiene un diseño personalizado: su dirección no se cambia desde aquí. Escríbenos si necesitas cambiarla.');
   }
 
   // Dirección de la tienda: libre, y nunca la de otra tienda ni la de un servicio de Createam.

@@ -12,6 +12,7 @@ import type { Draft, StoreResponse } from '../store';
 import { Collapsible, Field, FluidGrid, Notice, Pill, Section, Segmented } from '../ui';
 import { PreviewPanel, PreviewSheetButton } from '../Preview';
 import { BenefitsEditor, FaqEditor, PromoEditor } from './Extras';
+import { CustomSiteNotice, Locked, siteHost } from './CustomSite';
 
 interface Props {
   data: StoreResponse;
@@ -78,8 +79,11 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
   const primary = draft.colors.primary;
   const lowContrast = isHexColor(primary) && contrastRatio(primary, theme.colors.background) < 1.6;
 
-  const editor = (
-    <div className="min-w-0 space-y-3">
+  // Web propia (p. ej. bellasorpresa.pe): solo el aviso de oferta llega a su web; lo demás es parte de su diseño.
+  const customSite = data.customSite?.url ?? null;
+
+  const design = (
+    <>
       <Section title="Rubro" description="Con esto preparamos los textos y las categorías sugeridas.">
         <FluidGrid min="17rem" className="gap-2">
           {RUBRO_IDS.map((id) => {
@@ -328,10 +332,38 @@ export default function Diseno({ draft, setDraft, canManage, data, preview, prev
           })}
         </FluidGrid>
       </Collapsible>
-
-      <PromoEditor settings={s} update={update} disabled={disabled} />
+    </>
+  );
+  const promo = <PromoEditor settings={s} update={update} disabled={disabled} />;
+  const extras = (
+    <>
       <BenefitsEditor settings={s} theme={theme} rubro={rubro.id} update={update} disabled={disabled} />
       <FaqEditor settings={s} theme={theme} rubro={rubro.id} update={update} disabled={disabled} />
+    </>
+  );
+
+  if (customSite) {
+    // Sin vista previa: mostraría la plantilla de la plataforma, no su web.
+    return (
+      <div className="min-w-0 space-y-3">
+        <CustomSiteNotice url={customSite}>
+          Los colores, letras, portada, textos, beneficios y preguntas frecuentes de {siteHost(customSite)} son parte de su diseño. Desde aquí cambias el
+          aviso de oferta, que se ve arriba de tus productos.
+        </CustomSiteNotice>
+        {promo}
+        <Locked locked>
+          {design}
+          {extras}
+        </Locked>
+      </div>
+    );
+  }
+
+  const editor = (
+    <div className="min-w-0 space-y-3">
+      {design}
+      {promo}
+      {extras}
     </div>
   );
 
