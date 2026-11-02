@@ -9,6 +9,7 @@ import { getStorefrontIcon } from '@/lib/storefront/icons';
 import { formatPrice } from '@/lib/storefront/public-store';
 import { productPath, type StoreProduct } from '@/lib/storefront/catalog';
 import { formatRating } from '@/lib/storefront/reviews';
+import { cardSwatches, hasVariants } from '@/lib/storefront/variants';
 import Stars from './Stars';
 import type { CardStyle } from '@/lib/storefront/presets';
 
@@ -103,6 +104,9 @@ export default function StoreProductCard({
   const discount = product.compareAtPrice ? Math.round((1 - product.price / product.compareAtPrice) * 100) : 0;
 
   const href = productPath(product);
+  // Con variantes se elige talla o color en la ficha: el «+» lleva ahí.
+  const choose = hasVariants(product) && (product.variants?.length ?? 0) > 1;
+  const swatches = choose ? cardSwatches(product) : { colors: [], more: 0 };
 
   return (
     <div className="group relative">
@@ -124,7 +128,17 @@ export default function StoreProductCard({
             {fewLeft && <span className="bg-white/90 text-gray-900 px-2 py-0.5 rounded text-[10px] font-bold">Quedan {product.stock}</span>}
           </div>
         )}
-        {onAddToCart && !soldOut && (
+        {onAddToCart && !soldOut && choose && !preview && (
+          <Link
+            href={href}
+            prefetch={false}
+            aria-label={`Elegir opciones: ${product.name}`}
+            className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-sf-bg text-sf-primary shadow-lg flex items-center justify-center hover:bg-sf-primary hover:text-sf-on-primary active:scale-95 transition-all z-20"
+          >
+            <Plus size={20} strokeWidth={3} />
+          </Link>
+        )}
+        {onAddToCart && !soldOut && !choose && (
           <button
             type="button"
             onClick={() => onAddToCart(product)}
@@ -140,6 +154,7 @@ export default function StoreProductCard({
         {categoryLabel && <p className="mb-1 truncate text-[11px] uppercase tracking-wider text-sf-muted">{categoryLabel}</p>}
         <h3 className="font-sf-body text-sm font-medium leading-snug line-clamp-2 group-hover:text-sf-primary transition-colors">{product.name}</h3>
         <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2">
+          {product.priceMax !== undefined && product.priceMax > product.price && <span className="text-xs text-sf-muted">Desde</span>}
           <span className="text-base font-bold">{formatPrice(product.price)}</span>
           {product.compareAtPrice && (
             <span className="text-xs text-sf-muted line-through">
@@ -148,6 +163,21 @@ export default function StoreProductCard({
             </span>
           )}
         </p>
+        {swatches.colors.length > 0 && (
+          <p className="mt-1.5 flex items-center gap-1">
+            <span className="sr-only">{`Viene en ${swatches.colors.map((c) => c.label).join(', ')}${swatches.more ? ` y ${swatches.more} más` : ''}`}</span>
+            {swatches.colors.map((c) =>
+              c.color ? (
+                <span key={c.label} aria-hidden="true" title={c.label} className="h-3.5 w-3.5 rounded-full border border-black/30" style={{ backgroundColor: c.color }} />
+              ) : (
+                <span key={c.label} aria-hidden="true" title={c.label} className="relative h-3.5 w-3.5 overflow-hidden rounded-full border border-black/15 bg-sf-surface">
+                  {c.imageUrl && <Image src={c.imageUrl} alt="" fill sizes="14px" unoptimized={!canOptimizeImage(c.imageUrl)} className="object-cover" />}
+                </span>
+              )
+            )}
+            {swatches.more > 0 && <span aria-hidden="true" className="text-[11px] text-sf-muted">+{swatches.more}</span>}
+          </p>
+        )}
         {product.rating && product.rating.count > 0 && (
           <p className="mt-1 flex items-center gap-1 text-[11px]">
             <Stars value={product.rating.average} size={12} />

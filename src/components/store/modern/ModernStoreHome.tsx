@@ -12,11 +12,10 @@ import StoreFaq from './StoreFaq';
 import StorePromo from './StorePromo';
 import SpotlightHero from './SpotlightHero';
 import HowToOrder from './HowToOrder';
-import StickyOrderBar from './StickyOrderBar';
 import { CONTAINER } from './layout';
 import Link from 'next/link';
 import { useStorefront } from '../StorefrontRoot';
-import { useCart } from '@/contexts/CartContext';
+import { useCart, type CartProduct } from '@/contexts/CartContext';
 import { filterProducts, type CatalogPage, type StoreProduct } from '@/lib/storefront/catalog';
 
 interface ModernStoreHomeProps {
@@ -133,7 +132,7 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
     setTimeout(() => document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
 
-  const handleAddProduct = (product: StoreProduct) => {
+  const handleAddProduct = (product: CartProduct) => {
     addToCart(product, 1);
     setIsCartOpen(true);
   };
@@ -143,7 +142,6 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
     theme.layout.home === 'spotlight' && !category && !searchQuery.trim()
       ? initialProducts.find((p) => p.id === theme.layout.spotlightProductId) ?? initialProducts.find((p) => p.featured) ?? initialProducts[0]
       : undefined;
-  const starSoldOut = Boolean(star && theme.layout.showStock && star.stock !== null && star.stock <= 0);
   const plain = Boolean(category || star);
 
   return (
@@ -177,7 +175,7 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
           </p>
         </header>
       ) : star ? (
-        <SpotlightHero product={star} onAddToCart={handleAddProduct} />
+        <SpotlightHero product={star} onAddToCart={handleAddProduct} stickyBar={!isCartOpen} />
       ) : (
         <>
           {theme.layout.hero === 'none' && <div className="h-32 md:h-28" />}
@@ -226,15 +224,6 @@ export default function ModernStoreHome({ initialProducts, total, domain, initia
 
       <ModernFooter />
 
-      {star && !isCartOpen && (
-        <StickyOrderBar
-          name={star.name}
-          price={star.price}
-          label={starSoldOut ? 'Agotado' : theme.content.addToCart}
-          disabled={starSoldOut}
-          onClick={() => handleAddProduct(star)}
-        />
-      )}
     </>
   );
 }

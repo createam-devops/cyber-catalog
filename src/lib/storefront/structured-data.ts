@@ -9,6 +9,7 @@ import { normalizeWhatsapp, socialUrl, type StoreCategory } from './public-store
 import { RUBROS } from './rubros';
 import type { ResolvedStorefront, StoreFaq } from './theme';
 import type { PublicReview } from './reviews';
+import { hasVariants, schemaAttribute, selectionImages, variantAttributes, variantLineName } from './variants';
 
 /** URL absoluta: las imágenes guardadas en el catálogo son relativas (/media/...). */
 export function absoluteUrl(url: string | null | undefined, origin: string): string | undefined {
@@ -128,16 +129,63 @@ export function faqJsonLd(faq: StoreFaq[]) {
   };
 }
 
+/** La oferta de un producto o de una variante. */
+function offerJsonLd(item: Pick<StoreProduct, 'price' | 'saleEndsAt' | 'stock'>, url: string, origin: string) {
+  return {
+    '@type': 'Offer',
+    url,
+    priceCurrency: 'PEN',
+    price: item.price.toFixed(2),
+    // Oferta con fecha: Google muestra hasta cuándo vale el precio.
+    ...(item.saleEndsAt ? { priceValidUntil: item.saleEndsAt.slice(0, 10) } : {}),
+    // Sin control de stock, la tienda lo vende: disponible. Con stock en cero, agotado.
+    availability: item.stock !== null && item.stock <= 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+    itemCondition: 'https://schema.org/NewCondition',
+    seller: { '@id': storeId(origin) },
+  };
+}
+
+/**
+ * Con variantes (talla, color…), un `ProductGroup` con cada variante como
+ * `Product` con su precio, su stock y sus valores: así Google entiende que es un
+ * solo producto en varias tallas o colores.
+ */
+function variantsJsonLd(product: StoreProduct, url: string, origin: string) {
+  const options = product.options ?? [];
+  const variesBy = Array.from(new Set(options.map((o) => schemaAttribute(o.name)).filter(Boolean))).map((a) => `https://schema.org/${a}`);
+  return {
+    productGroupID: product.id,
+    ...(variesBy.length ? { variesBy } : {}),
+    hasVariant: (product.variants ?? []).map((variant) => {
+      const variantUrl = `${url}?variant=${encodeURIComponent(variant.id)}`;
+      const attributes = variantAttributes(options, variant);
+      const images = selectionImages(product, variant.values).map((image) => absoluteUrl(image, origin)).filter(Boolean);
+      const free = attributes.filter((a) => !a.attribute);
+      return {
+        '@type': 'Product',
+        name: variantLineName(product, variant),
+        sku: variant.sku || variant.id,
+        url: variantUrl,
+        ...(images.length ? { image: images } : {}),
+        ...Object.fromEntries(attributes.filter((a) => a.attribute).map((a) => [a.attribute, a.value])),
+        ...(free.length ? { additionalProperty: free.map((a) => ({ '@type': 'PropertyValue', name: a.name, value: a.value })) } : {}),
+        offers: offerJsonLd(variant, variantUrl, origin),
+      };
+    }),
+  };
+}
+
 /** `reviews`: las opiniones aprobadas que se ven en la ficha (Google exige que estén a la vista). */
 export function productJsonLd(product: StoreProduct, tenant: TenantConfig, origin: string, categoryLabel?: string, reviews: PublicReview[] = []) {
   const url = `${origin}${productPath(product)}`;
   const images = product.imageUrls.map((image) => absoluteUrl(image, origin)).filter(Boolean);
+  const grouped = hasVariants(product);
   return {
     '@context': 'https://schema.org',
-    '@type': 'Product',
+    '@type': grouped ? 'ProductGroup' : 'Product',
     name: product.name,
     url,
-    sku: product.id,
+    ...(grouped ? {} : { sku: product.id }),
     brand: { '@type': 'Brand', name: tenant.name },
     ...(product.description?.trim() ? { description: product.description.trim().slice(0, 5000) } : {}),
     ...(images.length ? { image: images } : {}),
@@ -164,18 +212,7 @@ export function productJsonLd(product: StoreProduct, tenant: TenantConfig, origi
           })),
         }
       : {}),
-    offers: {
-      '@type': 'Offer',
-      url,
-      priceCurrency: 'PEN',
-      price: product.price.toFixed(2),
-      // Oferta con fecha: Google muestra hasta cuándo vale el precio.
-      ...(product.saleEndsAt ? { priceValidUntil: product.saleEndsAt.slice(0, 10) } : {}),
-      // Sin control de stock, la tienda lo vende: disponible. Con stock en cero, agotado.
-      availability: product.stock !== null && product.stock <= 0 ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
-      itemCondition: 'https://schema.org/NewCondition',
-      seller: { '@id': storeId(origin) },
-    },
+    ...(grouped ? variantsJsonLd(product, url, origin) : { offers: offerJsonLd(product, url, origin) }),
   };
 }
 

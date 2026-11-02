@@ -7,7 +7,7 @@ import StoreUnavailable from "@/components/store/StoreUnavailable";
 import { findStoreByDomain, getStoreCatalog, storeAdminUrl, storefrontAvailability } from "@/lib/server/storefront-data";
 import { isAppNotEnabled } from "@/lib/server/erp/client";
 import { formatPrice, toPublicStore } from "@/lib/storefront/public-store";
-import { categoryPath, findProductByParam, productPath, type StoreCatalog, type StoreProduct } from "@/lib/storefront/catalog";
+import { categoryPath, findProductByParam, productPath, variantIdFromParam, type StoreCatalog, type StoreProduct } from "@/lib/storefront/catalog";
 import { absoluteUrl, breadcrumbJsonLd, jsonLdHtml, productJsonLd } from "@/lib/storefront/structured-data";
 import { publicReviews, withRatings } from "@/lib/server/reviews";
 
@@ -15,7 +15,8 @@ export const dynamic = 'force-dynamic';
 
 interface StoreProductPageProps {
   params: { id: string };
-  searchParams: { _domain?: string };
+  /** `variant`: la variante elegida (enlace compartido o dirección vieja de una variante suelta). */
+  searchParams: { _domain?: string; variant?: string };
 }
 
 /** Hasta 4 productos de la misma categoría; si no alcanzan, se completa con los más nuevos. */
@@ -55,9 +56,12 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
   if (!catalog || !product) {
     return notFound();
   }
-  // Entró por el número o por otra forma del slug: a su dirección única (301 para Google).
+  // La variante elegida: la de ?variant= o la de una dirección vieja de variante suelta («polo-rojo-m-123»).
+  const requestedVariant = searchParams.variant ?? variantIdFromParam(product, decodeURIComponent(params.id));
+  const initialVariantId = product.variants?.some((v) => v.id === requestedVariant) ? requestedVariant : null;
+  // Entró por el número o por otra forma del slug: a su dirección única (301 para Google), sin perder la variante.
   if (productPath(product) !== `/product/${encodeURIComponent(params.id)}`) {
-    permanentRedirect(productPath(product));
+    permanentRedirect(initialVariantId ? `${productPath(product)}?variant=${encodeURIComponent(initialVariantId)}` : productPath(product));
   }
 
   const origin = `https://${searchParams._domain}`;
@@ -79,7 +83,7 @@ export default async function StoreProductPage({ params, searchParams }: StorePr
         <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(data) }} />
       ))}
       <CartProviderWrapper storeId={tenant.id}>
-        <ModernProductDetail product={rated} relatedProducts={related} reviews={reviews} />
+        <ModernProductDetail product={rated} relatedProducts={related} reviews={reviews} initialVariantId={initialVariantId} />
       </CartProviderWrapper>
     </StorefrontRoot>
   );
