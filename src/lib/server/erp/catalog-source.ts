@@ -9,8 +9,10 @@ import { guessCategoryIcon } from '@/lib/storefront/category-icons';
 import { labelFromValues } from '@/lib/storefront/variants';
 import { ErpError, erpGet } from './client';
 
-/** Tope de productos por tienda (5 páginas de 100). */
-const MAX_PAGES = 5;
+/** Tope de entradas por tienda: productos sueltos más fichas. */
+const MAX_ENTRIES = 500;
+/** Freno por si el ERP devolviera cursores sin fin. */
+const MAX_PAGES = 50;
 
 interface ErpImage {
   url?: string;
@@ -228,10 +230,17 @@ export function toStoreCategories(
     .map(({ c }) => ({ id: String(c.id), label: c.name, icon: icons[String(c.id)] ?? guessCategoryIcon(c.name) }));
 }
 
-/** Todas las páginas de productos del ERP (hasta MAX_PAGES). */
+/**
+ * Todas las páginas de productos del ERP, hasta MAX_ENTRIES. Se sigue
+ * `next_cursor` hasta que venga vacío: en la v2 una página puede traer menos
+ * de page_size entradas aunque haya más, porque el ERP la corta al pasar de
+ * 500 variantes.
+ */
 async function loadAllPages<T>(partnerId: number, version: 1 | 2): Promise<T[]> {
   const items: T[] = [];
+  const seen = new Set<string>();
   let cursor: string | undefined;
+  let complete = false;
   for (let page = 0; page < MAX_PAGES; page++) {
     const res = await erpGet<{ items?: T[]; next_cursor?: string }>(
       partnerId,
@@ -240,10 +249,21 @@ async function loadAllPages<T>(partnerId: number, version: 1 | 2): Promise<T[]> 
       version
     );
     items.push(...(res.items ?? []));
-    if (!res.next_cursor) break;
-    cursor = res.next_cursor;
+    const next = res.next_cursor;
+    if (!next) {
+      complete = true;
+      break;
+    }
+    if (items.length >= MAX_ENTRIES || seen.has(next)) break;
+    seen.add(next);
+    cursor = next;
   }
-  return items;
+  if (!complete || items.length > MAX_ENTRIES) {
+    console.warn(
+      `[erp] catálogo del negocio ${partnerId} incompleto: se muestran ${Math.min(items.length, MAX_ENTRIES)} entradas (API v${version})`
+    );
+  }
+  return items.slice(0, MAX_ENTRIES);
 }
 
 // Un ERP sin la v2 (antes de su promoción) responde 404: se usa la v1 y se
