@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
       seoTitle: tenant.seoTitle ?? '',
       seoDescription: tenant.seoDescription ?? '',
     },
-    storeUrl: address ? `https://${address}` : null,
+    storeUrl: tenant.customSite?.url || (address ? `https://${address}` : null),
+    // Web propia: el editor bloquea lo que esa web no muestra (ver TenantConfig.customSite).
+    customSite: tenant.customSite?.url ? { url: tenant.customSite.url } : null,
     previewUrl: `${base}/vista-previa`,
     platformDomain: platformDomain(),
     planName: entitlements.planName,

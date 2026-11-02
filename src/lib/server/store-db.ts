@@ -135,7 +135,7 @@ async function backupToday(db: Db, dir: string) {
 
 /** Lo que cada tienda personaliza. `name`, `logo` y `whatsapp` son de respaldo: valen los del ERP. */
 export type StoreSettings = Partial<
-  Pick<TenantConfig, 'name' | 'logo' | 'whatsapp' | 'primaryColor' | 'colors' | 'heroSlides' | 'socialMedia' | 'seoTitle' | 'seoDescription' | 'storefront'>
+  Pick<TenantConfig, 'name' | 'logo' | 'whatsapp' | 'primaryColor' | 'colors' | 'heroSlides' | 'socialMedia' | 'seoTitle' | 'seoDescription' | 'storefront' | 'customSite'>
 >;
 
 interface StoreRow {
