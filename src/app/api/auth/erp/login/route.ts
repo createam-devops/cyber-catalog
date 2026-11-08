@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     );
   }
   if (!erpLoginEnabled()) {
-    return NextResponse.json({ error: 'El ingreso con CyberPOS no está disponible.' }, { status: 503 });
+    return NextResponse.json({ error: 'El ingreso con el ERP no está disponible.' }, { status: 503 });
   }
 
   const body = (await request.json().catch(() => ({}))) as { email?: unknown; password?: unknown };
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   const { claims } = result;
   if (!isStoreManagerRole(claims.role)) {
     return NextResponse.json(
-      { error: 'Tu usuario de CyberPOS no administra el negocio. Pide acceso a quien lo administra.' },
+      { error: 'Tu usuario del ERP no administra el negocio. Pide acceso a quien lo administra.' },
       { status: 403 }
     );
   }

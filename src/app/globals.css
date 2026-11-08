@@ -92,3 +92,58 @@
     }
   }
 }
+
+/*
+ * Identidad del sitio de Createam (portada, productos, rubros, módulos, legales).
+ * Dos paletas: azul marino (por defecto) y verde petróleo, las dos con el
+ * amarillo sol de acento. Se cambia con data-palette en el marco del sitio
+ * (src/components/site/SiteShell.tsx). Tailwind las usa como colores `site-*`.
+ */
+.site-theme {
+  --c-ink: #13284A;
+  --c-ink-deep: #0D1D38;
+  --c-ink-raise: #1B3560;
+  --c-ink-line: #2B4673;
+  --c-on-ink: #A8C8EA;
+  --c-on-ink-muted: #C8D6EA;
+  --c-on-ink-faint: #5E7AA5;
+  --c-bg: #F5F8FC;
+  --c-surface: #FFFFFF;
+  --c-line: #DCE5F0;
+  --c-line-strong: #C3D3E8;
+  --c-text: #13284A;
+  --c-text-muted: #45526B;
+  --c-text-faint: #5F6C86;
+  --c-soft: #E8F0FA;
+  --c-soft-line: #C6D9EF;
+  --c-accent: #FFC61A;
+  --c-accent-hover: #FFD34F;
+  --c-on-accent: #13284A;
+  /* Esferas 3D: luz, medio, cuerpo y sombra */
+  --c-orb-1: #FFFFFF;
+  --c-orb-2: #DCE9F7;
+  --c-orb-3: #A8C8EA;
+  --c-orb-4: #557AAD;
+}
+.site-theme[data-palette="petroleo"] {
+  --c-ink: #0E4A52;
+  --c-ink-deep: #0A363C;
+  --c-ink-raise: #145A63;
+  --c-ink-line: #24686F;
+  --c-on-ink: #F3E6CF;
+  --c-on-ink-muted: #D5E3E0;
+  --c-on-ink-faint: #5F9197;
+  --c-bg: #F7F5EF;
+  --c-line: #E3E1D6;
+  --c-line-strong: #CFD2C6;
+  --c-text: #0E3A40;
+  --c-text-muted: #455F5E;
+  --c-text-faint: #5E7573;
+  --c-soft: #E7F0EE;
+  --c-soft-line: #C3DAD6;
+  --c-on-accent: #0E3A40;
+  --c-orb-1: #FFFFFF;
+  --c-orb-2: #FBF3E4;
+  --c-orb-3: #F3E6CF;
+  --c-orb-4: #BFA57A;
+}

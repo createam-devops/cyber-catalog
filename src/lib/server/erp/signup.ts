@@ -70,7 +70,7 @@ export async function createErpPartner(input: { businessName: string; ownerName:
     });
   } catch (error) {
     console.error('[erp/signup] El ERP no respondió:', error);
-    return { ok: false, status: 503, code: 'ERP_UNAVAILABLE', error: 'No pudimos comunicarnos con CyberPOS. Inténtalo en unos minutos.' };
+    return { ok: false, status: 503, code: 'ERP_UNAVAILABLE', error: 'No pudimos comunicarnos con el ERP. Inténtalo en unos minutos.' };
   }
 
   const body = (await res.json().catch(() => ({}))) as { partner_id?: number; code?: string; error?: string };
@@ -78,7 +78,7 @@ export async function createErpPartner(input: { businessName: string; ownerName:
 
   switch (body.code) {
     case 'EMAIL_ALREADY_REGISTERED':
-      return { ok: false, status: 409, code: body.code, error: 'Ese correo ya tiene una cuenta en CyberPOS. Entra con ella.' };
+      return { ok: false, status: 409, code: body.code, error: 'Ese correo ya tiene una cuenta en el ERP. Entra con ella.' };
     case 'WEAK_PASSWORD':
       return { ok: false, status: 400, code: body.code, error: ERP_PASSWORD_RULE };
     case 'PLAN_NOT_FOUND':
@@ -91,5 +91,5 @@ export async function createErpPartner(input: { businessName: string; ownerName:
   if (res.status === 429) return { ok: false, status: 429, code: 'RATE_LIMITED', error: 'Demasiados intentos. Espera un momento y vuelve a intentarlo.' };
   if (res.status === 400) return { ok: false, status: 400, code: 'INVALID', error: body.error || 'Revisa los datos del formulario.' };
   console.error('[erp/signup] Respuesta inesperada del ERP:', res.status, body.code);
-  return { ok: false, status: 503, code: 'ERP_ERROR', error: 'CyberPOS no pudo crear tu cuenta. Inténtalo en unos minutos.' };
+  return { ok: false, status: 503, code: 'ERP_ERROR', error: 'El ERP no pudo crear tu cuenta. Inténtalo en unos minutos.' };
 }

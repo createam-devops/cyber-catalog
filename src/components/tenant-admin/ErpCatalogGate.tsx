@@ -7,7 +7,7 @@ import type { TenantConfig } from '@/lib/types';
 
 /**
  * Productos y categorías de una tienda conectada al ERP se administran en
- * CyberPOS: el ERP todavía no tiene la escritura desde el catálogo (su
+ * ERP: el ERP todavía no tiene la escritura desde el catálogo (su
  * Bloque 2). Para las demás tiendas muestra la pantalla de siempre.
  */
 export default function ErpCatalogGate({ what, children }: { what: 'productos' | 'categorías'; children: ReactNode }) {
@@ -37,9 +37,9 @@ export default function ErpCatalogGate({ what, children }: { what: 'productos' |
     <div className="max-w-2xl mx-auto p-6 md:p-10">
       <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100 text-center">
         <PackageCheck className="mx-auto mb-4 text-gray-900" size={40} />
-        <h1 className="text-2xl font-black text-gray-900 mb-2">Tus {what} se administran en CyberPOS</h1>
+        <h1 className="text-2xl font-black text-gray-900 mb-2">Tus {what} se administran en el ERP</h1>
         <p className="text-gray-500 mb-6">
-          Tu tienda muestra los productos que agregas al catálogo en CyberPOS, en el módulo <strong>Venta online</strong>.
+          Tu tienda muestra los productos que agregas al catálogo en el ERP, en el módulo <strong>Venta online</strong>.
           Allí también eliges los destacados, el orden y el precio «antes». Los cambios se ven en tu tienda en menos de
           un minuto.
         </p>

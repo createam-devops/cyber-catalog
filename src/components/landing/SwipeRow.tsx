@@ -54,7 +54,7 @@ function Arrow({ side, visible, onClick }: { side: "prev" | "next"; visible: boo
       aria-label={side === "prev" ? "Ver anteriores" : "Ver más"}
       aria-hidden={!visible}
       tabIndex={visible ? 0 : -1}
-      className={`absolute top-[40%] z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-[#DDE4F0] bg-white text-[#0B1B3A] shadow-[0_6px_20px_rgba(11,27,58,0.16)] transition-opacity hover:bg-[#F6F8FC] md:grid ${
+      className={`absolute top-[40%] z-10 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-site-line bg-white text-site-ink shadow-[0_6px_20px_rgba(11,27,58,0.16)] transition-opacity hover:bg-site-bg md:grid ${
         side === "prev" ? "left-2" : "right-2"
       } ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
     >

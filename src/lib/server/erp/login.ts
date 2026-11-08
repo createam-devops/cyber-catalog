@@ -13,7 +13,7 @@ export type ErpLoginResult =
 export async function erpLogin(email: string, password: string): Promise<ErpLoginResult> {
   const config = getErpConfig();
   if (!config) {
-    return { ok: false, status: 503, error: 'El ingreso con CyberPOS no está disponible.' };
+    return { ok: false, status: 503, error: 'El ingreso con el ERP no está disponible.' };
   }
 
   let res: Response;
@@ -26,7 +26,7 @@ export async function erpLogin(email: string, password: string): Promise<ErpLogi
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
-    return { ok: false, status: 503, error: 'No pudimos comunicarnos con CyberPOS. Inténtalo en unos minutos.' };
+    return { ok: false, status: 503, error: 'No pudimos comunicarnos con el ERP. Inténtalo en unos minutos.' };
   }
 
   const body = (await res.json().catch(() => ({}))) as {
@@ -45,7 +45,7 @@ export async function erpLogin(email: string, password: string): Promise<ErpLogi
   }
   const accessToken = body.tokens?.access_token;
   if (!res.ok || !accessToken) {
-    return { ok: false, status: 503, error: 'CyberPOS no respondió como esperábamos. Inténtalo en unos minutos.' };
+    return { ok: false, status: 503, error: 'El ERP no respondió como esperábamos. Inténtalo en unos minutos.' };
   }
 
   try {
@@ -53,7 +53,7 @@ export async function erpLogin(email: string, password: string): Promise<ErpLogi
     return { ok: true, claims, name: body.user?.name?.trim() || '' };
   } catch (error) {
     console.error('[erp/login] Token del ERP rechazado:', error);
-    return { ok: false, status: 503, error: 'No pudimos validar tu sesión de CyberPOS.' };
+    return { ok: false, status: 503, error: 'No pudimos validar tu sesión del ERP.' };
   }
 }
 

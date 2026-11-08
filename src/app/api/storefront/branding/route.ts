@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       start_url: '/',
       scope: '/',
       display: 'standalone',
-      theme_color: tenant ? brandColor(tenant) : '#1357ad',
+      theme_color: tenant ? brandColor(tenant) : '#0e4a52',
       background_color: '#ffffff',
       icons: [192, 512].map((size) => ({ src: `/icon.png?size=${size}`, sizes: `${size}x${size}`, type: 'image/png', purpose: 'any' })),
     }));

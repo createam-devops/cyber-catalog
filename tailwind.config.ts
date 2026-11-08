@@ -26,6 +26,28 @@ const config: Config = {
         'sf-body': ['var(--font-body)'],
       },
       colors: {
+        // Identidad del sitio de Createam: variables definidas en globals.css (.site-theme)
+        site: {
+          "ink": "var(--c-ink)",
+          "ink-deep": "var(--c-ink-deep)",
+          "ink-raise": "var(--c-ink-raise)",
+          "ink-line": "var(--c-ink-line)",
+          "on-ink": "var(--c-on-ink)",
+          "on-ink-muted": "var(--c-on-ink-muted)",
+          "on-ink-faint": "var(--c-on-ink-faint)",
+          "bg": "var(--c-bg)",
+          "surface": "var(--c-surface)",
+          "line": "var(--c-line)",
+          "line-strong": "var(--c-line-strong)",
+          "text": "var(--c-text)",
+          "text-muted": "var(--c-text-muted)",
+          "text-faint": "var(--c-text-faint)",
+          "soft": "var(--c-soft)",
+          "soft-line": "var(--c-soft-line)",
+          "accent": "var(--c-accent)",
+          "accent-hover": "var(--c-accent-hover)",
+          "on-accent": "var(--c-on-accent)",
+        },
         // Vitrina: colores de cada tienda, definidos como variables en <StorefrontRoot>
         sf: {
           primary: "rgb(var(--sf-primary-rgb) / <alpha-value>)",

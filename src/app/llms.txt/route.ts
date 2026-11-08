@@ -1,8 +1,10 @@
 import { PLANS } from '@/lib/plans';
 import { CATALOG_GROWTH, CONTACT, CYBERPOS_PLANS, FAQS, LINKS, RESTAURANT_PLANS } from '@/components/landing/content';
+import { MODULE_GROUPS, MODULE_PAGES } from '@/components/site/data/modules';
+import { RUBROS } from '@/components/site/data/rubros';
 
 // Resumen del sitio para modelos de lenguaje y agentes de IA (formato de llmstxt.org).
-// Se arma con los mismos datos de la landing para que precios y enlaces no se desfasen.
+// Se arma con los mismos datos de las páginas para que precios y enlaces no se desfasen.
 export const dynamic = 'force-static';
 
 const SITE_URL = 'https://createam.cloud';
@@ -15,43 +17,68 @@ function buildLlmsTxt(): string {
     .join('\n');
   const faqs = FAQS.map((faq) => `- ${faq.question} ${faq.answer}`).join('\n');
   const growth = CATALOG_GROWTH.map((m) => `- ${m.title}: ${m.text}`).join('\n');
+  const modulePages = MODULE_PAGES.map((m) => `- [${m.name}](${SITE_URL}/erp/${m.slug}): ${m.meta.description}`).join('\n');
+  const allModules = MODULE_GROUPS.map((g) => `- ${g.title}: ${g.modules.map((m) => `${m.name} (${m.text.replace(/\.$/, '')})`).join('; ')}.`).join('\n');
+  const rubros = RUBROS.map((r) => `- [${r.name}](${SITE_URL}/${r.slug}), con ${r.product}: ${r.meta.description}`).join('\n');
 
   return `# Createam
 
-> Software en la nube para negocios peruanos: Catálogo Digital (tienda online que recibe pedidos por WhatsApp), CyberPOS (sistema de ventas con facturación electrónica SUNAT, contabilidad y CRM) y OnTurn (reservas online para negocios que atienden con cita). Catálogo Digital vive dentro de CyberPOS, así que una tienda online puede crecer a sistema de ventas completo en la misma cuenta. Equipo en Lima, Perú, desde 2017. Precios en soles (PEN).
+> Software en la nube para negocios peruanos: el ERP de Createam (sistema de ventas modular con punto de venta, facturación electrónica SUNAT, inventario, contabilidad y CRM omnicanal con WhatsApp, Instagram y Messenger), Catálogo Digital (tienda online que recibe pedidos por WhatsApp y vive dentro del ERP) y OnTurn (reservas online para negocios que atienden con cita). Equipo en Lima, Perú, desde 2017. Precios en soles (PEN).
 
-Las tres herramientas funcionan en el navegador, sin instalar nada y sin contratos de permanencia. Las tres se prueban gratis.
+Las tres herramientas funcionan en el navegador, sin instalar nada y sin contratos de permanencia. Las tres se empiezan gratis. El ERP se arma por módulos: además de las soluciones por rubro, se configura un plan a la medida de cada negocio.
 
 ## Productos
 
-- [Catálogo Digital](${SITE_URL}/catalogo-digital): tienda online con catálogo, buscador y categorías; el carrito envía el pedido con el total al WhatsApp del negocio. Sin comisión por venta. Diseños por rubro (regalos, moda, comida, ferretería), dirección en createam.cloud o dominio propio, una página por producto y mapa del sitio para Google. Los productos, fotos, precios y stock se administran en CyberPOS (Venta online).
-- [CyberPOS](${SITE_URL}/#cyberpos): sistema de ventas modular para bodegas, tiendas, talleres, restaurantes y negocios que fabrican a medida. Ventas y caja (punto de venta), facturación electrónica y guías de remisión directo a SUNAT, inventario con varios almacenes, compras, contabilidad, CRM con WhatsApp, servicios, producción, tienda online y reportes.
-- [Tienda Createam](https://catalogo.createam.cloud/): equipos para el punto de venta, con precios en soles; se piden por WhatsApp. Está hecha con Catálogo Digital y tiene su propia guía para IAs en https://catalogo.createam.cloud/llms.txt.
-- [OnTurn](${SITE_URL}/#onturn): reservas online las 24 horas para barberías, salones, spas y consultorios dentales, con agenda, recordatorios, reseñas verificadas y seña por Yape o Plin. Incluye un CyberPOS básico.
+- [ERP de Createam](${SITE_URL}/erp): sistema de ventas para bodegas, tiendas, restaurantes, talleres y negocios que fabrican a medida. Plan gratis hasta por 1 año.
+- [Catálogo Digital](${SITE_URL}/catalogo-digital): tienda online con catálogo, buscador y carrito que envía el pedido con el total al WhatsApp del negocio. Sin comisión por venta. Los productos, fotos, precios y stock se administran en el ERP (Venta online).
+- [OnTurn](${SITE_URL}/onturn): reservas online las 24 horas para barberías, spas, centros de estética y consultorios dentales, con agenda por profesional, recordatorios por correo y notificación, lista de espera, reseñas verificadas y seña por Yape o Plin. Se conecta con el ERP: cada reserva confirmada llega como orden de servicio.
+- [Tienda Createam](https://catalogo.createam.cloud/): equipos para el punto de venta, con precios en soles; se piden por WhatsApp. Está hecha con Catálogo Digital y tiene su propia guía en https://catalogo.createam.cloud/llms.txt.
 
-## Catálogo Digital y CyberPOS: una sola plataforma
+## Soluciones por rubro
 
-Una tienda de Catálogo Digital no es un sistema aparte: vive dentro de CyberPOS. El negocio carga sus productos una sola vez y, cuando crece, activa en la misma cuenta, sin cambiar de sistema ni migrar nada:
+${rubros}
+
+## Módulos del ERP con página propia
+
+${modulePages}
+
+## Todos los módulos del ERP
+
+${allModules}
+
+## Catálogo Digital y el ERP: una sola plataforma
+
+Una tienda de Catálogo Digital no es un sistema aparte: vive dentro del ERP. El negocio carga sus productos una sola vez y, cuando crece, activa en la misma cuenta, sin cambiar de sistema ni migrar nada:
 
 ${growth}
 
-Al registrarse en ${SITE_URL}/catalogo-digital, el negocio recibe su cuenta de CyberPOS con el plan Catálogo Digital y crea su tienda desde Venta online › Tienda.
+Al registrarse en ${SITE_URL}/catalogo-digital, el negocio recibe su cuenta del ERP con el plan Catálogo Digital y crea su tienda desde Venta online › Tienda.
 
 ## Precios
 
-Catálogo Digital (prueba gratis; se paga desde CyberPOS):
+Todos los precios están en ${SITE_URL}/precios.
+
+Catálogo Digital (prueba gratis; se paga desde el ERP):
 - ${starter.name}: ${money(starter.monthlyPrice)} al mes, o ${money(starter.yearlyPrice)} al año (${money(starter.yearlyPrice / 12)} al mes). Hasta ${starter.limits.products} productos y ${starter.limits.categories} categorías.
 - ${pro.name}: ${money(pro.monthlyPrice)} al mes, o ${money(pro.yearlyPrice)} al año (${money(pro.yearlyPrice / 12)} al mes). Productos ilimitados, dominio propio, control de stock, SEO y estadísticas.
 
-CyberPOS (también hay planes a medida):
+ERP (también hay planes a medida):
 ${cyberposPlans}
 
 OnTurn: gratis hasta por 1 año; después, comisión por reserva.
 
+## Programa de Aliados
+
+- [Programa de Aliados](${SITE_URL}/aliados): técnicos, contadores, vendedores de equipos y consultores que recomiendan ERP, lo instalan o llevan la contabilidad de sus clientes y cobran una participación mensual mientras los atienden. Ser aliado es gratis. Solicitud: ${LINKS.allyJoin}
+
+## Para clientes de negocios que usan ERP
+
+- [Consultar un comprobante electrónico](${SITE_URL}${LINKS.invoiceLookup}): quien compró en un negocio que usa ERP busca su boleta o factura con sus datos y la descarga.
+
 ## Empezar
 
+- [Crear una cuenta en el ERP](${LINKS.cyberposRegister})
 - [Crear una tienda en Catálogo Digital](${SITE_URL}${LINKS.catalogRegister})
-- [Crear una cuenta en CyberPOS](${LINKS.cyberposRegister})
 - [Registrar un negocio en OnTurn](${LINKS.onturnRegister})
 
 ## Preguntas frecuentes
