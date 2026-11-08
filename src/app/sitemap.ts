@@ -1,34 +1,17 @@
 import { MetadataRoute } from 'next';
+import { SITE_PAGES } from '@/components/site/nav';
 
-// Solo páginas de la plataforma. Las tiendas de los tenants viven en su propio
-// dominio: listarlas aquí como createam.cloud/store?_domain=... las duplicaba.
+// Solo páginas de la plataforma, sacadas del mapa del sitio (components/site/nav.ts).
+// Las tiendas de los tenants viven en su propio dominio: listarlas aquí como
+// createam.cloud/store?_domain=... las duplicaba.
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://createam.cloud';
+  const lastModified = new Date();
 
-  return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/catalogo-digital`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/terminos`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${baseUrl}/privacidad`,
-      lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-  ];
+  return SITE_PAGES.map((page) => ({
+    url: page.path === '/' ? baseUrl : `${baseUrl}${page.path}`,
+    lastModified,
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
+  }));
 }

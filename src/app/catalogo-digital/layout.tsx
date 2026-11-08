@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Analytics from "@/components/Analytics";
 
 const title = "Crea tu catálogo digital gratis y vende por WhatsApp | Createam";
 const description =
-  "Crea tu tienda online con fotos, precios y pedidos por WhatsApp. Productos y stock desde CyberPOS, diseño según tu rubro y sin comisión por venta. Empieza gratis.";
+  "Crea tu tienda online con fotos, precios y pedidos por WhatsApp. Productos y stock desde el ERP, diseño según tu rubro y sin comisión por venta. Empieza gratis.";
 
 export const metadata: Metadata = {
   title,
@@ -14,10 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default function RegistroLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Analytics />
-      {children}
-    </>
-  );
+  // La analítica la pone el marco común del sitio (SiteShell).
+  return children;
 }

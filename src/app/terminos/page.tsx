@@ -19,7 +19,7 @@ export default function TerminosPage() {
         <p>
           Createam ofrece en createam.cloud <strong>Catálogo Digital</strong>, una plataforma para que un negocio cree su
           tienda online y reciba pedidos por WhatsApp. Estos términos regulan el uso de este sitio y de Catálogo Digital.
-          CyberPOS y OnTurn, que también presentamos aquí, tienen sus propios términos en sus plataformas.
+          ERP y OnTurn, que también presentamos aquí, tienen sus propios términos en sus plataformas.
         </p>
         <p>
           Al crear una cuenta o usar el servicio aceptas estos términos. Si los aceptas en nombre de un negocio, declaras
@@ -47,7 +47,7 @@ export default function TerminosPage() {
             Los planes, sus límites y sus precios en soles se publican en createam.cloud. Puedes pagar mes a mes o el año
             completo por adelantado.
           </li>
-          <li>El plan se paga desde tu cuenta de CyberPOS, por los medios de pago disponibles en cada momento.</li>
+          <li>El plan se paga desde tu cuenta del ERP, por los medios de pago disponibles en cada momento.</li>
           <li>
             No hay permanencia: puedes dejar de renovar cuando quieras. Si un periodo vence sin pago, podemos limitar
             funciones de la tienda o suspenderla hasta que se regularice.

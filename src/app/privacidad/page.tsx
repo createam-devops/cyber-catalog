@@ -22,7 +22,7 @@ export default function PrivacidadPage() {
           visitan este sitio y de los negocios que crean una cuenta. Cada negocio es responsable de los datos de sus
           propios clientes.
         </p>
-        <p>CyberPOS y OnTurn, que también presentamos aquí, tienen sus propias políticas en sus plataformas.</p>
+        <p>ERP y OnTurn, que también presentamos aquí, tienen sus propias políticas en sus plataformas.</p>
       </section>
 
       <section>
@@ -69,7 +69,7 @@ export default function PrivacidadPage() {
           necesitamos para operar: Google (cuentas, base de datos e imágenes con Firebase, y Google Analytics), Resend
           (envío de correos, como el código de verificación), las entidades de pago que uses y el proveedor de servidores
           donde corre la plataforma. Algunos de ellos guardan la información en servidores fuera del Perú. Tu cuenta, tus
-          productos y los pagos de tu plan se gestionan en CyberPOS, que también es de Createam.
+          productos y los pagos de tu plan se gestionan en el ERP, que también es de Createam.
         </p>
       </section>
 

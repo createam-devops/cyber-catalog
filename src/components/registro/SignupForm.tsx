@@ -6,7 +6,7 @@ import { trackEvent } from "@/lib/analytics";
 
 /**
  * Registro de un negocio nuevo: sus datos, el código que llega al correo y el
- * alta en CyberPOS (lo hace el servidor). Al terminar, el dueño entra a CyberPOS
+ * alta en el ERP (lo hace el servidor). Al terminar, el dueño entra al ERP
  * con su correo y crea su tienda desde «Crea tu tienda online».
  */
 
@@ -94,7 +94,7 @@ export default function SignupForm({ passwordRule, loginBase }: { passwordRule: 
       <p>{error.text}</p>
       {error.loginUrl && (
         <a href={error.loginUrl} className="mt-2 inline-flex min-h-[44px] items-center font-bold text-[#7A1485] underline">
-          Entrar a CyberPOS
+          Entrar al ERP
         </a>
       )}
     </div>
@@ -106,11 +106,11 @@ export default function SignupForm({ passwordRule, loginBase }: { passwordRule: 
         <CheckCircle2 className="h-14 w-14 text-[#15803D]" aria-hidden />
         <h2 className="font-landing-display text-2xl font-extrabold">¡Tu cuenta está lista!</h2>
         <p className="text-[#3D4B66]">
-          Entra a CyberPOS con tu correo y tu contraseña. Ahí eliges tu rubro y tu tienda queda en línea.
+          Entra al ERP con tu correo y tu contraseña. Ahí eliges tu rubro y tu tienda queda en línea.
         </p>
         {loginUrl && (
           <a href={loginUrl} className={primary}>
-            Entrar a CyberPOS <ArrowRight className="h-5 w-5" aria-hidden />
+            Entrar al ERP <ArrowRight className="h-5 w-5" aria-hidden />
           </a>
         )}
         <p className="text-sm text-[#5A6885]">Te llevamos en unos segundos.</p>
@@ -215,7 +215,7 @@ export default function SignupForm({ passwordRule, loginBase }: { passwordRule: 
           </button>
         </div>
         <p id="password-regla" className="mt-1.5 text-sm text-[#5A6885]">
-          {passwordRule} Con ella entrarás a CyberPOS.
+          {passwordRule} Con ella entrarás al ERP.
         </p>
       </div>
       {errorBox}
@@ -227,7 +227,7 @@ export default function SignupForm({ passwordRule, loginBase }: { passwordRule: 
         <p className="text-center text-[15px] text-[#3D4B66]">
           ¿Ya tienes cuenta?{" "}
           <a href={loginBase} className="font-bold text-[#7A1485] underline">
-            Entra a CyberPOS
+            Entra al ERP
           </a>
         </p>
       )}

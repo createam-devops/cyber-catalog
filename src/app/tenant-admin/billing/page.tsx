@@ -36,10 +36,10 @@ function BillingContent() {
 
   async function handleSubscribe(planId: 'starter' | 'pro') {
     if (!user) return;
-    // Quien entró con CyberPOS tiene su plan en el ERP: se cambia desde allá
+    // Quien entró con el ERP tiene su plan en el ERP: se cambia desde allá
     // (quién cobra el catálogo es la decisión D3 pendiente con el ERP).
     if (user.provider === 'erp') {
-      toast.info('Tu plan se administra desde CyberPOS. Escríbenos para cambiarlo.');
+      toast.info('Tu plan se administra desde el ERP. Escríbenos para cambiarlo.');
       return;
     }
     setLoadingPlan(planId);
