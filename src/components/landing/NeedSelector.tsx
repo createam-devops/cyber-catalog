@@ -99,7 +99,7 @@ const NEEDS: Need[] = [
 
 export default function NeedSelector() {
   const [selected, setSelected] = useState(NEEDS[0].id);
-  const fade = useEdgeFade<HTMLDivElement>();
+  const fade = useEdgeFade<HTMLDivElement>("x");
   const need = NEEDS.find((n) => n.id === selected) ?? NEEDS[0];
   // El botón principal es amarillo sol, como en todo el sitio.
   const ctaClass = "inline-flex min-h-[50px] items-center justify-center rounded-full bg-site-accent px-6 font-bold text-site-on-accent transition-colors hover:bg-site-accent-hover";
@@ -112,7 +112,7 @@ export default function NeedSelector() {
         style={fade.style}
         role="group"
         aria-label="Tipo de negocio"
-        className="mt-7 flex snap-x gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
+        className="mt-7 flex snap-x gap-2.5 overflow-x-auto overflow-y-hidden pb-1 [scrollbar-width:none] md:flex-wrap md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden"
       >
         {NEEDS.map((n) => (
           <button

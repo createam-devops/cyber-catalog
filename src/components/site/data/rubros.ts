@@ -69,7 +69,7 @@ export interface RubroData {
     points: string[];
     image?: { src: string; alt: string; width: number; height: number; label: string };
   };
-  primaryCta: { label: string; href: string; track: string };
+  primaryCta: { label: string; shortLabel: string; href: string; track: string };
   secondaryCta?: { label: string; href: string; track?: string };
   note?: string;
   featuresTitle: string;
@@ -100,7 +100,7 @@ const RESTAURANTES: RubroData = {
     lead: "Atiende más mesas, sin comandas perdidas y con la cuenta lista en un toque.",
     points: ["Del celular del mozo a la cocina", "Carta digital con QR", "Cuenta dividida sin calculadora"],
   },
-  primaryCta: { label: "Pedir una demostración", href: LINKS.whatsapp, track: "restaurantes_demo" },
+  primaryCta: { label: "Pedir una demostración", shortLabel: "Pedir demo", href: LINKS.whatsapp, track: "restaurantes_demo" },
   secondaryCta: { label: "Ver los planes", href: "#precios", track: "restaurantes_planes" },
   note: "Desde S/ 24.90 al mes",
   featuresTitle: "Más mesas atendidas, menos errores",
@@ -259,7 +259,7 @@ const BODEGAS: RubroData = {
       label: "ERP · Vender",
     },
   },
-  primaryCta: { label: "Crear cuenta gratis", href: LINKS.cyberposRegister, track: "bodegas_registro" },
+  primaryCta: { label: "Crear cuenta gratis", shortLabel: "Crear cuenta", href: LINKS.cyberposRegister, track: "bodegas_registro" },
   secondaryCta: { label: "Ver precios", href: "/precios#erp", track: "bodegas_precios" },
   note: "Plan gratis hasta por 1 año · Sin tarjeta y sin permanencia",
   featuresTitle: "Vende rápido y cobra seguro",
@@ -408,7 +408,7 @@ const FABRICACION: RubroData = {
       label: "ERP",
     },
   },
-  primaryCta: { label: "Pedir una demostración", href: LINKS.whatsapp, track: "fabricacion_demo" },
+  primaryCta: { label: "Pedir una demostración", shortLabel: "Pedir demo", href: LINKS.whatsapp, track: "fabricacion_demo" },
   secondaryCta: { label: "Ver todos los módulos", href: "/erp#modulos", track: "fabricacion_modulos" },
   note: "Plan a tu medida, con los módulos que usa tu taller",
   featuresTitle: "Del presupuesto a la instalación, sin errores",
@@ -530,7 +530,7 @@ const BARBERIAS: RubroData = {
       label: "OnTurn",
     },
   },
-  primaryCta: { label: "Registrar mi negocio", href: LINKS.onturnRegister, track: "barberias_registro" },
+  primaryCta: { label: "Registrar mi negocio", shortLabel: "Registrarme", href: LINKS.onturnRegister, track: "barberias_registro" },
   secondaryCta: { label: "Ver un negocio de ejemplo", href: "https://beta.onturn.app/barberia-don-juan", track: "barberias_ejemplo" },
   note: "Gratis hasta por 1 año · Sin instalar nada",
   featuresTitle: "Agenda llena, menos inasistencias",

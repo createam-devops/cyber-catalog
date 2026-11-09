@@ -23,7 +23,8 @@ export interface SiteNavProps {
   logins: NavItem[];
   allModulesHref: string;
   customPlanHref: string;
-  cta: { label: string; href: string; track?: string };
+  /** shortLabel: el texto en celular, donde el largo empuja el botón de menú fuera de la pantalla */
+  cta: { label: string; shortLabel?: string; href: string; track?: string };
 }
 
 type MenuId = "productos" | "rubros" | "ingresar";
@@ -147,7 +148,7 @@ export default function SiteNav({ logo, products, modules, rubros, logins, allMo
 
   return (
     <header className="sticky top-0 z-40 border-b border-site-line bg-white">
-      <div ref={rootRef} className={`${container} relative flex items-center justify-between gap-x-3 py-2.5`}>
+      <div ref={rootRef} className={`${container} relative flex items-center justify-between gap-x-2 py-2.5 sm:gap-x-3`}>
         <Link href="/" className="group flex min-h-[44px] flex-none items-center" aria-label="Createam, ir al inicio">
           {logo}
         </Link>
@@ -198,7 +199,7 @@ export default function SiteNav({ logo, products, modules, rubros, logins, allMo
           ))}
         </nav>
 
-        <div className="flex flex-none items-center gap-2">
+        <div className="flex flex-none items-center gap-1.5 sm:gap-2">
           <div className="hidden sm:block">
             {menuButton("ingresar", "Ingresar", "rounded-full border-[1.5px] border-site-line-strong px-4 font-bold hover:border-site-ink hover:text-site-ink")}
           </div>
@@ -214,9 +215,10 @@ export default function SiteNav({ logo, products, modules, rubros, logins, allMo
             href={cta.href}
             onClick={closeAll}
             track={cta.track}
-            className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full bg-site-accent px-4 text-[15px] font-bold text-site-on-accent transition-colors hover:bg-site-accent-hover sm:px-5"
+            className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full bg-site-accent px-3.5 text-[14px] font-bold text-site-on-accent transition-colors hover:bg-site-accent-hover max-[359px]:hidden sm:px-5 sm:text-[15px]"
           >
-            {cta.label}
+            <span className="sm:hidden">{cta.shortLabel ?? cta.label}</span>
+            <span className="hidden sm:inline">{cta.label}</span>
           </NavAnchor>
           <button
             type="button"

@@ -16,7 +16,7 @@ export default function ModulePage({ module: m }: { module: ModulePageData }) {
   const rubros = RUBROS.filter((r) => m.rubros?.includes(r.slug));
 
   return (
-    <SiteShell cta={{ label: "Crear cuenta gratis", href: LINKS.cyberposRegister, track: `${m.slug}_cabecera` }}>
+    <SiteShell cta={{ label: "Crear cuenta gratis", shortLabel: "Crear cuenta", href: LINKS.cyberposRegister, track: `${m.slug}_cabecera` }}>
       <JsonLd
         graph={[
           breadcrumbJsonLd(breadcrumbs),

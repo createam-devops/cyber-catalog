@@ -66,7 +66,7 @@ export default async function CyberPosPage() {
   const showcase = await getShowcase();
 
   return (
-    <SiteShell cta={{ label: "Crear cuenta gratis", href: LINKS.cyberposRegister, track: "cyberpos_cabecera" }}>
+    <SiteShell cta={{ label: "Crear cuenta gratis", shortLabel: "Crear cuenta", href: LINKS.cyberposRegister, track: "cyberpos_cabecera" }}>
       <JsonLd
         graph={[
           breadcrumbJsonLd(BREADCRUMBS),

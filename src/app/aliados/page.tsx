@@ -156,7 +156,7 @@ export default async function AliadosPage() {
   ];
 
   return (
-    <SiteShell cta={{ label: "Quiero ser aliado", href: LINKS.allyJoin, track: "aliados_cabecera" }}>
+    <SiteShell cta={{ label: "Quiero ser aliado", shortLabel: "Unirme", href: LINKS.allyJoin, track: "aliados_cabecera" }}>
       <JsonLd graph={[breadcrumbJsonLd(BREADCRUMBS), faqJsonLd(faqs)]} />
 
       <PageHero
