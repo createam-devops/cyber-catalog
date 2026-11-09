@@ -92,7 +92,10 @@ jobs:
              export DOCKER_IMAGE='$DOCKER_IMAGE'
              cd \"\$PROJECT_DIR\"
              if command -v docker-compose >/dev/null 2>&1; then DC='docker-compose'; else DC='docker compose'; fi
-             \$DC down || true
+             # Primero se baja la imagen nueva con el sitio en línea; después
+             # up -d cambia el contenedor viejo por el nuevo. Antes se apagaba
+             # todo y recién se descargaba: cerca de un minuto sin tiendas, y
+             # Google marcaba errores al leer los sitemap.
              docker pull \"\$DOCKER_IMAGE\"
              \$DC up -d --remove-orphans
              sleep 10
