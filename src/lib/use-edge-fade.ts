@@ -31,8 +31,12 @@ function maskFor({ axis, start, end }: Edges): CSSProperties | undefined {
  *
  * `ref` es un ref de función: sirve aunque el carrusel aparezca después (por
  * ejemplo, cuando llega la segunda categoría o la segunda foto).
+ *
+ * `axes = "x"` para las filas que solo se deslizan de lado: si no, una tarjeta
+ * que entra animada desde abajo cuenta como desborde vertical y el borde
+ * inferior queda difuminado (el ResizeObserver no ve cuando termina de subir).
  */
-export function useEdgeFade<T extends HTMLElement>() {
+export function useEdgeFade<T extends HTMLElement>(axes: "x" | "y" | "both" = "both") {
   const [el, setEl] = useState<T | null>(null);
   const [edges, setEdges] = useState<Edges>(NONE);
 
@@ -42,8 +46,8 @@ export function useEdgeFade<T extends HTMLElement>() {
       return;
     }
     const update = () => {
-      const overX = el.scrollWidth - el.clientWidth;
-      const overY = el.scrollHeight - el.clientHeight;
+      const overX = axes === "y" ? 0 : el.scrollWidth - el.clientWidth;
+      const overY = axes === "x" ? 0 : el.scrollHeight - el.clientHeight;
       const next: Edges =
         overX > 2
           ? { axis: "x", start: el.scrollLeft > 2, end: overX - el.scrollLeft > 2 }
@@ -62,7 +66,7 @@ export function useEdgeFade<T extends HTMLElement>() {
       el.removeEventListener("scroll", update);
       observer.disconnect();
     };
-  }, [el]);
+  }, [el, axes]);
 
   /** Mueve el carrusel casi una pantalla hacia un lado (para las flechas). */
   const scroll = useCallback(

@@ -19,11 +19,13 @@ import { container } from "./ui";
 
 export interface ShellCta {
   label: string;
+  /** Texto corto para celular (por debajo de 640 px) */
+  shortLabel?: string;
   href: string;
   track?: string;
 }
 
-const DEFAULT_CTA: ShellCta = { label: "Empezar gratis", href: "/#empezar", track: "cabecera_empezar" };
+const DEFAULT_CTA: ShellCta = { label: "Empezar gratis", shortLabel: "Empezar", href: "/#empezar", track: "cabecera_empezar" };
 
 /**
  * Marco de todas las páginas del sitio: tipografías, cabecera con menús,

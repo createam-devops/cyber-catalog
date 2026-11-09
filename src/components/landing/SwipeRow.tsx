@@ -8,6 +8,11 @@ import { useEdgeFade } from "@/lib/use-edge-fade";
  * `md` es la grilla o fila que indique className, salvo con `desktopCarousel`,
  * que sigue en una sola fila y suma flechas. Nunca se sale del contenedor: el
  * borde donde queda contenido cortado se difumina.
+ *
+ * Solo se desliza de lado: sin `overflow-y-hidden`, el desborde vertical (las
+ * tarjetas que aún no aparecen están 16 px más abajo) lo volvía una caja con
+ * scroll propio que atrapaba el dedo al bajar por la página en el celular. El
+ * py-2 con -my-2 deja aire para que la tarjeta que se eleva no se corte.
  */
 export default function SwipeRow({
   label,
@@ -20,7 +25,7 @@ export default function SwipeRow({
   desktopCarousel?: boolean;
   children: React.ReactNode;
 }) {
-  const fade = useEdgeFade<HTMLDivElement>();
+  const fade = useEdgeFade<HTMLDivElement>("x");
   return (
     <div className="relative">
       <div
@@ -29,8 +34,8 @@ export default function SwipeRow({
         aria-label={label}
         tabIndex={0}
         style={fade.style}
-        className={`flex snap-x snap-mandatory gap-3.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-          desktopCarousel ? "" : "md:overflow-visible md:pb-0"
+        className={`-my-2 flex snap-x snap-mandatory gap-3.5 overflow-x-auto overflow-y-hidden py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          desktopCarousel ? "" : "md:my-0 md:overflow-visible md:py-0"
         } ${className}`}
       >
         {children}

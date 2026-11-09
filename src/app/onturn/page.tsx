@@ -102,7 +102,7 @@ const FAQS: Faq[] = [
 
 export default function OnTurnPage() {
   return (
-    <SiteShell cta={{ label: "Registrar mi negocio", href: LINKS.onturnRegister, track: "onturn_cabecera" }}>
+    <SiteShell cta={{ label: "Registrar mi negocio", shortLabel: "Registrarme", href: LINKS.onturnRegister, track: "onturn_cabecera" }}>
       <JsonLd
         graph={[
           breadcrumbJsonLd(BREADCRUMBS),

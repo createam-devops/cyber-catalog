@@ -98,7 +98,7 @@ export default function RegistroPage() {
   const loginBase = erpLoginBase();
 
   return (
-    <SiteShell cta={{ label: "Crear mi catálogo", href: "#registro", track: "catalogo_cabecera" }}>
+    <SiteShell cta={{ label: "Crear mi catálogo", shortLabel: "Empezar", href: "#registro", track: "catalogo_cabecera" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
 
         <section className="relative isolate overflow-hidden bg-site-ink text-white">
