@@ -147,3 +147,27 @@
   --c-orb-3: #F3E6CF;
   --c-orb-4: #BFA57A;
 }
+
+/*
+ * Constelación de la identidad (src/components/site/ModuleAssembly.tsx): las
+ * estrellas del fondo titilan solo mientras se ve (--orbit-state).
+ */
+@keyframes site-twinkle {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+.site-twinkle {
+  opacity: 0.35;
+  animation: site-twinkle 4.5s ease-in-out infinite;
+  animation-play-state: var(--orbit-state, running);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-twinkle {
+    animation: none;
+  }
+}

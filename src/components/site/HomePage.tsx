@@ -68,14 +68,21 @@ export default async function HomePage() {
               Empieza con ventas y boletas SUNAT. Suma inventario, contabilidad, tienda online y CRM cuando lo necesites, sin cambiar
               de sistema.
             </p>
+            {/* El botón principal lleva a crear la cuenta (plan gratis del ERP), no a otra sección */}
             <div className="mt-1 flex flex-wrap gap-3">
-              <ButtonLink href="#empezar" className="min-h-[54px] px-7 text-[17px]">
-                Elegir mi herramienta
+              <ButtonLink href={LINKS.cyberposRegister} track="portada_registro_erp" className="min-h-[54px] px-7 text-[17px]">
+                Crear cuenta gratis
               </ButtonLink>
-              <ButtonLink href="/precios" variant="outline-dark" className="min-h-[54px] px-7 text-[17px]">
+              <ButtonLink href="/precios" variant="outline-dark" track="portada_precios" className="min-h-[54px] px-7 text-[17px]">
                 Ver precios
               </ButtonLink>
             </div>
+            <p className="-mt-2 text-[15px] text-site-on-ink-muted">
+              ¿Prefieres que te asesoremos?{" "}
+              <a href={LINKS.whatsapp} data-track="portada_whatsapp" className="font-semibold text-white underline underline-offset-2 hover:text-site-accent">
+                Escríbenos por WhatsApp
+              </a>
+            </p>
             <ul className="mt-1 flex flex-wrap gap-x-6 gap-y-2 text-[15px] font-medium text-site-on-ink-muted">
               {["Gratis hasta por 1 año", "Sin instalar nada", "Sin permanencia"].map((item) => (
                 <li key={item} className="flex items-center gap-2">
@@ -202,7 +209,7 @@ export default async function HomePage() {
 
       {showcase && <ProductShowcase showcase={showcase} />}
 
-      <section className={`${container} ${showcase ? "pb-14 sm:pb-20 lg:pb-24" : sectionY}`}>
+      <section data-section="aliados" className={`${container} ${showcase ? "pb-14 sm:pb-20 lg:pb-24" : sectionY}`}>
         <Reveal className="relative isolate flex flex-wrap items-center gap-x-10 gap-y-6 overflow-hidden rounded-[24px] bg-site-ink-deep p-7 text-white sm:p-10">
           <HeroSky />
           <IconTile accent="createam" size="lg" className="relative">
@@ -249,7 +256,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className={`${container} ${sectionY} flex flex-col gap-8`}>
+      <section data-section="nosotros" className={`${container} ${sectionY} flex flex-col gap-8`}>
         <SectionHeading
           title="Hecho en Lima, desde 2017"
           lead="Createam es un equipo de Lima que desarrolla software desde 2017. Estas plataformas nacieron de proyectos reales con negocios peruanos."

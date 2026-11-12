@@ -25,7 +25,9 @@ export interface ShellCta {
   track?: string;
 }
 
-const DEFAULT_CTA: ShellCta = { label: "Empezar gratis", shortLabel: "Empezar", href: "/#empezar", track: "cabecera_empezar" };
+// Por defecto, el botón de la cabecera abre el registro del ERP (plan gratis):
+// lleva a crear la cuenta, no a otra sección de la página.
+const DEFAULT_CTA: ShellCta = { label: "Crear cuenta gratis", shortLabel: "Crear cuenta", href: LINKS.cyberposRegister, track: "cabecera_registro_erp" };
 
 /**
  * Marco de todas las páginas del sitio: tipografías, cabecera con menús,
@@ -98,7 +100,7 @@ function SiteFooter({ contactBand }: { contactBand: boolean }) {
     <footer className="bg-site-ink text-white">
       <div className={`${container} flex flex-col gap-11 pb-9 pt-14 sm:pt-20`}>
         {contactBand && (
-          <div id="contacto" className="flex flex-wrap items-center justify-between gap-x-12 gap-y-6">
+          <div id="contacto" data-section="contacto" className="flex flex-wrap items-center justify-between gap-x-12 gap-y-6">
             <div className="min-w-0 flex-[1_1_420px]">
               <h2 className="font-landing-display text-[clamp(28px,3.4vw,44px)] font-bold leading-[1.08] tracking-[-0.006em]">
                 ¿No sabes por cuál empezar?

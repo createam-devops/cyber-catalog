@@ -6,13 +6,15 @@ export const LINKS = {
   catalogRegister: '/catalogo-digital',
   // Las tiendas se administran en el ERP: /ingresar lleva a su ingreso.
   catalogLogin: '/ingresar',
-  cyberposRegister: 'https://erpapp.createam.cloud/auth/register',
-  cyberposLogin: 'https://erpapp.createam.cloud/auth/login',
+  // La app del ERP vive en cyberposapp.createam.cloud aunque el sitio ya no diga
+  // «CyberPOS»: no cambiar el dominio al renombrar (erpapp… no existe y da 404).
+  cyberposRegister: 'https://cyberposapp.createam.cloud/auth/register',
+  cyberposLogin: 'https://cyberposapp.createam.cloud/auth/login',
   onturnRegister: 'https://beta.onturn.app/registrar-negocio',
   onturnLogin: 'https://beta.onturn.app/panel',
   // Programa de Aliados: la solicitud y el portal del aliado viven en el ERP.
-  allyJoin: 'https://erpapp.createam.cloud/aliados/unete',
-  allyHome: 'https://erpapp.createam.cloud/app/aliado',
+  allyJoin: 'https://cyberposapp.createam.cloud/aliados/unete',
+  allyHome: 'https://cyberposapp.createam.cloud/app/aliado',
   // Consulta de comprobantes para quien compró en un negocio que usa el ERP de Createam:
   // /comprobantes redirige a la página del ERP.
   invoiceLookup: '/comprobantes',

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/landing/LegalPage";
 import { CONTACT, LINKS } from "@/components/landing/content";
+import { CLARITY_PROJECT_ID } from "@/lib/analytics";
 
 export const metadata: Metadata = {
   title: "Política de privacidad | Createam",
@@ -55,6 +56,14 @@ export default function PrivacidadPage() {
             técnicos como el tipo de dispositivo, el navegador y la ubicación aproximada. Esta medición no está activa en
             las tiendas de los negocios.
           </li>
+          {CLARITY_PROJECT_ID && (
+            <li>
+              <strong>Cómo se usa createam.cloud</strong>: usamos Microsoft Clarity para ver, de forma anónima, cómo se
+              mueve la gente por el sitio (dónde hace clic y hasta dónde baja) y así mejorar las páginas. Clarity oculta
+              lo que escribes en los formularios y coloca sus propias cookies. Tampoco está activo en las tiendas de los
+              negocios.
+            </li>
+          )}
         </ul>
         <p>
           <strong>Si compras en una tienda:</strong> no necesitas crear una cuenta. Tu carrito se guarda solo en tu propio
@@ -66,7 +75,7 @@ export default function PrivacidadPage() {
         <h2>3. Con quién se comparten</h2>
         <p>
           No vendemos tus datos ni los usamos para publicidad de terceros. Solo acceden a ellos los proveedores que
-          necesitamos para operar: Google (cuentas, base de datos e imágenes con Firebase, y Google Analytics), Resend
+          necesitamos para operar: Google (cuentas, base de datos e imágenes con Firebase, y Google Analytics),{CLARITY_PROJECT_ID ? " Microsoft (Clarity)," : ""} Resend
           (envío de correos, como el código de verificación), las entidades de pago que uses y el proveedor de servidores
           donde corre la plataforma. Algunos de ellos guardan la información en servidores fuera del Perú. Tu cuenta, tus
           productos y los pagos de tu plan se gestionan en el ERP, que también es de Createam.
@@ -102,7 +111,7 @@ export default function PrivacidadPage() {
             que se guardan en tu navegador.
           </li>
           <li>
-            <strong>Para medir:</strong> las cookies de Google Analytics, descritas en la sección 2.
+            <strong>Para medir:</strong> las cookies de Google Analytics{CLARITY_PROJECT_ID ? " y de Microsoft Clarity" : ""}, descritas en la sección 2.
           </li>
         </ul>
         <p>
