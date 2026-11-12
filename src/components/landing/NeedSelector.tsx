@@ -6,6 +6,7 @@ import { PLANS } from "@/lib/plans";
 import { LINKS } from "./content";
 import { useEdgeFade } from "@/lib/use-edge-fade";
 import { FadeSwap } from "@/components/site/motion";
+import { trackEvent } from "@/lib/analytics";
 
 interface Need {
   id: string;
@@ -121,6 +122,7 @@ export default function NeedSelector() {
             aria-pressed={n.id === selected}
             onClick={(event) => {
               setSelected(n.id);
+              trackEvent("selector_opcion", { opcion: n.id });
               event.currentTarget.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
             }}
             className={`min-h-[48px] shrink-0 snap-start whitespace-nowrap rounded-full border-[1.5px] px-5 text-base font-bold transition-colors ${
