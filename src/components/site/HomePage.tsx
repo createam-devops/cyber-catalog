@@ -93,7 +93,7 @@ export default async function HomePage() {
             </ul>
           </div>
 
-          <div className="min-w-0 flex-[1_1_440px]">
+          <div className="min-w-0 flex-[1_1_440px] lg:self-start">
             <ModuleAssembly spec={ERP_ASSEMBLY} />
           </div>
         </div>
