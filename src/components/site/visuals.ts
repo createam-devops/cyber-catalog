@@ -8,12 +8,12 @@ export type PieceIcon =
   | "recetas" | "cotizador" | "precio" | "corte" | "ia" | "produccion" | "instalacion" | "garantia" | "agenda"
   | "recordatorio" | "senas" | "espera" | "resenas" | "clientes" | "carrito" | "whatsapp" | "dominio" | "seo"
   | "instagram" | "messenger" | "metaads" | "tiktok" | "embudo" | "chatbot" | "negocio" | "restaurante" | "taller"
-  | "farmacia" | "ferreteria" | "barberia" | "minimarket" | "comision";
+  | "farmacia" | "ferreteria" | "barberia" | "minimarket" | "comision" | "cotizacion" | "asistente";
 
 export interface AssemblySpec {
   /** Nombre del núcleo: «Tu ERP», «Tu tienda», «Tu cartera»… */
   core: string;
-  /** Hasta 8 piezas, en el orden en que se acoplan */
+  /** Hasta 14 piezas (MAX_PIECES), en el orden en que se acoplan: las primeras van en la órbita de adentro */
   pieces: { label: string; icon: PieceIcon }[];
   /** Cuántas vienen acopladas desde el inicio (el plan básico) */
   base?: number;
@@ -25,22 +25,34 @@ export interface AssemblySpec {
   countLabel?: string;
 }
 
+// Módulos que el ERP ya tiene (ver data/modules.ts): no sumar aquí nada que no exista.
 const ERP_PIECES: AssemblySpec["pieces"] = [
   { label: "Ventas y caja", icon: "ventas" },
   { label: "Boletas SUNAT", icon: "sunat" },
   { label: "Inventario", icon: "inventario" },
-  { label: "CRM omnicanal", icon: "crm" },
-  { label: "Contabilidad", icon: "contabilidad" },
-  { label: "Tienda online", icon: "tienda" },
   { label: "Compras", icon: "compras" },
+  { label: "Contabilidad", icon: "contabilidad" },
+  { label: "CRM omnicanal", icon: "crm" },
+  { label: "Tienda online", icon: "tienda" },
   { label: "Reportes", icon: "reportes" },
+  { label: "Guías de remisión", icon: "guias" },
+  { label: "Cotizaciones", icon: "cotizacion" },
+  { label: "Cobranzas", icon: "fiado" },
+  { label: "Órdenes de servicio", icon: "instalacion" },
+  { label: "Reservas online", icon: "reservas" },
+  { label: "Asistente con IA", icon: "asistente" },
 ];
+
+/** Cuántas piezas caben en la animación (tres órbitas). */
+export const MAX_PIECES = 14;
 
 export const ERP_ASSEMBLY: AssemblySpec = { core: "Tu ERP", pieces: ERP_PIECES, base: 2 };
 
-/** El ERP con una pieza destacada al centro de la página de ese módulo. */
+/** El ERP con la pieza de la página de ese módulo destacada (sin repetir íconos). */
 function withHighlight(first: { label: string; icon: PieceIcon }, rest: AssemblySpec["pieces"]): AssemblySpec {
-  return { core: "Tu ERP", pieces: [first, ...rest.filter((p) => p.icon !== first.icon)].slice(0, 8), base: 1, highlight: 0 };
+  const seen = new Set<PieceIcon>();
+  const pieces = [first, ...rest].filter((p) => !seen.has(p.icon) && seen.add(p.icon));
+  return { core: "Tu ERP", pieces: pieces.slice(0, MAX_PIECES), base: 1, highlight: 0 };
 }
 
 export const MODULE_ASSEMBLY: Record<string, AssemblySpec> = {

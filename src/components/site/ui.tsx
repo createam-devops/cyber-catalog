@@ -205,7 +205,7 @@ export function PageHero({
             </Float>
           ) : (
             // La identidad en movimiento: las piezas de esta página se acoplan a su núcleo.
-            <div className="min-w-0 flex-[1_1_360px]">
+            <div className="min-w-0 flex-[1_1_360px] lg:self-start">
               <ModuleAssembly spec={visual ?? ERP_ASSEMBLY} />
             </div>
           )}
