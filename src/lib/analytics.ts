@@ -9,7 +9,7 @@ export const GA_MEASUREMENT_ID = 'G-HQ5BXGHL7P';
  * (Configuración › Información general › ID del proyecto). Al activarlo, la
  * página de Privacidad lo menciona sola.
  */
-export const CLARITY_PROJECT_ID = '';
+export const CLARITY_PROJECT_ID = 'zcqwevc70a';
 
 type Gtag = (...args: unknown[]) => void;
 type Clarity = (...args: unknown[]) => void;
